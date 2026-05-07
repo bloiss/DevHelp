@@ -1,0 +1,34 @@
+# ─── Environnement ───────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Go ──────────────────────────────────
+backend/bin/
+backend/tmp/
+worker/bin/
+worker/tmp/
+*.exe
+*.test
+*.out
+
+# ─── Node / Frontend ─────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+
+# ─── OS ──────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── IDE ─────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ─── Docker ──────────────────────────────
+*.log
+
+# ─── Sentry source maps (générés au build) ─
+frontend/dist/*.map

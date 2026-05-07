@@ -1,0 +1,116 @@
+version: "3.8"
+
+# ─────────────────────────────────────────────────────────────────
+# Docker Swarm — Production
+# Usage :
+#   docker swarm init
+#   docker stack deploy -c docker-compose.swarm.yml devhelp
+#
+# Scaler l'API :
+#   docker service scale devhelp_api=5
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ─────────────────────────────────────────
+  # API PRINCIPALE (scalable horizontalement)
+  # ─────────────────────────────────────────
+  api:
+    image: ${DOCKER_HUB_USERNAME}/devhelp-api:latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - AI_PROVIDER=${AI_PROVIDER}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    networks:
+      - devhelp_net
+
+  # ─────────────────────────────────────────
+  # WORKER MODÉRATION IA (scalable indépendamment)
+  # ─────────────────────────────────────────
+  worker:
+    image: ${DOCKER_HUB_USERNAME}/devhelp-worker:latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - AI_PROVIDER=${AI_PROVIDER}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+    networks:
+      - devhelp_net
+
+  # ─────────────────────────────────────────
+  # LOAD BALANCER / REVERSE PROXY
+  # ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - devhelp_net
+
+  # ─────────────────────────────────────────
+  # RABBITMQ
+  # ─────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - devhelp_net
+
+networks:
+  devhelp_net:
+    driver: overlay
+
+volumes:
+  rabbitmq_data:
+
+configs:
+  nginx_conf:
+    file: ./infra/nginx/nginx.conf
