@@ -4,25 +4,33 @@ import (
 	"log"
 	"os"
 
+	"github.com/bloiss/devhelp/backend/internal/config"
+	"github.com/bloiss/devhelp/backend/internal/database"
+	"github.com/bloiss/devhelp/backend/internal/router"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Charger .env en développement
 	if os.Getenv("ENV") != "production" {
 		if err := godotenv.Load("../../.env"); err != nil {
 			log.Println("No .env file found, using environment variables")
 		}
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	cfg := config.Load()
+
+	db := database.Connect(cfg.DatabaseURL)
+
+	if err := database.Migrate(db); err != nil {
+		log.Fatalf("migration failed: %v", err)
 	}
 
-	log.Printf("DevHelp API starting on port %s", port)
+	r := router.New(&router.Handlers{
+		JWTSecret: cfg.JWTAccessSecret,
+	})
 
-	// TODO: initialiser DB, router, middlewares
-	// router := api.NewRouter()
-	// log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Printf("DevHelp API starting on :%s (env: %s)", cfg.Port, cfg.Env)
+	if err := r.Run(":" + cfg.Port); err != nil {
+		log.Fatalf("server error: %v", err)
+	}
 }
