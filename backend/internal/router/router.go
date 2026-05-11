@@ -3,15 +3,14 @@ package router
 import (
 	"time"
 
+	"github.com/bloiss/devhelp/backend/internal/handler"
 	"github.com/bloiss/devhelp/backend/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 type Handlers struct {
-	// Sera rempli au fur et à mesure des features
-	// Auth   *handler.AuthHandler
-	// Post   *handler.PostHandler
-	// etc.
+	Auth      *handler.AuthHandler
+	OAuth     *handler.OAuthHandler
 	JWTSecret string
 }
 
@@ -33,21 +32,28 @@ func New(h *Handlers) *gin.Engine {
 	auth := api.Group("/auth")
 	auth.Use(middleware.RateLimit(20, time.Minute))
 	{
-		// auth.POST("/register", h.Auth.Register)
-		// auth.POST("/login", h.Auth.Login)
-		// auth.POST("/refresh", h.Auth.Refresh)
-		// auth.POST("/forgot-password", h.Auth.ForgotPassword)
-		// auth.POST("/reset-password", h.Auth.ResetPassword)
-		// auth.GET("/google", h.Auth.GoogleLogin)
-		// auth.GET("/google/callback", h.Auth.GoogleCallback)
-		// auth.GET("/github", h.Auth.GitHubLogin)
-		// auth.GET("/github/callback", h.Auth.GitHubCallback)
+		// Email / mot de passe
+		auth.POST("/register", h.Auth.Register)
+		auth.POST("/login", h.Auth.Login)
+		auth.POST("/refresh", h.Auth.Refresh)
+		auth.POST("/forgot-password", h.Auth.ForgotPassword)
+		auth.POST("/reset-password", h.Auth.ResetPassword)
+		auth.POST("/logout", h.Auth.Logout)
+
+		// OAuth
+		auth.GET("/google", h.OAuth.GoogleLogin)
+		auth.GET("/google/callback", h.OAuth.GoogleCallback)
+		auth.GET("/github", h.OAuth.GitHubLogin)
+		auth.GET("/github/callback", h.OAuth.GitHubCallback)
 	}
 
 	// Routes protégées (JWT requis)
 	protected := api.Group("/")
 	protected.Use(middleware.AuthRequired(h.JWTSecret))
 	{
+		// Auth (nécessite JWT)
+		protected.POST("/auth/set-password", h.Auth.SetPassword)
+
 		// Posts
 		// protected.GET("/posts", h.Post.List)
 		// protected.POST("/posts", h.Post.Create)

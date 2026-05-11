@@ -3,10 +3,14 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/bloiss/devhelp/backend/internal/config"
 	"github.com/bloiss/devhelp/backend/internal/database"
+	"github.com/bloiss/devhelp/backend/internal/handler"
+	"github.com/bloiss/devhelp/backend/internal/repository"
 	"github.com/bloiss/devhelp/backend/internal/router"
+	"github.com/bloiss/devhelp/backend/internal/service"
 	"github.com/joho/godotenv"
 )
 
@@ -25,7 +29,36 @@ func main() {
 		log.Fatalf("migration failed: %v", err)
 	}
 
+	// ─── Repositories ─────────────────────────────────────────────
+	userRepo := repository.NewUserRepository(db)
+
+	// ─── Services ─────────────────────────────────────────────────
+	accessExpiry, _ := time.ParseDuration(cfg.JWTAccessExpiry)
+	refreshExpiry, _ := time.ParseDuration(cfg.JWTRefreshExpiry)
+
+	authService := service.NewAuthService(
+		userRepo,
+		cfg.JWTAccessSecret,
+		cfg.JWTRefreshSecret,
+		accessExpiry,
+		refreshExpiry,
+	)
+
+	oauthService := service.NewOAuthService(
+		userRepo,
+		authService,
+		cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleRedirectURL,
+		cfg.GitHubClientID, cfg.GitHubClientSecret, cfg.GitHubRedirectURL,
+	)
+
+	// ─── Handlers ─────────────────────────────────────────────────
+	authHandler := handler.NewAuthHandler(authService)
+	oauthHandler := handler.NewOAuthHandler(oauthService)
+
+	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
+		Auth:      authHandler,
+		OAuth:     oauthHandler,
 		JWTSecret: cfg.JWTAccessSecret,
 	})
 
