@@ -1,14 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { AuthCard } from '@/components/auth/AuthCard'
+import { RegisterForm } from '@/components/auth/RegisterForm'
+import { useAuthStore } from '@/stores/authStore'
 
 export const Route = createFileRoute('/auth/register')({
+  // Si déjà connecté → redirige vers le forum
+  beforeLoad: () => {
+    if (useAuthStore.getState().isAuthenticated) {
+      throw redirect({ to: '/forum' })
+    }
+  },
   component: RegisterPage,
 })
 
 function RegisterPage() {
   return (
-    <div className="flex items-center justify-center min-h-[80vh] px-4">
-      {/* RegisterForm — à implémenter en semaine 1 */}
-      <p className="text-muted-foreground">Formulaire d'inscription à venir.</p>
+    <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)] px-4 py-12">
+      <AuthCard
+        title="Rejoindre DevHelp"
+        description="Crée ton compte pour participer aux discussions."
+      >
+        <RegisterForm />
+      </AuthCard>
     </div>
   )
 }
