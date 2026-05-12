@@ -1,15 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { CreatePostForm } from '@/components/forum/CreatePostForm'
+import { useAuthStore } from '@/stores/authStore'
 
 export const Route = createFileRoute('/forum/new')({
-  component: NewPost,
+  // Redirige vers login si non connecté
+  beforeLoad: () => {
+    if (!useAuthStore.getState().isAuthenticated) {
+      throw redirect({ to: '/auth/login' })
+    }
+  },
+  component: NewPostPage,
 })
 
-function NewPost() {
+function NewPostPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Créer un post</h1>
-      {/* PostEditor — à implémenter en semaine 2 */}
-      <p className="text-muted-foreground">Éditeur à venir.</p>
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight mb-1">Créer un post</h1>
+        <p className="text-sm text-muted-foreground">
+          Sois précis dans ton titre — une bonne question obtient une réponse plus rapidement.
+        </p>
+      </div>
+      <CreatePostForm />
     </div>
   )
 }
