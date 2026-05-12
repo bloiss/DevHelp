@@ -52,24 +52,24 @@ export function CategoryCard({ name, slug, description, icon: Icon, color, postC
       >
         <Card className="h-full border-border transition-colors duration-200 hover:border-primary/20 group flex flex-col">
           <Link to="/forum/$category" params={{ category: slug }} className="flex-1">
-            <CardHeader className="gap-3">
+            <CardHeader className="gap-4 p-6">
               <div className="flex items-start justify-between">
                 <motion.div
-                  className={cn('p-2.5 rounded-lg', color)}
+                  className={cn('p-3 rounded-xl', color)}
                   whileHover={{ scale: 1.12, rotate: 6 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-6 w-6" />
                 </motion.div>
                 <Badge variant="secondary" className="text-xs font-normal shrink-0">
                   {PILLAR_LABEL[pillar]}
                 </Badge>
               </div>
               <div>
-                <CardTitle className="text-base group-hover:text-primary transition-colors">
+                <CardTitle className="text-lg group-hover:text-primary transition-colors">
                   {name}
                 </CardTitle>
-                <CardDescription className="mt-1 text-sm leading-snug">
+                <CardDescription className="mt-1.5 text-sm leading-relaxed">
                   {description}
                 </CardDescription>
               </div>
@@ -81,7 +81,7 @@ export function CategoryCard({ name, slug, description, icon: Icon, color, postC
             </CardHeader>
           </Link>
 
-          <div className="px-6 pb-4">
+          <div className="px-6 pb-5">
             <Link to="/forum/new">
               <Button
                 variant="outline"
