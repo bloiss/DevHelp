@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { CalendarDays, PenSquare } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Avatar } from '@/components/shared/Avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,6 +9,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { MOCK_POSTS } from '@/data/mockPosts'
 import { useAuthStore } from '@/stores/authStore'
 import { formatDate } from '@/lib/utils'
+import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
 
 export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
@@ -36,10 +38,15 @@ function ProfilePage() {
   const roleLabel = ROLE_LABEL[profileUser.role] ?? null
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <motion.div
+      className="max-w-4xl mx-auto px-4 py-8"
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+    >
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-6 items-start mb-8">
+      <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-6 items-start mb-8">
         <Avatar
           user={profileUser}
           size="lg"
@@ -75,10 +82,10 @@ function ProfilePage() {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-px mb-10 rounded-xl border border-border bg-border overflow-hidden">
+      <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-px mb-10 rounded-xl border border-border bg-border overflow-hidden">
         <div className="bg-card px-4 py-5 text-center">
           <p className="text-2xl font-bold tabular-nums">{userPosts.length}</p>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -93,24 +100,33 @@ function ProfilePage() {
           <p className="text-2xl font-bold tabular-nums text-muted-foreground">—</p>
           <p className="text-sm text-muted-foreground mt-0.5">réponses</p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Posts */}
-      <h2 className="font-semibold text-base mb-4">Posts récents</h2>
+      <motion.h2 variants={fadeInUp} className="font-semibold text-base mb-4">Posts récents</motion.h2>
 
       {userPosts.length > 0 ? (
-        <div className="flex flex-col gap-3">
+        <motion.div
+          className="flex flex-col gap-3"
+          variants={staggerFast}
+          initial="hidden"
+          animate="visible"
+        >
           {userPosts.map((post) => (
-            <PostCard key={post.id} post={post} categorySlug={post.category.slug} />
+            <motion.div key={post.id} variants={fadeInUp}>
+              <PostCard post={post} categorySlug={post.category.slug} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
-        <EmptyState
-          icon={<PenSquare className="h-10 w-10" />}
-          title="Aucun post pour l'instant"
-          description="Cet utilisateur n'a pas encore posté de question."
-        />
+        <motion.div variants={fadeInUp}>
+          <EmptyState
+            icon={<PenSquare className="h-10 w-10" />}
+            title="Aucun post pour l'instant"
+            description="Cet utilisateur n'a pas encore posté de question."
+          />
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }

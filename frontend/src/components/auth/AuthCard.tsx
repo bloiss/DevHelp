@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Code2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { stagger, fadeInUp, scaleIn } from '@/lib/animations'
 
 interface AuthCardProps {
   title: string
@@ -12,39 +14,50 @@ interface AuthCardProps {
   className?: string
 }
 
-// Layout partagé pour les pages login et register
 export function AuthCard({ title, description, children, oauth, className }: AuthCardProps) {
   return (
-    <div className={cn('w-full max-w-sm mx-auto flex flex-col gap-6', className)}>
-
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+      className={cn('w-full max-w-sm mx-auto flex flex-col gap-6', className)}
+    >
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-2 font-bold text-xl justify-center">
-        <Code2 className="h-6 w-6 text-primary" />
-        <span>DevHelp</span>
-      </Link>
+      <motion.div variants={fadeInUp}>
+        <Link to="/" className="flex items-center gap-2 font-bold text-xl justify-center group">
+          <motion.div
+            whileHover={{ rotate: 12, scale: 1.1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+          >
+            <Code2 className="h-6 w-6 text-primary" />
+          </motion.div>
+          <span>DevHelp</span>
+        </Link>
+      </motion.div>
 
       {/* Card */}
-      <div className="rounded-xl border border-border bg-card p-8 shadow-sm flex flex-col gap-6">
-        <div className="text-center">
+      <motion.div
+        variants={scaleIn}
+        className="rounded-xl border border-border bg-card p-8 shadow-sm flex flex-col gap-6"
+      >
+        <motion.div variants={fadeInUp} className="text-center">
           <h1 className="text-xl font-semibold">{title}</h1>
           <p className="text-sm text-muted-foreground mt-1">{description}</p>
-        </div>
+        </motion.div>
 
-        {/* Formulaire */}
         {children}
 
-        {/* Séparateur OAuth — affiché uniquement si fourni */}
         {oauth && (
-          <>
+          <motion.div variants={fadeInUp} className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
               <span className="text-xs text-muted-foreground">ou continuer avec</span>
               <Separator className="flex-1" />
             </div>
             {oauth}
-          </>
+          </motion.div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

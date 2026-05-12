@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Search, SearchX, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { PostCard } from '@/components/forum/PostCard'
@@ -9,6 +10,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { MOCK_POSTS } from '@/data/mockPosts'
 import { CATEGORIES } from '@/data/categories'
 import { cn } from '@/lib/utils'
+import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
 import type { User } from '@/types/user'
 
 export const Route = createFileRoute('/search')({
@@ -73,10 +75,15 @@ function SearchPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <motion.div
+      className="max-w-4xl mx-auto px-4 py-8"
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+    >
 
       {/* Barre de recherche */}
-      <div className="mb-8">
+      <motion.div variants={fadeInUp} className="mb-8">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold tracking-tight">Recherche</h1>
           <Sparkles className="h-4 w-4 text-primary" />
@@ -94,22 +101,28 @@ function SearchPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* État initial */}
       {!q && (
-        <EmptyState
-          icon={<Search className="h-10 w-10" />}
-          title="Lance une recherche"
-          description="Tape un mot-clé pour trouver des posts, des membres ou des rubriques."
-        />
+        <motion.div variants={fadeInUp}>
+          <EmptyState
+            icon={<Search className="h-10 w-10" />}
+            title="Lance une recherche"
+            description="Tape un mot-clé pour trouver des posts, des membres ou des rubriques."
+          />
+        </motion.div>
       )}
 
       {/* Résultats */}
       {q && (
-        <>
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
           {/* Onglets */}
-          <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
+          <motion.div variants={fadeInUp} className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
             {TABS.map(({ key, label }) => (
               <button
                 key={key}
@@ -134,16 +147,18 @@ function SearchPage() {
                 )}
               </button>
             ))}
-          </div>
+          </motion.div>
 
           {/* Posts */}
           {activeTab === 'posts' && (
             postResults.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <motion.div className="flex flex-col gap-3" variants={staggerFast} initial="hidden" animate="visible">
                 {postResults.map((post) => (
-                  <PostCard key={post.id} post={post} categorySlug={post.category.slug} />
+                  <motion.div key={post.id} variants={fadeInUp}>
+                    <PostCard post={post} categorySlug={post.category.slug} />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             ) : (
               <EmptyState
                 icon={<SearchX className="h-10 w-10" />}
@@ -156,10 +171,10 @@ function SearchPage() {
           {/* Utilisateurs */}
           {activeTab === 'users' && (
             userResults.length > 0 ? (
-              <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden">
+              <motion.div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden" variants={staggerFast} initial="hidden" animate="visible">
                 {userResults.map((user) => (
+                  <motion.div key={user.id} variants={fadeInUp}>
                   <Link
-                    key={user.id}
                     to="/profile/$username"
                     params={{ username: user.username }}
                     className="flex items-center gap-4 px-4 py-4 hover:bg-accent/50 transition-colors"
@@ -179,8 +194,9 @@ function SearchPage() {
                       </p>
                     </div>
                   </Link>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             ) : (
               <EmptyState
                 icon={<SearchX className="h-10 w-10" />}
@@ -193,12 +209,12 @@ function SearchPage() {
           {/* Catégories */}
           {activeTab === 'categories' && (
             categoryResults.length > 0 ? (
-              <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden">
+              <motion.div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden" variants={staggerFast} initial="hidden" animate="visible">
                 {categoryResults.map((cat) => {
                   const Icon = cat.icon
                   return (
+                    <motion.div key={cat.slug} variants={fadeInUp}>
                     <Link
-                      key={cat.slug}
                       to="/forum/$category"
                       params={{ category: cat.slug }}
                       className="flex items-center gap-4 px-4 py-4 hover:bg-accent/50 transition-colors group"
@@ -215,9 +231,10 @@ function SearchPage() {
                         </p>
                       </div>
                     </Link>
+                    </motion.div>
                   )
                 })}
-              </div>
+              </motion.div>
             ) : (
               <EmptyState
                 icon={<SearchX className="h-10 w-10" />}
@@ -226,8 +243,8 @@ function SearchPage() {
               />
             )
           )}
-        </>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }

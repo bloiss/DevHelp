@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowUp, MessageSquare, Clock } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/shared/Avatar'
-import { cn } from '@/lib/utils'
-import { formatRelativeDate } from '@/lib/utils'
+import { cn, formatRelativeDate } from '@/lib/utils'
 import type { Post } from '@/types/post'
 
 interface PostCardProps {
@@ -17,11 +17,16 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
     : post.content
 
   return (
-    <article className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200">
-
-      {/* Score votes — colonne gauche */}
+    <motion.article
+      whileHover={{ y: -2, boxShadow: '0 6px 24px hsl(var(--primary) / 0.07)' }}
+      transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+      className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/25 transition-colors duration-200"
+    >
+      {/* Score votes */}
       <div className="flex flex-col items-center gap-1 pt-0.5 shrink-0">
-        <ArrowUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        <motion.div whileHover={{ scale: 1.2 }} transition={{ type: 'spring', stiffness: 500, damping: 15 }}>
+          <ArrowUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        </motion.div>
         <span className={cn(
           'text-sm font-semibold tabular-nums',
           (post.vote_count ?? 0) > 0 ? 'text-foreground' : 'text-muted-foreground',
@@ -30,10 +35,9 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
         </span>
       </div>
 
-      {/* Contenu principal */}
+      {/* Contenu */}
       <div className="flex flex-col gap-2 flex-1 min-w-0">
 
-        {/* Auteur + date */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Avatar user={post.author} size="sm" />
           <span className="font-medium text-foreground">{post.author.username}</span>
@@ -49,7 +53,6 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           </span>
         </div>
 
-        {/* Titre */}
         <Link
           to="/forum/$category/$postId"
           params={{ category: categorySlug, postId: post.id }}
@@ -58,12 +61,10 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           {post.title}
         </Link>
 
-        {/* Extrait */}
         <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
           {excerpt}
         </p>
 
-        {/* Footer stats */}
         <div className="flex items-center gap-4 mt-1">
           <Link
             to="/forum/$category/$postId"
@@ -75,6 +76,6 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           </Link>
         </div>
       </div>
-    </article>
+    </motion.article>
   )
 }

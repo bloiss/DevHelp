@@ -4,10 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FieldWrapper } from './FieldWrapper'
+import { fadeInUp, stagger } from '@/lib/animations'
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -26,9 +28,7 @@ export function LoginForm() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-  })
+  } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
   async function onSubmit(data: FormValues) {
     setApiError(null)
@@ -41,65 +41,79 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-
-      {/* Erreur API */}
+    <motion.form
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+      onSubmit={handleSubmit(onSubmit)}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {apiError && (
-        <div className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
+        <motion.div
+          variants={fadeInUp}
+          className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive"
+        >
           {apiError}
-        </div>
+        </motion.div>
       )}
 
-      <FieldWrapper label="Email" htmlFor="email" error={errors.email?.message}>
-        <Input
-          id="email"
-          type="email"
-          placeholder="vous@exemple.com"
-          autoComplete="email"
-          aria-invalid={!!errors.email}
-          {...register('email')}
-        />
-      </FieldWrapper>
-
-      <FieldWrapper label="Mot de passe" htmlFor="password" error={errors.password?.message}>
-        <div className="relative">
+      <motion.div variants={fadeInUp}>
+        <FieldWrapper label="Email" htmlFor="email" error={errors.email?.message}>
           <Input
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="••••••••"
-            autoComplete="current-password"
-            className="pr-10"
-            aria-invalid={!!errors.password}
-            {...register('password')}
+            id="email"
+            type="email"
+            placeholder="vous@exemple.com"
+            autoComplete="email"
+            aria-invalid={!!errors.email}
+            {...register('email')}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+        </FieldWrapper>
+      </motion.div>
+
+      <motion.div variants={fadeInUp}>
+        <FieldWrapper label="Mot de passe" htmlFor="password" error={errors.password?.message}>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              className="pr-10"
+              aria-invalid={!!errors.password}
+              {...register('password')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPassword ? 'Masquer' : 'Afficher'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <Link
+            to="/auth/forgot-password"
+            className="self-end text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-        <Link
-          to="/auth/forgot-password"
-          className="self-end text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Mot de passe oublié ?
-        </Link>
-      </FieldWrapper>
+            Mot de passe oublié ?
+          </Link>
+        </FieldWrapper>
+      </motion.div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full mt-2">
-        {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-        Se connecter
-      </Button>
+      <motion.div variants={fadeInUp} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+        <Button type="submit" disabled={isSubmitting} className="w-full mt-2">
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          Se connecter
+        </Button>
+      </motion.div>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <motion.p variants={fadeInUp} className="text-center text-sm text-muted-foreground">
         Pas encore de compte ?{' '}
-        <Link to="/auth/register" className="text-foreground font-medium hover:underline underline-offset-4">
+        <Link to="/auth/register" className="text-foreground font-medium hover:underline underline-offset-4 transition-all">
           S'inscrire
         </Link>
-      </p>
-    </form>
+      </motion.p>
+    </motion.form>
   )
 }

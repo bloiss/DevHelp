@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { useState } from 'react'
 import { PenSquare, TrendingUp, Clock, MessageSquareOff } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { PostCard } from '@/components/forum/PostCard'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -8,6 +9,7 @@ import { getCategoryBySlug } from '@/data/categories'
 import { getMockPostsByCategory } from '@/data/mockPosts'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
+import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
 
 export const Route = createFileRoute('/forum/$category/')({
   component: CategoryPage,
@@ -41,10 +43,15 @@ function CategoryPage() {
   })
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <motion.div
+      className="max-w-4xl mx-auto px-4 py-8"
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+    >
 
       {/* En-tête catégorie */}
-      <div className="flex items-start justify-between gap-4 mb-8">
+      <motion.div variants={fadeInUp} className="flex items-start justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <div className={cn('p-3 rounded-xl shrink-0', category.color)}>
             <Icon className="h-6 w-6" />
@@ -63,10 +70,10 @@ function CategoryPage() {
             </Button>
           </Link>
         )}
-      </div>
+      </motion.div>
 
       {/* Barre de tri */}
-      <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
+      <motion.div variants={fadeInUp} className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
         {SORT_OPTIONS.map(({ key, label, icon: SortIcon }) => (
           <button
             key={key}
@@ -82,15 +89,22 @@ function CategoryPage() {
             {label}
           </button>
         ))}
-      </div>
+      </motion.div>
 
       {/* Liste des posts */}
       {posts.length > 0 ? (
-        <div className="flex flex-col gap-3">
+        <motion.div
+          className="flex flex-col gap-3"
+          variants={staggerFast}
+          initial="hidden"
+          animate="visible"
+        >
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} categorySlug={slug} />
+            <motion.div key={post.id} variants={fadeInUp}>
+              <PostCard post={post} categorySlug={slug} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
         <EmptyState
           icon={<MessageSquareOff className="h-10 w-10" />}
@@ -109,6 +123,6 @@ function CategoryPage() {
           }
         />
       )}
-    </div>
+    </motion.div>
   )
 }

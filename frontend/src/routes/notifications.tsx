@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Bell, MessageSquare, ArrowUp, Mail, Shield, CheckCheck } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { cn, formatRelativeDate } from '@/lib/utils'
+import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
 
 export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
@@ -138,10 +140,15 @@ function NotificationsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <motion.div
+      className="max-w-2xl mx-auto px-4 py-8"
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+    >
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <motion.div variants={fadeInUp} className="flex items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
           {unreadCount > 0 && (
@@ -157,22 +164,29 @@ function NotificationsPage() {
             Tout marquer comme lu
           </Button>
         )}
-      </div>
+      </motion.div>
 
       {/* Liste */}
       {notifs.length === 0 ? (
-        <EmptyState
-          icon={<Bell className="h-10 w-10" />}
-          title="Aucune notification"
-          description="Tu seras notifié ici lorsque quelqu'un interagit avec tes posts."
-        />
+        <motion.div variants={fadeInUp}>
+          <EmptyState
+            icon={<Bell className="h-10 w-10" />}
+            title="Aucune notification"
+            description="Tu seras notifié ici lorsque quelqu'un interagit avec tes posts."
+          />
+        </motion.div>
       ) : (
-        <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden">
+        <motion.div
+          className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden"
+          variants={staggerFast}
+          initial="hidden"
+          animate="visible"
+        >
           {notifs.map((notif) => {
             const { Icon, color, text, href } = TYPE_CONFIG[notif.type]
             return (
+              <motion.div key={notif.id} variants={fadeInUp}>
               <Link
-                key={notif.id}
                 to={href(notif)}
                 onClick={() => markRead(notif.id)}
                 className={cn(
@@ -200,10 +214,11 @@ function NotificationsPage() {
                   <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-2" />
                 )}
               </Link>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }
