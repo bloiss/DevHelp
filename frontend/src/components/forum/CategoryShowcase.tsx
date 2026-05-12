@@ -88,24 +88,50 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
+
     let accum = 0
-    let timer: ReturnType<typeof setTimeout>
+    let locked = false
+    let resetTimer: ReturnType<typeof setTimeout>
+    const THRESHOLD = 120   // px of accumulated horizontal movement required
+    const COOLDOWN   = 500  // ms locked after a navigation fires
 
     function onWheel(e: WheelEvent) {
-      // Only intercept primarily-horizontal scroll
-      if (Math.abs(e.deltaX) < Math.abs(e.deltaY) * 0.6) return
+      const adx = Math.abs(e.deltaX)
+      const ady = Math.abs(e.deltaY)
+
+      // Vertical scroll is dominant → let the page scroll normally
+      if (adx <= ady) return
+      // Horizontal movement too small to be intentional → ignore
+      if (adx < 8) return
+
+      // From here we own this gesture
       e.preventDefault()
+
+      if (locked) return
+
       accum += e.deltaX
-      clearTimeout(timer)
-      timer = setTimeout(() => { accum = 0 }, 220)
-      if (accum > 75) { next(); accum = 0 }
-      else if (accum < -75) { prev(); accum = 0 }
+
+      // Reset accumulator if the user pauses between events
+      clearTimeout(resetTimer)
+      resetTimer = setTimeout(() => { accum = 0 }, 350)
+
+      if (accum > THRESHOLD) {
+        next()
+        accum = 0
+        locked = true
+        setTimeout(() => { locked = false }, COOLDOWN)
+      } else if (accum < -THRESHOLD) {
+        prev()
+        accum = 0
+        locked = true
+        setTimeout(() => { locked = false }, COOLDOWN)
+      }
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => {
       el.removeEventListener('wheel', onWheel)
-      clearTimeout(timer)
+      clearTimeout(resetTimer)
     }
   }, [next, prev])
 
@@ -133,7 +159,8 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
         onPanEnd={(_, info) => {
           const dx = info.offset.x
           const dy = Math.abs(info.offset.y)
-          if (Math.abs(dx) > 55 && Math.abs(dx) > dy * 1.3) {
+          // Require clear horizontal intent: 80 px minimum + horizontal dominance
+          if (Math.abs(dx) > 80 && Math.abs(dx) > dy * 1.8) {
             if (dx < 0) next()
             else prev()
           }
