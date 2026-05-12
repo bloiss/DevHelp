@@ -9,15 +9,17 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center">
 
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg shrink-0">
-          <Code2 className="h-5 w-5 text-primary" />
-          <span>DevHelp</span>
-        </Link>
+        {/* Logo — flex-1 pour occuper la moitié gauche */}
+        <div className="flex-1 flex justify-start">
+          <Link to="/" className="flex items-center gap-2 font-bold text-lg">
+            <Code2 className="h-5 w-5 text-primary" />
+            <span>DevHelp</span>
+          </Link>
+        </div>
 
-        {/* Navigation centrale */}
+        {/* Navigation centrale — toujours au milieu exact */}
         <div className="hidden md:flex items-center gap-1">
           <Link
             to="/forum"
@@ -28,8 +30,8 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Actions droite */}
-        <div className="flex items-center gap-2">
+        {/* Actions droite — flex-1 pour occuper la moitié droite */}
+        <div className="flex-1 flex items-center justify-end gap-2">
           {isAuthenticated && user ? (
             <>
               <Link
