@@ -2,11 +2,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { PenSquare, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { CategoryCard } from '@/components/forum/CategoryCard'
+import { CategoryShowcase } from '@/components/forum/CategoryShowcase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CATEGORIES } from '@/data/categories'
-import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
+import { fadeInUp, stagger } from '@/lib/animations'
 
 export const Route = createFileRoute('/forum/')({
   component: ForumHub,
@@ -86,17 +86,8 @@ function ForumHub() {
       </motion.div>
 
       {filtered.length > 0 ? (
-        <motion.div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-5"
-          variants={staggerFast}
-          initial="hidden"
-          animate="visible"
-        >
-          {filtered.map((cat) => (
-            <motion.div key={cat.slug} variants={fadeInUp}>
-              <CategoryCard {...cat} />
-            </motion.div>
-          ))}
+        <motion.div variants={fadeInUp}>
+          <CategoryShowcase categories={filtered} />
         </motion.div>
       ) : (
         <motion.p variants={fadeInUp} className="text-muted-foreground text-center py-16">
