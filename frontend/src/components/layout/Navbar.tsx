@@ -1,20 +1,28 @@
 import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Code2, Bell, MessageSquare, User, LogOut, Menu } from 'lucide-react'
+import { Code2, Bell, MessageSquare, User, LogOut, Menu, Sun, Moon } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
+import { useThemeStore } from '@/stores/themeStore'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuthStore()
   const { logout } = useAuth()
+  const { setTheme, resolvedTheme } = useThemeStore()
   const [scrolled, setScrolled] = useState(false)
+  const isDark = resolvedTheme() === 'dark'
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8)
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  function toggleTheme() {
+    setTheme(isDark ? 'light' : 'dark')
+  }
 
   return (
     <header className={cn(
@@ -90,6 +98,39 @@ export function Navbar() {
               </Link>
             </>
           )}
+
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md hover:bg-accent transition-colors relative overflow-hidden"
+            aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {isDark ? (
+                <motion.span
+                  key="sun"
+                  initial={{ opacity: 0, rotate: -90, scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: 90, scale: 0.6 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="flex"
+                >
+                  <Sun className="h-4 w-4" />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="moon"
+                  initial={{ opacity: 0, rotate: 90, scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: -90, scale: 0.6 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="flex"
+                >
+                  <Moon className="h-4 w-4" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
 
           <button className="md:hidden p-2 rounded-md hover:bg-accent transition-colors">
             <Menu className="h-4 w-4" />
