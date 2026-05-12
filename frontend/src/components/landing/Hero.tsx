@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32 px-4">
+    <section className="relative overflow-hidden flex-1 flex flex-col justify-center py-16 px-4">
 
       {/* Fond dégradé subtil */}
       <div className="pointer-events-none absolute inset-0 -z-10">

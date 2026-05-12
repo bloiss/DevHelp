@@ -12,8 +12,11 @@ export const Route = createFileRoute('/')({
 function LandingPage() {
   return (
     <div className="flex flex-col">
-      <Hero />
-      <Stats />
+      {/* Premier viewport : Hero + Stats, exactement 100vh moins la navbar */}
+      <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
+        <Hero />
+        <Stats />
+      </div>
       <Features />
       <CategoriesPreview />
       <CallToAction />
