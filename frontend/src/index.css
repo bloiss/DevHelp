@@ -71,16 +71,88 @@
   --ring: oklch(0.48 0 0);
 }
 
+/* ── Ambient glow variables ───────────────────────────────── */
+:root {
+  --glow-a: hsl(214 75% 55% / 0.05);
+  --glow-b: hsl(260 65% 60% / 0.04);
+}
+.dark {
+  --glow-a: hsl(214 75% 65% / 0.11);
+  --glow-b: hsl(260 65% 70% / 0.09);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
+    scroll-behavior: smooth;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+
   body {
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03";
   }
+
+  /* Text selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.14);
+    color: inherit;
+  }
+
+  /* Thin elegant scrollbar */
+  ::-webkit-scrollbar        { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.45);
+  }
+}
+
+/* ── Shimmer sweep (primary button) ──────────────────────── */
+@keyframes btn-shimmer {
+  from { left: -60%; }
+  to   { left: 160%;  }
+}
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(0 0% 100% / 0.18) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.btn-shimmer:hover::after {
+  opacity: 1;
+  animation: btn-shimmer 0.55s ease-out forwards;
+}
+
+/* ── Dot-grid utility (reusable across pages) ─────────────── */
+.bg-dot-grid {
+  background-image: radial-gradient(
+    circle,
+    hsl(var(--foreground) / 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
 }

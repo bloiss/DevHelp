@@ -26,8 +26,11 @@ export function Navbar() {
 
   return (
     <header className={cn(
-      'sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-shadow duration-300',
-      scrolled && 'shadow-[0_1px_20px_hsl(var(--foreground)/0.06)]',
+      'sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl transition-all duration-300',
+      // Gradient border bottom (replaces solid border-b)
+      'after:absolute after:inset-x-0 after:bottom-0 after:h-px',
+      'after:bg-gradient-to-r after:from-transparent after:via-border after:to-transparent',
+      scrolled && 'shadow-[0_4px_24px_hsl(var(--foreground)/0.05)] dark:shadow-[0_4px_32px_hsl(0_0%_0%/0.4)]',
     )}>
       <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center">
 

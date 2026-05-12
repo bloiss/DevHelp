@@ -16,26 +16,47 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
     ? post.content.slice(0, 160).trimEnd() + '…'
     : post.content
 
+  const votes = post.vote_count ?? 0
+
   return (
     <motion.article
-      whileHover={{ y: -2, boxShadow: '0 6px 24px hsl(var(--primary) / 0.07)' }}
-      transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-      className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/25 transition-colors duration-200"
+      whileHover={{
+        y: -3,
+        boxShadow: '0 8px 32px hsl(var(--primary)/0.08), 0 2px 8px hsl(var(--primary)/0.04)',
+      }}
+      transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+      className="group relative flex gap-4 p-5 rounded-xl border border-border bg-card/90
+        hover:border-primary/30 transition-colors duration-200 overflow-hidden
+        dark:hover:shadow-[0_8px_32px_hsl(0_0%_0%/0.35)]"
     >
-      {/* Score votes */}
+      {/* Left accent bar — slides in on hover */}
+      <div className="absolute left-0 inset-y-0 w-[2px] bg-primary
+        scale-y-0 group-hover:scale-y-100 origin-center
+        transition-transform duration-300 ease-out rounded-r-full" />
+
+      {/* Vote column */}
       <div className="flex flex-col items-center gap-1 pt-0.5 shrink-0">
-        <motion.div whileHover={{ scale: 1.2 }} transition={{ type: 'spring', stiffness: 500, damping: 15 }}>
-          <ArrowUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        <motion.div
+          whileHover={{ scale: 1.25, y: -1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+        >
+          <ArrowUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
         </motion.div>
-        <span className={cn(
-          'text-sm font-semibold tabular-nums',
-          (post.vote_count ?? 0) > 0 ? 'text-foreground' : 'text-muted-foreground',
-        )}>
-          {post.vote_count ?? 0}
-        </span>
+        <motion.span
+          key={votes}
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+          className={cn(
+            'text-sm font-semibold tabular-nums',
+            votes > 0 ? 'text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          {votes}
+        </motion.span>
       </div>
 
-      {/* Contenu */}
+      {/* Content */}
       <div className="flex flex-col gap-2 flex-1 min-w-0">
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -56,7 +77,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
         <Link
           to="/forum/$category/$postId"
           params={{ category: categorySlug, postId: post.id }}
-          className="font-semibold text-base leading-snug hover:text-primary transition-colors line-clamp-2"
+          className="font-semibold text-base leading-snug hover:text-primary transition-colors duration-200 line-clamp-2"
         >
           {post.title}
         </Link>
@@ -69,9 +90,10 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           <Link
             to="/forum/$category/$postId"
             params={{ category: categorySlug, postId: post.id }}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground
+              hover:text-foreground transition-colors duration-200 group/comments"
           >
-            <MessageSquare className="h-3.5 w-3.5" />
+            <MessageSquare className="h-3.5 w-3.5 transition-transform duration-200 group-hover/comments:scale-110" />
             {post.comment_count ?? 0} commentaire{(post.comment_count ?? 0) > 1 ? 's' : ''}
           </Link>
         </div>

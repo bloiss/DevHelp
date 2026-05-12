@@ -8,15 +8,6 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden flex-1 flex flex-col justify-center py-16 px-4">
 
-      {/* Fond : grille de points */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.035]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
-
       {/* Fond : orbes animés */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
