@@ -10,7 +10,7 @@ export function CategoriesPreview() {
     <section className="py-20 px-4 bg-muted/40">
       <div className="max-w-5xl mx-auto">
 
-        <div className="text-center mb-12">
+        <div className="flex flex-col items-center text-center mb-12">
           <h2 className="text-3xl font-bold tracking-tight mb-3">
             Explore les rubriques
           </h2>

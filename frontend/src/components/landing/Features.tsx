@@ -33,11 +33,11 @@ export function Features() {
       <div className="max-w-5xl mx-auto">
 
         {/* En-tête */}
-        <div className="text-center mb-14">
+        <div className="flex flex-col items-center text-center mb-14">
           <h2 className="text-3xl font-bold tracking-tight mb-3">
             Tout ce qu'il faut pour apprendre ensemble
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl">
             DevHelp combine la simplicité d'un forum classique avec des outils modernes
             pour une expérience d'entraide efficace.
           </p>
