@@ -1,4 +1,6 @@
 import { LayoutGrid, ThumbsUp, Sparkles, ShieldCheck } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { fadeInUp, stagger } from '@/lib/animations'
 
 const FEATURES = [
   {
@@ -15,9 +17,9 @@ const FEATURES = [
   },
   {
     icon: Sparkles,
-    title: 'IA pour t\'aider',
+    title: "IA pour t'aider",
     description:
-      'Améliore ta rédaction en un clic grâce à l\'intelligence artificielle intégrée directement dans l\'éditeur de posts.',
+      "Améliore ta rédaction en un clic grâce à l'intelligence artificielle intégrée directement dans l'éditeur de posts.",
   },
   {
     icon: ShieldCheck,
@@ -33,33 +35,52 @@ export function Features() {
       <div className="max-w-5xl mx-auto">
 
         {/* En-tête */}
-        <div className="flex flex-col items-center text-center mb-14">
-          <h2 className="text-3xl font-bold tracking-tight mb-3">
+        <motion.div
+          className="flex flex-col items-center text-center mb-14"
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-80px' }}
+        >
+          <motion.h2 variants={fadeInUp} className="text-3xl font-bold tracking-tight mb-3">
             Tout ce qu'il faut pour apprendre ensemble
-          </h2>
-          <p className="text-muted-foreground max-w-xl">
+          </motion.h2>
+          <motion.p variants={fadeInUp} className="text-muted-foreground max-w-xl">
             DevHelp combine la simplicité d'un forum classique avec des outils modernes
             pour une expérience d'entraide efficace.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Grille */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-60px' }}
+        >
           {FEATURES.map(({ icon: Icon, title, description }) => (
-            <div
+            <motion.div
               key={title}
-              className="flex gap-4 p-6 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200"
+              variants={fadeInUp}
+              whileHover={{ y: -4 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="flex gap-4 p-6 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-[border-color,box-shadow] duration-300 cursor-default"
             >
-              <div className="p-2.5 rounded-lg bg-primary/10 text-primary h-fit shrink-0">
+              <motion.div
+                className="p-2.5 rounded-lg bg-primary/10 text-primary h-fit shrink-0"
+                whileHover={{ scale: 1.1, rotate: 8 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              >
                 <Icon className="h-5 w-5" />
-              </div>
+              </motion.div>
               <div className="flex flex-col gap-1.5">
                 <h3 className="font-semibold text-base">{title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )
