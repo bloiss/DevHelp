@@ -23,7 +23,7 @@ export function Hero() {
         {/* Titre principal */}
         <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-tight">
           Apprends, Partage et{' '}
-          <span className="text-primary">Progresse</span>
+          <span className="text-primary">Progresse.</span>
         </h1>
 
         {/* Sous-titre */}

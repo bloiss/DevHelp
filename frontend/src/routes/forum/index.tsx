@@ -1,7 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Search } from 'lucide-react'
+import { PenSquare, Search } from 'lucide-react'
 import { CategoryCard } from '@/components/forum/CategoryCard'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CATEGORIES } from '@/data/categories'
 
@@ -32,11 +33,19 @@ function ForumHub() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Forum</h1>
-        <p className="text-muted-foreground">
-          {CATEGORIES.length} rubriques pour discuter, apprendre et progresser ensemble.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Forum</h1>
+          <p className="text-muted-foreground">
+            {CATEGORIES.length} rubriques pour discuter, apprendre et progresser ensemble.
+          </p>
+        </div>
+        <Link to="/forum/new">
+          <Button className="shrink-0 gap-2">
+            <PenSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Nouveau post</span>
+          </Button>
+        </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-8">
