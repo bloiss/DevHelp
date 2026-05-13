@@ -4,6 +4,8 @@ import { Bell, MessageSquare, ArrowUp, Mail, Shield, CheckCheck } from 'lucide-r
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { AuthWall } from '@/components/shared/AuthWall'
+import { useAuthStore } from '@/stores/authStore'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
 
@@ -125,7 +127,18 @@ const TYPE_CONFIG = {
 } satisfies Record<NotifType, { Icon: React.ElementType; color: string; text: (n: Notif) => React.ReactNode; href: (n: Notif) => string }>
 
 function NotificationsPage() {
+  const { isAuthenticated } = useAuthStore()
   const [notifs, setNotifs] = useState<Notif[]>(MOCK)
+
+  if (!isAuthenticated) {
+    return (
+      <AuthWall
+        icon={<Bell className="h-8 w-8" />}
+        title="Suis tes notifications"
+        description="Connecte-toi pour voir les réponses à tes posts, les votes reçus, les mentions et toute l'activité autour de tes contributions."
+      />
+    )
+  }
 
   const unreadCount = notifs.filter((n) => !n.read).length
 

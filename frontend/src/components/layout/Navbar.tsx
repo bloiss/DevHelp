@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link } from '@tanstack/react-router'
-import { Code2, Bell, MessageSquare, User, LogOut, Menu, Sun, Moon, Search } from 'lucide-react'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { Code2, Bell, MessageSquare, User, LogOut, Sun, Moon, Search, PenSquare } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -9,6 +9,64 @@ import { useNotificationStore } from '@/stores/notificationStore'
 import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+
+function NavIconLink({
+  to,
+  label,
+  children,
+  badge,
+}: {
+  to: string
+  label: string
+  children: React.ReactNode
+  badge?: number
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const active = pathname.startsWith(to)
+
+  return (
+    <Link
+      to={to}
+      className={cn(
+        'relative p-2 rounded-md transition-colors group',
+        active
+          ? 'text-foreground'
+          : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+      )}
+      aria-label={label}
+    >
+      {active && (
+        <motion.span
+          layoutId="nav-icon-active"
+          className="absolute inset-0 rounded-md"
+          style={{ background: 'var(--gold-soft)' }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        />
+      )}
+      <span className="relative flex">
+        {children}
+        {badge != null && badge > 0 && (
+          <motion.span
+            key={badge}
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full text-[9px] font-bold leading-none"
+            style={{
+              background: 'var(--gold)',
+              color: 'var(--primary-foreground)',
+              minWidth: 14,
+              height: 14,
+              padding: '0 3px',
+            }}
+          >
+            {badge > 9 ? '9+' : badge}
+          </motion.span>
+        )}
+      </span>
+    </Link>
+  )
+}
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuthStore()
@@ -32,31 +90,39 @@ export function Navbar() {
   return (
     <header className={cn(
       'sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl transition-all duration-300',
-      // Gradient border bottom (replaces solid border-b)
       'after:absolute after:inset-x-0 after:bottom-0 after:h-px',
       'after:bg-gradient-to-r after:from-transparent after:via-border after:to-transparent',
       scrolled && 'shadow-[0_4px_24px_hsl(var(--foreground)/0.05)] dark:shadow-[0_4px_32px_hsl(0_0%_0%/0.4)]',
     )}>
-      <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center">
+      <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-2">
 
+        {/* ── Logo ── */}
         <div className="flex-1 flex justify-start">
           <Link to="/" className="flex items-center gap-2 font-bold text-lg group">
-            <Code2 className="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+            <Code2 className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" style={{ color: 'var(--gold)' }} />
             <span>DevHelp</span>
           </Link>
         </div>
 
+        {/* ── Center nav (desktop only) ── */}
         <div className="hidden md:flex items-center gap-1">
           <Link
+            to="/home"
+            className="relative px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+            activeProps={{ className: 'bg-accent text-accent-foreground' }}
+          >
+            Accueil
+          </Link>
+          <Link
             to="/forum"
-            className="relative px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-0.5 after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-4/5"
+            className="relative px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
             activeProps={{ className: 'bg-accent text-accent-foreground' }}
           >
             Forum
           </Link>
         </div>
 
-        {/* Command palette trigger — visible on md+ */}
+        {/* ── Search (desktop) ── */}
         <button
           onClick={openCommand}
           className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-muted-foreground text-sm hover:bg-accent hover:text-foreground transition-colors duration-200 group"
@@ -69,50 +135,65 @@ export function Navbar() {
           </kbd>
         </button>
 
-        <div className="flex-1 flex items-center justify-end gap-2">
-          {isAuthenticated && user ? (
-            <>
+        {/* ── Right actions ── */}
+        <div className="flex items-center gap-1">
+
+          {/* Always-visible icons: Messages, Notifications, Profile */}
+          <div className="hidden md:flex items-center gap-1">
+
+            {isAuthenticated && (
               <Link
                 to="/forum/new"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium"
+                style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid var(--gold-border)' }}
               >
-                + Nouveau post
+                <PenSquare className="h-3.5 w-3.5" />
+                Nouveau post
               </Link>
+            )}
 
-              <div className="relative">
-                <button
-                  onClick={toggleNotif}
-                  className="p-2 rounded-md hover:bg-accent transition-colors relative group"
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                  {unreadCount > 0 && (
-                    <motion.span
-                      key={unreadCount}
-                      initial={{ scale: 0.6, opacity: 0 }}
-                      animate={{ scale: 1,   opacity: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                      className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-4 px-0.5 rounded-full text-[9px] font-bold bg-gold text-primary-foreground leading-none"
-                    >
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </motion.span>
-                  )}
-                </button>
-                <NotificationPanel />
-              </div>
+            <NavIconLink to="/messages" label="Messages">
+              <MessageSquare className="h-4 w-4" />
+            </NavIconLink>
 
-              <Link to="/messages" className="p-2 rounded-md hover:bg-accent transition-colors group">
-                <MessageSquare className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-              </Link>
-
-              <Link
-                to="/profile/$username"
-                params={{ username: user.username }}
-                className="p-2 rounded-md hover:bg-accent transition-colors group"
+            {/* Bell — toggles the dropdown panel */}
+            <div className="relative">
+              <button
+                onClick={toggleNotif}
+                className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors group"
+                aria-label="Notifications"
               >
-                <User className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-              </Link>
+                <Bell className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                {unreadCount > 0 && (
+                  <motion.span
+                    key={unreadCount}
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                    className="absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full text-[9px] font-bold leading-none"
+                    style={{
+                      background: 'var(--gold)',
+                      color: 'var(--primary-foreground)',
+                      minWidth: 14,
+                      height: 14,
+                      padding: '0 3px',
+                    }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </motion.span>
+                )}
+              </button>
+              <NotificationPanel />
+            </div>
 
+            <NavIconLink
+              to={isAuthenticated && user ? `/profile/${user.username}` : '/profile'}
+              label="Profil"
+            >
+              <User className="h-4 w-4" />
+            </NavIconLink>
+
+            {isAuthenticated && (
               <button
                 onClick={logout}
                 className="p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground group"
@@ -120,28 +201,40 @@ export function Navbar() {
               >
                 <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
               </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/auth/login"
-                className="px-3 py-1.5 text-sm rounded-md hover:bg-accent transition-colors"
-              >
-                Connexion
-              </Link>
-              <Link
-                to="/auth/register"
-                className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                S'inscrire
-              </Link>
-            </>
-          )}
+            )}
+
+            {!isAuthenticated && (
+              <>
+                <Link
+                  to="/auth/login"
+                  className="px-3 py-1.5 text-sm rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  Connexion
+                </Link>
+                <Link
+                  to="/auth/register"
+                  className="px-3 py-1.5 text-sm rounded-md font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: 'var(--gold)', color: 'var(--primary-foreground)' }}
+                >
+                  S'inscrire
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile: search icon + theme */}
+          <button
+            onClick={openCommand}
+            className="md:hidden p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            aria-label="Rechercher"
+          >
+            <Search className="h-4 w-4" />
+          </button>
 
           {/* Dark mode toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-md hover:bg-accent transition-colors relative overflow-hidden"
+            className="p-2 rounded-md hover:bg-accent transition-colors relative overflow-hidden text-muted-foreground hover:text-foreground"
             aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -169,10 +262,6 @@ export function Navbar() {
                 </motion.span>
               )}
             </AnimatePresence>
-          </button>
-
-          <button className="md:hidden p-2 rounded-md hover:bg-accent transition-colors">
-            <Menu className="h-4 w-4" />
           </button>
         </div>
       </nav>

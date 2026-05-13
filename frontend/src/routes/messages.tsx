@@ -5,6 +5,7 @@ import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { AuthWall } from '@/components/shared/AuthWall'
 import { useAuthStore } from '@/stores/authStore'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import type { User } from '@/types/user'
@@ -168,7 +169,17 @@ function MessageBubble({ msg, isMe }: { msg: Msg; isMe: boolean }) {
 // ─── Page principale ──────────────────────────────────────────────
 
 function MessagesPage() {
-  const { user } = useAuthStore()
+  const { user, isAuthenticated } = useAuthStore()
+
+  if (!isAuthenticated) {
+    return (
+      <AuthWall
+        icon={<MessageSquare className="h-8 w-8" />}
+        title="Accède à tes messages"
+        description="Connecte-toi pour retrouver tes conversations avec la communauté et échanger en privé avec d'autres développeurs."
+      />
+    )
+  }
   const [convs, setConvs] = useState<ConvPreview[]>(MOCK_CONVS)
   const [messages, setMessages] = useState<Record<string, Msg[]>>(MOCK_MESSAGES)
   const [selectedId, setSelectedId] = useState<string | null>(null)

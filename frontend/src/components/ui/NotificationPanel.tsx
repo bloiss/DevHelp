@@ -167,7 +167,7 @@ export function NotificationPanel() {
           {/* Footer */}
           <div className="border-t border-border px-4 py-2.5">
             <Link
-              to="/forum"
+              to="/notifications"
               onClick={close}
               className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
             >
