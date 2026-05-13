@@ -1,10 +1,11 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PenSquare, TrendingUp, Clock, MessageSquareOff } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { PostCard } from '@/components/forum/PostCard'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/shared/EmptyState'
+import { PostCard }         from '@/components/forum/PostCard'
+import { PostCardSkeleton } from '@/components/forum/PostCardSkeleton'
+import { Button }           from '@/components/ui/button'
+import { EmptyState }       from '@/components/shared/EmptyState'
 import { getCategoryBySlug } from '@/data/categories'
 import { getMockPostsByCategory } from '@/data/mockPosts'
 import { useAuthStore } from '@/stores/authStore'
@@ -26,7 +27,15 @@ type SortKey = typeof SORT_OPTIONS[number]['key']
 function CategoryPage() {
   const { category: slug } = Route.useParams()
   const { isAuthenticated } = useAuthStore()
-  const [sort, setSort] = useState<SortKey>('recent')
+  const [sort, setSort]       = useState<SortKey>('recent')
+  const [isLoading, setLoading] = useState(true)
+
+  // Simulate API fetch — reset on every slug change
+  useEffect(() => {
+    setLoading(true)
+    const t = setTimeout(() => setLoading(false), 650)
+    return () => clearTimeout(t)
+  }, [slug])
 
   const category = getCategoryBySlug(slug)
 
@@ -92,7 +101,13 @@ function CategoryPage() {
       </motion.div>
 
       {/* Liste des posts */}
-      {posts.length > 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <PostCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : posts.length > 0 ? (
         <motion.div
           className="flex flex-col gap-3"
           variants={staggerFast}

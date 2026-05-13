@@ -6,6 +6,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { toast }    from '@/stores/toastStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FieldWrapper } from './FieldWrapper'
@@ -33,10 +34,12 @@ export function LoginForm() {
   async function onSubmit(data: FormValues) {
     setApiError(null)
     try {
-      await login(data)
+      const res = await login(data)
+      toast.success(`Bienvenue, @${res.user.username} !`)
       navigate({ to: '/forum' })
     } catch {
       setApiError('Email ou mot de passe incorrect.')
+      toast.error('Connexion échouée', { description: 'Email ou mot de passe incorrect.' })
     }
   }
 

@@ -6,6 +6,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { toast }    from '@/stores/toastStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FieldWrapper } from './FieldWrapper'
@@ -44,18 +45,26 @@ export function RegisterForm() {
   async function onSubmit(data: FormValues) {
     setApiError(null)
     try {
-      await registerUser({
+      const res = await registerUser({
         email: data.email,
         username: data.username,
         password: data.password,
         captcha_token: 'bypass-dev',
       })
+      toast.success(`Compte créé ! Bienvenue, @${res.user.username}`)
       navigate({ to: '/forum' })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      if (msg?.includes('email')) setApiError('Cet email est déjà utilisé.')
-      else if (msg?.includes('username')) setApiError("Ce nom d'utilisateur est déjà pris.")
-      else setApiError("Une erreur est survenue. Réessaie dans un moment.")
+      if (msg?.includes('email')) {
+        setApiError('Cet email est déjà utilisé.')
+        toast.error('Email déjà utilisé', { description: 'Essaie avec une autre adresse.' })
+      } else if (msg?.includes('username')) {
+        setApiError("Ce nom d'utilisateur est déjà pris.")
+        toast.error("Nom d'utilisateur pris", { description: 'Choisis un autre identifiant.' })
+      } else {
+        setApiError("Une erreur est survenue. Réessaie dans un moment.")
+        toast.error('Erreur', { description: "Une erreur est survenue. Réessaie dans un moment." })
+      }
     }
   }
 

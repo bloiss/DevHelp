@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/stores/authStore'
-import { authService } from '@/services/auth.service'
-import { queryClient } from '@/lib/queryClient'
+import { authService }  from '@/services/auth.service'
+import { queryClient }  from '@/lib/queryClient'
+import { toast }        from '@/stores/toastStore'
 import type { LoginInput, RegisterInput } from '@/services/auth.service'
 
 export function useAuth() {
@@ -24,6 +25,7 @@ export function useAuth() {
     }
     storeLogout()
     queryClient.clear()
+    toast.info('Déconnecté. À bientôt !')
   }
 
   return { user, isAuthenticated, login, register, logout }

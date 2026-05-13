@@ -147,6 +147,18 @@
   animation: btn-shimmer 0.55s ease-out forwards;
 }
 
+/* ── Skeleton shimmer ─────────────────────────────────────── */
+@keyframes skeleton-wave {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(200%);  }
+}
+
+/* ── Toast progress bar ───────────────────────────────────── */
+@keyframes progress-shrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
 /* ── Dot-grid utility (reusable across pages) ─────────────── */
 .bg-dot-grid {
   background-image: radial-gradient(
