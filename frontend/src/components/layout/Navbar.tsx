@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Code2, Bell, MessageSquare, User, LogOut, Menu, Sun, Moon } from 'lucide-react'
+import { Code2, Bell, MessageSquare, User, LogOut, Menu, Sun, Moon, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
@@ -11,6 +12,7 @@ export function Navbar() {
   const { user, isAuthenticated } = useAuthStore()
   const { logout } = useAuth()
   const { setTheme, resolvedTheme } = useThemeStore()
+  const { open: openCommand } = useCommandStore()
   const [scrolled, setScrolled] = useState(false)
   const isDark = resolvedTheme() === 'dark'
 
@@ -50,6 +52,19 @@ export function Navbar() {
             Forum
           </Link>
         </div>
+
+        {/* Command palette trigger — visible on md+ */}
+        <button
+          onClick={openCommand}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-muted-foreground text-sm hover:bg-accent hover:text-foreground transition-colors duration-200 group"
+          aria-label="Ouvrir la recherche"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">Rechercher…</span>
+          <kbd className="hidden lg:inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded border border-border bg-background/80 text-muted-foreground leading-none ml-1 group-hover:border-border/80">
+            ⌘K
+          </kbd>
+        </button>
 
         <div className="flex-1 flex items-center justify-end gap-2">
           {isAuthenticated && user ? (

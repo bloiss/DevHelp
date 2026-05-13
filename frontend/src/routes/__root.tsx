@@ -1,6 +1,7 @@
 import { createRootRoute } from '@tanstack/react-router'
 import { Navbar } from '@/components/layout/Navbar'
 import { PageTransition } from '@/components/layout/PageTransition'
+import { CommandPalette } from '@/components/ui/CommandPalette'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -33,6 +34,7 @@ function RootLayout() {
       <main className="flex-1 flex flex-col">
         <PageTransition />
       </main>
+      <CommandPalette />
     </div>
   )
 }
