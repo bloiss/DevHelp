@@ -34,7 +34,7 @@ export function Hero() {
         {/* Badge */}
         <motion.div
           variants={fadeInUp}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-muted/80 text-sm text-muted-foreground backdrop-blur-sm hover:border-primary/30 transition-colors duration-300"
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-muted/80 text-sm text-muted-foreground backdrop-blur-sm hover:border-gold/40 transition-colors duration-300"
         >
           <Code2 className="h-3.5 w-3.5 text-primary" />
           <span>La communauté des développeurs</span>

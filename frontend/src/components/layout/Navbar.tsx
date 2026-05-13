@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { NotificationPanel } from '@/components/ui/NotificationPanel'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +15,7 @@ export function Navbar() {
   const { logout } = useAuth()
   const { setTheme, resolvedTheme } = useThemeStore()
   const { open: openCommand } = useCommandStore()
+  const { unreadCount, toggle: toggleNotif } = useNotificationStore()
   const [scrolled, setScrolled] = useState(false)
   const isDark = resolvedTheme() === 'dark'
 
@@ -76,9 +79,27 @@ export function Navbar() {
                 + Nouveau post
               </Link>
 
-              <Link to="/notifications" className="p-2 rounded-md hover:bg-accent transition-colors relative group">
-                <Bell className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={toggleNotif}
+                  className="p-2 rounded-md hover:bg-accent transition-colors relative group"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                  {unreadCount > 0 && (
+                    <motion.span
+                      key={unreadCount}
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1,   opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                      className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-4 px-0.5 rounded-full text-[9px] font-bold bg-gold text-primary-foreground leading-none"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </motion.span>
+                  )}
+                </button>
+                <NotificationPanel />
+              </div>
 
               <Link to="/messages" className="p-2 rounded-md hover:bg-accent transition-colors group">
                 <MessageSquare className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />

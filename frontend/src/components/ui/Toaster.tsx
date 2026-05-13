@@ -21,15 +21,15 @@ const CONFIG = {
   },
   info: {
     Icon:        Info,
-    iconClass:   'text-blue-500',
-    barClass:    'bg-blue-500',
-    wrapClass:   'bg-blue-500/10 border-blue-500/20',
+    iconClass:   'text-gold',
+    barClass:    'bg-gold',
+    wrapClass:   'bg-gold/10 border-gold/20',
   },
   warning: {
     Icon:        AlertTriangle,
-    iconClass:   'text-amber-500',
-    barClass:    'bg-amber-500',
-    wrapClass:   'bg-amber-500/10 border-amber-500/20',
+    iconClass:   'text-gold',
+    barClass:    'bg-gold',
+    wrapClass:   'bg-gold/10 border-gold/20',
   },
 } as const
 

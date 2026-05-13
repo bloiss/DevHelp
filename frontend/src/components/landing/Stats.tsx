@@ -46,7 +46,8 @@ function StatItem({
       className="flex flex-col items-center gap-2 text-center"
     >
       <motion.div
-        className="p-2 rounded-lg bg-primary/10 text-primary"
+        className="p-2 rounded-lg"
+        style={{ background: 'var(--gold-soft)', color: 'var(--gold)' }}
         whileHover={{ scale: 1.15, rotate: 6 }}
         transition={{ type: 'spring', stiffness: 400, damping: 15 }}
       >

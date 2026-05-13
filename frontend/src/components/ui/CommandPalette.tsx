@@ -334,7 +334,7 @@ export function CommandPalette() {
                             className={cn(
                               'w-full flex items-center gap-3 px-3 mx-1 py-2.5 rounded-lg text-left transition-colors duration-100',
                               'focus-visible:outline-none',
-                              isSelected ? 'bg-accent' : 'hover:bg-accent/60',
+                              isSelected ? 'bg-accent ring-1 ring-inset ring-gold/30' : 'hover:bg-accent/60',
                             )}
                             style={{ width: 'calc(100% - 8px)' }}
                           >
@@ -350,7 +350,7 @@ export function CommandPalette() {
                               )}
                             </div>
                             {isSelected && (
-                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <ArrowRight className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--gold)' }} />
                             )}
                           </button>
                         )

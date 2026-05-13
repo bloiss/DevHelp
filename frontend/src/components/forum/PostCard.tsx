@@ -22,7 +22,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
     <motion.article
       whileHover={{
         y: -3,
-        boxShadow: '0 8px 32px hsl(var(--primary)/0.08), 0 2px 8px hsl(var(--primary)/0.04)',
+        boxShadow: '0 8px 32px var(--gold-glow), 0 2px 8px oklch(from var(--gold) l c h / 0.06)',
       }}
       transition={{ type: 'spring', stiffness: 380, damping: 24 }}
       className="group relative flex gap-4 p-5 rounded-xl border border-border bg-card/90
@@ -49,7 +49,9 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           transition={{ type: 'spring', stiffness: 500, damping: 18 }}
           className={cn(
             'text-sm font-semibold tabular-nums',
-            votes > 0 ? 'text-foreground' : 'text-muted-foreground',
+            votes > 10 ? 'text-gold'
+            : votes > 0 ? 'text-foreground'
+            : 'text-muted-foreground',
           )}
         >
           {votes}
@@ -63,7 +65,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           <Avatar user={post.author} size="sm" />
           <span className="font-medium text-foreground">{post.author.username}</span>
           {post.author.role !== 'user' && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            <Badge className="text-[10px] px-1.5 py-0 bg-gold/15 text-gold border-gold/30 border" style={{ background: 'var(--gold-soft)', color: 'var(--gold)', borderColor: 'var(--gold-border)' }}>
               {post.author.role === 'moderator' ? 'Modo' : 'Admin'}
             </Badge>
           )}

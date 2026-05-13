@@ -90,11 +90,15 @@ function CategoryPage() {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-all',
               sort === key
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground shadow-sm [--tw-shadow:0_1px_8px_var(--gold-glow)]'
                 : 'text-muted-foreground hover:text-foreground',
             )}
+            style={sort === key ? { boxShadow: '0 1px 8px var(--gold-glow)' } : undefined}
           >
-            <SortIcon className="h-3.5 w-3.5" />
+            <SortIcon
+              className="h-3.5 w-3.5"
+              style={sort === key ? { color: 'var(--gold)' } : undefined}
+            />
             {label}
           </button>
         ))}
