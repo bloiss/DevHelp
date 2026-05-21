@@ -71,9 +71,9 @@ func Load() *Config {
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleRedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 
-		GitHubClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		GitHubClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		GitHubRedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+		GitHubClientID:     os.Getenv("GH_CLIENT_ID"),
+		GitHubClientSecret: os.Getenv("GH_CLIENT_SECRET"),
+		GitHubRedirectURL:  os.Getenv("GH_REDIRECT_URL"),
 
 		SMTPHost:     os.Getenv("SMTP_HOST"),
 		SMTPPort:     smtpPort,
