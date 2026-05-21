@@ -25,6 +25,7 @@ func Connect(dsn string) *gorm.DB {
 	sqlDB.SetMaxIdleConns(10)
 
 	log.Println("Database connected successfully")
+	db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
 	return db
 }
 
