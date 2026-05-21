@@ -9,11 +9,12 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
+	authService  *service.AuthService
+	emailService *service.EmailService
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *service.AuthService, emailService *service.EmailService) *AuthHandler {
+	return &AuthHandler{authService: authService, emailService: emailService}
 }
 
 // ─── Register ─────────────────────────────────────────────────────
@@ -165,10 +166,10 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	// TODO: envoyer l'email avec le lien contenant rawToken
-	// emailService.SendResetLink(req.Email, rawToken)
-
-	_ = rawToken
+	// Envoyer l'email uniquement si un token a été généré (email existant)
+	if rawToken != "" {
+		_ = h.emailService.SendPasswordReset(req.Email, rawToken)
+	}
 
 	// Toujours répondre 200 pour ne pas révéler si l'email existe
 	c.JSON(http.StatusOK, gin.H{"message": "if this email exists, a reset link has been sent"})

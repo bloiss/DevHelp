@@ -44,6 +44,8 @@ func main() {
 		refreshExpiry,
 	)
 
+	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.ResendFrom, cfg.AppURL)
+
 	oauthService := service.NewOAuthService(
 		userRepo,
 		authService,
@@ -52,7 +54,7 @@ func main() {
 	)
 
 	// ─── Handlers ─────────────────────────────────────────────────
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, emailService)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
 
 	// ─── Router ───────────────────────────────────────────────────
