@@ -45,6 +45,7 @@ func main() {
 	)
 
 	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.ResendFrom, cfg.AppURL)
+	captchaService := service.NewCaptchaService(cfg.HCaptchaSecret)
 
 	oauthService := service.NewOAuthService(
 		userRepo,
@@ -54,7 +55,7 @@ func main() {
 	)
 
 	// ─── Handlers ─────────────────────────────────────────────────
-	authHandler := handler.NewAuthHandler(authService, emailService)
+	authHandler := handler.NewAuthHandler(authService, emailService, captchaService)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
 
 	// ─── Router ───────────────────────────────────────────────────

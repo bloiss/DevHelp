@@ -27,7 +27,8 @@ type Config struct {
 	ResendFrom   string
 	AppURL       string
 
-	CaptchaSecret string
+	HCaptchaSecret  string
+	HCaptchaSiteKey string
 
 	S3Endpoint  string
 	S3AccessKey string
@@ -74,7 +75,8 @@ func Load() *Config {
 		ResendFrom:   getEnv("RESEND_FROM", "onboarding@resend.dev"),
 		AppURL:       getEnv("APP_URL", "http://localhost:5173"),
 
-		CaptchaSecret: os.Getenv("CAPTCHA_SECRET"),
+		HCaptchaSecret:  os.Getenv("HCAPTCHA_SECRET"),
+		HCaptchaSiteKey: os.Getenv("HCAPTCHA_SITE_KEY"),
 
 		S3Endpoint:  getEnv("S3_ENDPOINT", "http://localhost:9000"),
 		S3AccessKey: os.Getenv("S3_ACCESS_KEY"),

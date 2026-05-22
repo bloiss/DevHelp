@@ -9,12 +9,13 @@ import (
 )
 
 type AuthHandler struct {
-	authService  *service.AuthService
-	emailService *service.EmailService
+	authService    *service.AuthService
+	emailService   *service.EmailService
+	captchaService *service.CaptchaService
 }
 
-func NewAuthHandler(authService *service.AuthService, emailService *service.EmailService) *AuthHandler {
-	return &AuthHandler{authService: authService, emailService: emailService}
+func NewAuthHandler(authService *service.AuthService, emailService *service.EmailService, captchaService *service.CaptchaService) *AuthHandler {
+	return &AuthHandler{authService: authService, emailService: emailService, captchaService: captchaService}
 }
 
 // ─── Register ─────────────────────────────────────────────────────
@@ -43,8 +44,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// TODO: valider le captcha via service dédié
-	// if err := captchaService.Verify(req.CaptchaToken); err != nil { ... }
+	if err := h.captchaService.Verify(req.CaptchaToken); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "captcha validation failed"})
+		return
+	}
 
 	user, access, refresh, err := h.authService.Register(service.RegisterInput{
 		Email:    req.Email,
