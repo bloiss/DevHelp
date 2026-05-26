@@ -169,7 +169,12 @@ function MessageBubble({ msg, isMe }: { msg: Msg; isMe: boolean }) {
 // ─── Page principale ──────────────────────────────────────────────
 
 function MessagesPage() {
-  const { user, isAuthenticated } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
+  const [convs, setConvs] = useState<ConvPreview[]>(MOCK_CONVS)
+  const [messages, setMessages] = useState<Record<string, Msg[]>>(MOCK_MESSAGES)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [input, setInput] = useState('')
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   if (!isAuthenticated) {
     return (
@@ -180,11 +185,6 @@ function MessagesPage() {
       />
     )
   }
-  const [convs, setConvs] = useState<ConvPreview[]>(MOCK_CONVS)
-  const [messages, setMessages] = useState<Record<string, Msg[]>>(MOCK_MESSAGES)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [input, setInput] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
 
   const selected = convs.find((c) => c.id === selectedId) ?? null
   const thread = selectedId ? (messages[selectedId] ?? []) : []

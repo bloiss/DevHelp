@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { PenSquare, ArrowRight } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -13,12 +13,12 @@ const PILLAR_LABEL: Record<string, string> = {
 
 const SPRING = { type: 'spring', stiffness: 350, damping: 28 } as const
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
 }
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20, scale: 0.97 },
   visible: {
     opacity: 1,

@@ -87,7 +87,6 @@ const TYPE_CONFIG = {
         <span className="font-medium text-foreground line-clamp-1">"{n.post_title}"</span>
       </>
     ),
-    href: (n: Notif) => `/forum/${n.post_category}/${n.post_id}` as const,
   },
   like: {
     Icon: ArrowUp,
@@ -99,7 +98,6 @@ const TYPE_CONFIG = {
         <span className="font-medium text-foreground">"{n.post_title}"</span>
       </>
     ),
-    href: (n: Notif) => `/forum/${n.post_category}/${n.post_id}` as const,
   },
   message: {
     Icon: Mail,
@@ -110,7 +108,6 @@ const TYPE_CONFIG = {
         <span className="font-medium text-foreground">{n.actor}</span>
       </>
     ),
-    href: () => '/messages' as const,
   },
   report_update: {
     Icon: Shield,
@@ -122,9 +119,8 @@ const TYPE_CONFIG = {
         {' a été approuvé par la modération'}
       </>
     ),
-    href: (n: Notif) => `/forum/${n.post_category}/${n.post_id}` as const,
   },
-} satisfies Record<NotifType, { Icon: React.ElementType; color: string; text: (n: Notif) => React.ReactNode; href: (n: Notif) => string }>
+} satisfies Record<NotifType, { Icon: React.ElementType; color: string; text: (n: Notif) => React.ReactNode }>
 
 function NotificationsPage() {
   const { isAuthenticated } = useAuthStore()
@@ -196,37 +192,39 @@ function NotificationsPage() {
           animate="visible"
         >
           {notifs.map((notif) => {
-            const { Icon, color, text, href } = TYPE_CONFIG[notif.type]
-            return (
-              <motion.div key={notif.id} variants={fadeInUp}>
-              <Link
-                to={href(notif)}
-                onClick={() => markRead(notif.id)}
-                className={cn(
-                  'flex items-start gap-4 px-4 py-4 hover:bg-accent/50 transition-colors',
-                  !notif.read && 'bg-primary/5',
-                )}
-              >
-                {/* Icône type */}
+            const { Icon, color, text } = TYPE_CONFIG[notif.type]
+            const rowClass = cn(
+              'flex items-start gap-4 px-4 py-4 hover:bg-accent/50 transition-colors',
+              !notif.read && 'bg-primary/5',
+            )
+            const rowContent = (
+              <>
                 <div className={cn('p-2 rounded-lg shrink-0 mt-0.5', color)}>
                   <Icon className="h-4 w-4" />
                 </div>
-
-                {/* Texte */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted-foreground leading-snug">
-                    {text(notif)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatRelativeDate(notif.created_at)}
-                  </p>
+                  <p className="text-sm text-muted-foreground leading-snug">{text(notif)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatRelativeDate(notif.created_at)}</p>
                 </div>
-
-                {/* Indicateur non lu */}
-                {!notif.read && (
-                  <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-2" />
-                )}
-              </Link>
+                {!notif.read && <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-2" />}
+              </>
+            )
+            return (
+              <motion.div key={notif.id} variants={fadeInUp}>
+              {notif.type === 'message' ? (
+                <Link to="/messages" onClick={() => markRead(notif.id)} className={rowClass}>
+                  {rowContent}
+                </Link>
+              ) : (
+                <Link
+                  to="/forum/$category/$postId"
+                  params={{ category: notif.post_category!, postId: notif.post_id! }}
+                  onClick={() => markRead(notif.id)}
+                  className={rowClass}
+                >
+                  {rowContent}
+                </Link>
+              )}
               </motion.div>
             )
           })}

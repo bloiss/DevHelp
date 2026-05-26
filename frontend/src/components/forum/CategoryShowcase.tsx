@@ -8,6 +8,7 @@ import {
   useTransform,
   animate,
   useReducedMotion,
+  type Variants,
 } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,8 +30,7 @@ const SPRING = {
   snap:   { type: 'spring', stiffness: 260, damping: 30, mass: 0.85 },
 } as const
 
-// Inner card content — layered stagger on activation
-const contentVariants = {
+const contentVariants: Variants = {
   hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1, y: 0,
@@ -43,7 +43,7 @@ const contentVariants = {
   },
   exit: { opacity: 0, y: -10, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } },
 }
-const itemVariant = {
+const itemVariant: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] } },
 }
@@ -223,7 +223,7 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
 
           // Per-depth position + spring
           let x: string, scale: number, rotY: number, opacity: number, blur: number, zIndex: number
-          let spring: typeof SPRING.active
+          let spring: (typeof SPRING)[keyof typeof SPRING]
 
           if (isActive) {
             x = '0%'; scale = 1; rotY = 0; opacity = 1; blur = 0; zIndex = 10

@@ -37,7 +37,6 @@ export function ForgotPasswordForm() {
     }
   }
 
-  // État succès — toujours le même message pour ne pas révéler si l'email existe
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-4 text-center py-2">

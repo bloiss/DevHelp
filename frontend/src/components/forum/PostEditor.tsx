@@ -62,7 +62,6 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
       'rounded-md border bg-transparent transition-colors',
       error ? 'border-destructive' : 'border-input focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
     )}>
-      {/* Barre d'outils */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border flex-wrap">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -125,7 +124,6 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
         </ToolbarButton>
       </div>
 
-      {/* Zone de saisie */}
       <EditorContent editor={editor} />
     </div>
   )

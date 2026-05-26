@@ -14,7 +14,6 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()(
-  // persist sauvegarde l'état dans le localStorage entre les sessions
   persist(
     (set) => ({
       user: null,
@@ -33,8 +32,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'devhelp-auth',
-      // On ne persiste pas le refreshToken en mémoire — il est géré via cookie HttpOnly côté back
-      // Mais pour le MVP sans cookie, on le stocke localement
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

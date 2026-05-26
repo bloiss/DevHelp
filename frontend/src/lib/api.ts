@@ -6,7 +6,6 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Injecte automatiquement le JWT dans chaque requête
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   if (token) {
@@ -15,7 +14,6 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Si le serveur renvoie 401, tente un refresh automatique du token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

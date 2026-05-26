@@ -10,7 +10,6 @@ interface FieldWrapperProps {
   className?: string
 }
 
-// Regroupe label + input + message d'erreur — évite la répétition dans chaque formulaire
 export function FieldWrapper({ label, htmlFor, error, children, className }: FieldWrapperProps) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>

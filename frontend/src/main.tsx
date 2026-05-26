@@ -12,7 +12,6 @@ const router = createRouter({
   defaultPreload: 'intent',
 })
 
-// Typage global du router pour l'autocomplétion dans toute l'appli
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router

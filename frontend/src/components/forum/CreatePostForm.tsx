@@ -44,8 +44,8 @@ export function CreatePostForm() {
   async function onSubmit(_data: FormValues) {
     setApiError(null)
     try {
-      // TODO: remplacer par postService.create() en semaine 2
-      await new Promise((r) => setTimeout(r, 800)) // simule un appel API
+      // TODO: brancher postService.create() une fois le back disponible
+      await new Promise((r) => setTimeout(r, 800))
       navigate({ to: '/forum' })
     } catch {
       setApiError('Une erreur est survenue. Réessaie dans un moment.')
@@ -55,14 +55,12 @@ export function CreatePostForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6" noValidate>
 
-      {/* Erreur API */}
       {apiError && (
         <div className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
           {apiError}
         </div>
       )}
 
-      {/* Titre */}
       <FieldWrapper label="Titre" htmlFor="title" error={errors.title?.message}>
         <div className="relative">
           <Input
@@ -78,7 +76,6 @@ export function CreatePostForm() {
         </div>
       </FieldWrapper>
 
-      {/* Catégorie */}
       <FieldWrapper label="Rubrique" htmlFor="category" error={errors.category?.message}>
         <Controller
           name="category"
@@ -93,7 +90,6 @@ export function CreatePostForm() {
         />
       </FieldWrapper>
 
-      {/* Contenu */}
       <FieldWrapper label="Contenu" htmlFor="content" error={errors.content?.message}>
         <Controller
           name="content"
@@ -104,7 +100,6 @@ export function CreatePostForm() {
         />
       </FieldWrapper>
 
-      {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button
           type="button"
