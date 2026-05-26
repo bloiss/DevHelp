@@ -54,6 +54,7 @@ func New(h *Handlers) *gin.Engine {
 	protected.Use(middleware.AuthRequired(h.JWTSecret))
 	{
 		// Auth (nécessite JWT)
+		protected.GET("/auth/me", h.Auth.Me)
 		protected.POST("/auth/set-password", h.Auth.SetPassword)
 
 		// Posts

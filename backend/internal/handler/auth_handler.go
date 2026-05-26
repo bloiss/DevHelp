@@ -265,3 +265,22 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "password set successfully"})
 }
+
+// ─── Me ───────────────────────────────────────────────────────────
+
+// Me godoc
+// @Summary      Récupérer l'utilisateur connecté
+// @Tags         auth
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} model.User
+// @Router       /auth/me [get]
+func (h *AuthHandler) Me(c *gin.Context) {
+	userID := c.MustGet("user_id").(uuid.UUID)
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}

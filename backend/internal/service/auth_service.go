@@ -209,6 +209,10 @@ func (s *AuthService) Logout(refreshTokenStr string) error {
 	return s.userRepo.DeleteRefreshToken(hashToken(refreshTokenStr))
 }
 
+func (s *AuthService) GetUserByID(id uuid.UUID) (*model.User, error) {
+	return s.userRepo.FindByID(id)
+}
+
 // ─── Helpers privés ───────────────────────────────────────────────
 
 func (s *AuthService) generateTokenPair(user *model.User) (string, string, error) {
