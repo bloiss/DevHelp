@@ -11,6 +11,16 @@ export interface User {
   updated_at: string
 }
 
+// Profil public retourné par GET /users/:username
+export interface PublicProfile {
+  id: string
+  username: string
+  avatar_url?: string
+  role: UserRole
+  created_at: string
+  post_count: number
+}
+
 export interface AuthResponse {
   user: User
   access_token: string

@@ -57,6 +57,9 @@ func (h *PostHandler) List(c *gin.Context) {
 		}
 		input.AuthorID = &id
 	}
+	if v := c.Query("author"); v != "" {
+		input.AuthorUsername = &v
+	}
 
 	result, err := h.svc.List(input)
 	if err != nil {

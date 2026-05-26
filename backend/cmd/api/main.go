@@ -33,6 +33,8 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
 	postRepo := repository.NewPostRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	likeRepo := repository.NewLikeRepository(db)
 
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _ := time.ParseDuration(cfg.JWTAccessExpiry)
@@ -57,13 +59,19 @@ func main() {
 	)
 
 	categoryService := service.NewCategoryService(categoryRepo)
-	postService := service.NewPostService(postRepo, categoryRepo)
+	postService := service.NewPostService(postRepo, categoryRepo, userRepo)
+	commentService := service.NewCommentService(commentRepo)
+	likeService := service.NewLikeService(likeRepo)
+	userService := service.NewUserService(userRepo, postRepo)
 
 	// ─── Handlers ─────────────────────────────────────────────────
 	authHandler := handler.NewAuthHandler(authService, emailService, captchaService)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	postHandler := handler.NewPostHandler(postService)
+	commentHandler := handler.NewCommentHandler(commentService)
+	likeHandler := handler.NewLikeHandler(likeService)
+	userHandler := handler.NewUserHandler(userService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
@@ -71,6 +79,9 @@ func main() {
 		OAuth:     oauthHandler,
 		Category:  categoryHandler,
 		Post:      postHandler,
+		Comment:   commentHandler,
+		Like:      likeHandler,
+		User:      userHandler,
 		JWTSecret: cfg.JWTAccessSecret,
 	})
 

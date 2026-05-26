@@ -3,7 +3,7 @@ import type { Post, Comment } from '@/types/post'
 import type { PaginatedResponse } from '@/types/api'
 
 export const postService = {
-  list: (params?: { category?: string; page?: number; per_page?: number }) =>
+  list: (params?: { category?: string; author?: string; page?: number; per_page?: number }) =>
     api.get<PaginatedResponse<Post>>('/posts', { params }).then((r) => r.data),
 
   get: (id: string) =>

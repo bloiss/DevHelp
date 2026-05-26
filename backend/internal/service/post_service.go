@@ -16,19 +16,21 @@ var (
 type PostService struct {
 	repo         *repository.PostRepository
 	categoryRepo *repository.CategoryRepository
+	userRepo     *repository.UserRepository
 }
 
-func NewPostService(repo *repository.PostRepository, categoryRepo *repository.CategoryRepository) *PostService {
-	return &PostService{repo: repo, categoryRepo: categoryRepo}
+func NewPostService(repo *repository.PostRepository, categoryRepo *repository.CategoryRepository, userRepo *repository.UserRepository) *PostService {
+	return &PostService{repo: repo, categoryRepo: categoryRepo, userRepo: userRepo}
 }
 
 type PostListInput struct {
-	CategoryID   *uuid.UUID
-	CategorySlug *string
-	AuthorID     *uuid.UUID
-	Status       *model.ContentStatus // admin uniquement
-	Page         int
-	PageSize     int
+	CategoryID     *uuid.UUID
+	CategorySlug   *string
+	AuthorID       *uuid.UUID
+	AuthorUsername *string
+	Status         *model.ContentStatus // admin uniquement
+	Page           int
+	PageSize       int
 }
 
 type PostListResult struct {
@@ -39,13 +41,22 @@ type PostListResult struct {
 }
 
 func (s *PostService) List(input PostListInput) (*PostListResult, error) {
-	// Résoudre le slug en UUID si fourni
+	// Résoudre le slug catégorie en UUID si fourni
 	if input.CategorySlug != nil && input.CategoryID == nil {
 		cat, err := s.categoryRepo.FindBySlug(*input.CategorySlug)
 		if err != nil {
 			return nil, ErrCategoryNotFound
 		}
 		input.CategoryID = &cat.ID
+	}
+
+	// Résoudre le username auteur en UUID si fourni
+	if input.AuthorUsername != nil && input.AuthorID == nil {
+		user, err := s.userRepo.FindByUsername(*input.AuthorUsername)
+		if err != nil {
+			return nil, ErrUserNotFound
+		}
+		input.AuthorID = &user.ID
 	}
 
 	posts, total, err := s.repo.FindAll(repository.PostFilters{
