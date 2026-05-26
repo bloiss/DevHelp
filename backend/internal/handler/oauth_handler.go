@@ -3,7 +3,9 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/bloiss/devhelp/backend/internal/service"
 	"github.com/gin-gonic/gin"
@@ -46,15 +48,16 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	user, access, refresh, err := h.oauthService.HandleGoogleCallback(c.Query("code"))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "google oauth failed"})
+		appURL := os.Getenv("APP_URL")
+		c.Redirect(http.StatusTemporaryRedirect, appURL+"/auth/login?error=oauth_failed")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"user":          user,
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+	appURL := os.Getenv("APP_URL")
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf(
+		"%s/auth/callback?access_token=%s&refresh_token=%s&username=%s",
+		appURL, access, refresh, user.Username,
+	))
 }
 
 // ─── GitHub ───────────────────────────────────────────────────────
@@ -84,15 +87,16 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 
 	user, access, refresh, err := h.oauthService.HandleGitHubCallback(c.Query("code"))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "github oauth failed"})
+		appURL := os.Getenv("APP_URL")
+		c.Redirect(http.StatusTemporaryRedirect, appURL+"/auth/login?error=oauth_failed")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"user":          user,
-		"access_token":  access,
-		"refresh_token": refresh,
-	})
+	appURL := os.Getenv("APP_URL")
+	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf(
+		"%s/auth/callback?access_token=%s&refresh_token=%s&username=%s",
+		appURL, access, refresh, user.Username,
+	))
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
