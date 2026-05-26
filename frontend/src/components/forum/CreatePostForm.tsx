@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button'
 import { FieldWrapper } from '@/components/auth/FieldWrapper'
 import { PostEditor } from './PostEditor'
 import { CategorySelect } from './CategorySelect'
+import { postService } from '@/services/post.service'
+import { toast } from '@/stores/toastStore'
 
 const schema = z.object({
   title: z
     .string()
     .min(10, 'Le titre doit faire au moins 10 caractères')
     .max(150, 'Le titre ne peut pas dépasser 150 caractères'),
-  category: z.string().min(1, 'Choisis une rubrique'),
+  category_id: z.string().min(1, 'Choisis une rubrique'),
   content: z
     .string()
     .min(30, 'Le contenu doit faire au moins 30 caractères')
@@ -36,19 +38,24 @@ export function CreatePostForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', category: '', content: '' },
+    defaultValues: { title: '', category_id: '', content: '' },
   })
 
   const titleLength = watch('title').length
 
-  async function onSubmit(_data: FormValues) {
+  async function onSubmit(data: FormValues) {
     setApiError(null)
     try {
-      // TODO: brancher postService.create() une fois le back disponible
-      await new Promise((r) => setTimeout(r, 800))
-      navigate({ to: '/forum' })
+      const post = await postService.create({
+        title: data.title,
+        category_id: data.category_id,
+        content: data.content,
+      })
+      toast.success('Post publié !', { description: 'Ton post est en cours de modération.' })
+      navigate({ to: '/forum/$category/$postId', params: { category: post.category.slug, postId: post.id } })
     } catch {
       setApiError('Une erreur est survenue. Réessaie dans un moment.')
+      toast.error('Erreur', { description: 'Impossible de publier le post.' })
     }
   }
 
@@ -76,15 +83,15 @@ export function CreatePostForm() {
         </div>
       </FieldWrapper>
 
-      <FieldWrapper label="Rubrique" htmlFor="category" error={errors.category?.message}>
+      <FieldWrapper label="Rubrique" htmlFor="category_id" error={errors.category_id?.message}>
         <Controller
-          name="category"
+          name="category_id"
           control={control}
           render={({ field }) => (
             <CategorySelect
               value={field.value}
               onChange={field.onChange}
-              error={errors.category?.message}
+              error={errors.category_id?.message}
             />
           )}
         />
