@@ -1,14 +1,15 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { PenSquare, TrendingUp, Clock, MessageSquareOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { BackButton } from '@/components/shared/BackButton'
-import { PostCard }         from '@/components/forum/PostCard'
+import { PostCard } from '@/components/forum/PostCard'
 import { PostCardSkeleton } from '@/components/forum/PostCardSkeleton'
-import { Button }           from '@/components/ui/button'
-import { EmptyState }       from '@/components/shared/EmptyState'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { getCategoryBySlug } from '@/data/categories'
-import { getMockPostsByCategory } from '@/data/mockPosts'
+import { postService } from '@/services/post.service'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
@@ -28,23 +29,19 @@ type SortKey = typeof SORT_OPTIONS[number]['key']
 function CategoryPage() {
   const { category: slug } = Route.useParams()
   const { isAuthenticated } = useAuthStore()
-  const [sort, setSort]       = useState<SortKey>('recent')
-  const [isLoading, setLoading] = useState(true)
-
-  // Simulate API fetch — reset on every slug change
-  useEffect(() => {
-    setLoading(true)
-    const t = setTimeout(() => setLoading(false), 650)
-    return () => clearTimeout(t)
-  }, [slug])
+  const [sort, setSort] = useState<SortKey>('recent')
 
   const category = getCategoryBySlug(slug)
-
-  // Catégorie inconnue → 404
   if (!category) throw notFound()
 
   const Icon = category.icon
-  const allPosts = getMockPostsByCategory(slug)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['posts', { category: slug, sort }],
+    queryFn: () => postService.list({ category: slug, per_page: 30 }),
+  })
+
+  const allPosts = data?.data ?? []
 
   const posts = [...allPosts].sort((a, b) => {
     if (sort === 'popular') return (b.vote_count ?? 0) - (a.vote_count ?? 0)
@@ -59,7 +56,6 @@ function CategoryPage() {
       initial="hidden"
       animate="visible"
     >
-
       {/* Back */}
       <motion.div variants={fadeInUp} className="mb-4">
         <BackButton label="Forum" />
@@ -96,15 +92,11 @@ function CategoryPage() {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-all',
               sort === key
-                ? 'bg-background text-foreground shadow-sm [--tw-shadow:0_1px_8px_var(--gold-glow)]'
+                ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
             )}
-            style={sort === key ? { boxShadow: '0 1px 8px var(--gold-glow)' } : undefined}
           >
-            <SortIcon
-              className="h-3.5 w-3.5"
-              style={sort === key ? { color: 'var(--gold)' } : undefined}
-            />
+            <SortIcon className="h-3.5 w-3.5" />
             {label}
           </button>
         ))}
