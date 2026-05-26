@@ -268,13 +268,6 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 
 // ─── Me ───────────────────────────────────────────────────────────
 
-// Me godoc
-// @Summary      Récupérer l'utilisateur connecté
-// @Tags         auth
-// @Produce      json
-// @Security     BearerAuth
-// @Success      200 {object} model.User
-// @Router       /auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
 	user, err := h.authService.GetUserByID(userID)
