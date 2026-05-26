@@ -24,7 +24,11 @@ type hCaptchaResponse struct {
 }
 
 // Verify valide le token hCaptcha envoyé par le frontend.
+// En mode dev (secret vide ou token bypass-dev), la validation est ignorée.
 func (s *CaptchaService) Verify(token string) error {
+	if s.secret == "" || token == "bypass-dev" {
+		return nil
+	}
 	resp, err := http.PostForm("https://api.hcaptcha.com/siteverify", url.Values{
 		"secret":   {s.secret},
 		"response": {token},
