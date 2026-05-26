@@ -56,14 +56,18 @@ func main() {
 		cfg.GitHubClientID, cfg.GitHubClientSecret, cfg.GitHubRedirectURL,
 	)
 
+	commentRepo := repository.NewCommentRepository(db)
+
 	categoryService := service.NewCategoryService(categoryRepo)
 	postService := service.NewPostService(postRepo, categoryRepo)
+	commentService := service.NewCommentService(commentRepo, postRepo)
 
 	// ─── Handlers ─────────────────────────────────────────────────
 	authHandler := handler.NewAuthHandler(authService, emailService, captchaService)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	postHandler := handler.NewPostHandler(postService)
+	commentHandler := handler.NewCommentHandler(commentService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
@@ -71,6 +75,7 @@ func main() {
 		OAuth:     oauthHandler,
 		Category:  categoryHandler,
 		Post:      postHandler,
+		Comment:   commentHandler,
 		JWTSecret: cfg.JWTAccessSecret,
 	})
 

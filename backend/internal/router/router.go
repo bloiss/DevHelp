@@ -13,6 +13,7 @@ type Handlers struct {
 	OAuth     *handler.OAuthHandler
 	Category  *handler.CategoryHandler
 	Post      *handler.PostHandler
+	Comment   *handler.CommentHandler
 	JWTSecret string
 }
 
@@ -62,7 +63,8 @@ func New(h *Handlers) *gin.Engine {
 		protected.DELETE("/posts/:id", h.Post.Delete)
 
 		// Comments
-		// protected.POST("/posts/:id/comments", h.Comment.Create)
+		protected.POST("/posts/:id/comments", h.Comment.Create)
+		protected.DELETE("/posts/:id/comments/:commentId", h.Comment.Delete)
 
 		// Likes
 		// protected.POST("/posts/:id/like", h.Like.Toggle)
@@ -109,6 +111,9 @@ func New(h *Handlers) *gin.Engine {
 	// Posts (lecture publique)
 	api.GET("/posts", h.Post.List)
 	api.GET("/posts/:id", h.Post.Get)
+
+	// Comments (lecture publique)
+	api.GET("/posts/:id/comments", h.Comment.List)
 
 	// Routes admin seul
 	adminOnly := protected.Group("/admin")
