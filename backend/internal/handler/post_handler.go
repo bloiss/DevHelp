@@ -29,11 +29,18 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 // @Success      200 {object} service.PostListResult
 // @Router       /posts [get]
 func (h *PostHandler) List(c *gin.Context) {
+	pageSize := queryInt(c, "per_page", 0)
+	if pageSize == 0 {
+		pageSize = queryInt(c, "page_size", 20)
+	}
 	input := service.PostListInput{
 		Page:     queryInt(c, "page", 1),
-		PageSize: queryInt(c, "page_size", 20),
+		PageSize: pageSize,
 	}
 
+	if v := c.Query("category"); v != "" {
+		input.CategorySlug = &v
+	}
 	if v := c.Query("category_id"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {

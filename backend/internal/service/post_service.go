@@ -23,21 +23,31 @@ func NewPostService(repo *repository.PostRepository, categoryRepo *repository.Ca
 }
 
 type PostListInput struct {
-	CategoryID *uuid.UUID
-	AuthorID   *uuid.UUID
-	Status     *model.ContentStatus // admin uniquement
-	Page       int
-	PageSize   int
+	CategoryID   *uuid.UUID
+	CategorySlug *string
+	AuthorID     *uuid.UUID
+	Status       *model.ContentStatus // admin uniquement
+	Page         int
+	PageSize     int
 }
 
 type PostListResult struct {
-	Posts    []model.Post `json:"posts"`
+	Data     []model.Post `json:"data"`
 	Total    int64        `json:"total"`
 	Page     int          `json:"page"`
-	PageSize int          `json:"page_size"`
+	PerPage  int          `json:"per_page"`
 }
 
 func (s *PostService) List(input PostListInput) (*PostListResult, error) {
+	// Résoudre le slug en UUID si fourni
+	if input.CategorySlug != nil && input.CategoryID == nil {
+		cat, err := s.categoryRepo.FindBySlug(*input.CategorySlug)
+		if err != nil {
+			return nil, ErrCategoryNotFound
+		}
+		input.CategoryID = &cat.ID
+	}
+
 	posts, total, err := s.repo.FindAll(repository.PostFilters{
 		CategoryID: input.CategoryID,
 		AuthorID:   input.AuthorID,
@@ -52,7 +62,7 @@ func (s *PostService) List(input PostListInput) (*PostListResult, error) {
 	if pageSize <= 0 {
 		pageSize = 20
 	}
-	return &PostListResult{Posts: posts, Total: total, Page: input.Page, PageSize: pageSize}, nil
+	return &PostListResult{Data: posts, Total: total, Page: input.Page, PerPage: pageSize}, nil
 }
 
 func (s *PostService) GetByID(id uuid.UUID, requesterRole string) (*model.Post, error) {
