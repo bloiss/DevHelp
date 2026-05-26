@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-muted: var(--gold-muted);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  /* ── Amber / gold accent ── */
+  --primary: oklch(0.76 0.157 83);
+  --primary-foreground: oklch(0.17 0.042 60);
+
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.76 0.157 83);
+
+  /* ── Gold utilities ── */
+  --gold:        oklch(0.76 0.157 83);
+  --gold-muted:  oklch(0.76 0.08  83);
+  --gold-glow:   oklch(0.76 0.157 83 / 0.22);
+  --gold-border: oklch(0.76 0.157 83 / 0.38);
+  --gold-soft:   oklch(0.76 0.157 83 / 0.10);
+}
+
+.dark {
+  --background: oklch(0.13 0.007 240);
+  --foreground: oklch(0.94 0 0);
+  --card: oklch(0.18 0.006 240);
+  --card-foreground: oklch(0.94 0 0);
+  --popover: oklch(0.18 0.006 240);
+  --popover-foreground: oklch(0.94 0 0);
+
+  /* ── Amber / gold accent — slightly lighter in dark ── */
+  --primary: oklch(0.83 0.142 85);
+  --primary-foreground: oklch(0.14 0.038 60);
+
+  --secondary: oklch(0.24 0.005 240);
+  --secondary-foreground: oklch(0.94 0 0);
+  --muted: oklch(0.22 0.005 240);
+  --muted-foreground: oklch(0.62 0 0);
+  --accent: oklch(0.24 0.005 240);
+  --accent-foreground: oklch(0.94 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.83 0.142 85);
+
+  /* ── Gold utilities ── */
+  --gold:        oklch(0.83 0.142 85);
+  --gold-muted:  oklch(0.83 0.07  85);
+  --gold-glow:   oklch(0.83 0.142 85 / 0.28);
+  --gold-border: oklch(0.83 0.142 85 / 0.42);
+  --gold-soft:   oklch(0.83 0.142 85 / 0.12);
+}
+
+/* ── Ambient glow variables ───────────────────────────────── */
+:root {
+  --glow-a: oklch(0.76 0.157 83 / 0.07);
+  --glow-b: hsl(260 65% 60% / 0.04);
+}
+.dark {
+  --glow-a: oklch(0.83 0.142 85 / 0.13);
+  --glow-b: hsl(260 65% 70% / 0.07);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+
+  /* Text selection */
+  ::selection {
+    background: oklch(from var(--primary) l c h / 0.18);
+    color: inherit;
+  }
+
+  /* Thin elegant scrollbar */
+  ::-webkit-scrollbar        { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.45);
+  }
+}
+
+/* ── Shimmer sweep (primary button) ──────────────────────── */
+@keyframes btn-shimmer {
+  from { left: -60%; }
+  to   { left: 160%;  }
+}
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 0.28) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.btn-shimmer:hover::after {
+  opacity: 1;
+  animation: btn-shimmer 0.55s ease-out forwards;
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────── */
+@keyframes skeleton-wave {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(200%);  }
+}
+
+/* ── Toast progress bar ───────────────────────────────────── */
+@keyframes progress-shrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ── Dot-grid utility (reusable across pages) ─────────────── */
+.bg-dot-grid {
+  background-image: radial-gradient(
+    circle,
+    hsl(var(--foreground) / 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+}
