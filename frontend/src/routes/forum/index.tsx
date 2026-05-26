@@ -4,6 +4,7 @@ import { PenSquare, Search, Layers, LayoutGrid } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CategoryShowcase } from '@/components/forum/CategoryShowcase'
 import { CategoryGrid } from '@/components/forum/CategoryGrid'
+import { BackButton } from '@/components/shared/BackButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CATEGORIES } from '@/data/categories'
@@ -26,7 +27,15 @@ type ViewMode = 'showcase' | 'grid'
 function ForumHub() {
   const [activePillar, setActivePillar] = useState<PillarKey>('all')
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useState<ViewMode>('showcase')
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('devhelp-forum-view')
+    return saved === 'grid' ? 'grid' : 'showcase'
+  })
+
+  function updateViewMode(mode: ViewMode) {
+    setViewMode(mode)
+    localStorage.setItem('devhelp-forum-view', mode)
+  }
 
   const filtered = CATEGORIES.filter((cat) => {
     const matchesPillar = activePillar === 'all' || cat.pillar === activePillar
@@ -44,6 +53,11 @@ function ForumHub() {
       initial="hidden"
       animate="visible"
     >
+      {/* Back */}
+      <motion.div variants={fadeInUp} className="mb-2">
+        <BackButton />
+      </motion.div>
+
       {/* Header */}
       <motion.div variants={fadeInUp} className="flex items-start justify-between gap-4 mb-8">
         <div>
@@ -96,7 +110,7 @@ function ForumHub() {
         {/* View toggle */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg ml-auto shrink-0">
           <button
-            onClick={() => setViewMode('showcase')}
+            onClick={() => updateViewMode('showcase')}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-all',
               viewMode === 'showcase'
@@ -109,7 +123,7 @@ function ForumHub() {
             <span className="hidden sm:inline">Exposition</span>
           </button>
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => updateViewMode('grid')}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-all',
               viewMode === 'grid'

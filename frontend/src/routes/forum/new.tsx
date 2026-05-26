@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { CreatePostForm } from '@/components/forum/CreatePostForm'
+import { BackButton } from '@/components/shared/BackButton'
 import { useAuthStore } from '@/stores/authStore'
 
 export const Route = createFileRoute('/forum/new')({
@@ -15,6 +16,7 @@ export const Route = createFileRoute('/forum/new')({
 function NewPostPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      <BackButton className="mb-4" />
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight mb-1">Créer un post</h1>
         <p className="text-sm text-muted-foreground">

@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { PenSquare, TrendingUp, Clock, MessageSquareOff } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { BackButton } from '@/components/shared/BackButton'
 import { PostCard }         from '@/components/forum/PostCard'
 import { PostCardSkeleton } from '@/components/forum/PostCardSkeleton'
 import { Button }           from '@/components/ui/button'
@@ -58,6 +59,11 @@ function CategoryPage() {
       initial="hidden"
       animate="visible"
     >
+
+      {/* Back */}
+      <motion.div variants={fadeInUp} className="mb-4">
+        <BackButton label="Forum" />
+      </motion.div>
 
       {/* En-tête catégorie */}
       <motion.div variants={fadeInUp} className="flex items-start justify-between gap-4 mb-8">

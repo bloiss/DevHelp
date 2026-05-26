@@ -1,6 +1,7 @@
-import { createFileRoute, Link, notFound } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowLeft, MessageSquare } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
+import { BackButton } from '@/components/shared/BackButton'
 import { VoteButtons } from '@/components/forum/VoteButtons'
 import { CommentItem } from '@/components/forum/CommentItem'
 import { CommentForm } from '@/components/forum/CommentForm'
@@ -63,15 +64,7 @@ function PostPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
 
-      {/* Fil d'Ariane */}
-      <Link
-        to="/forum/$category"
-        params={{ category: slug }}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Retour à {category.name}
-      </Link>
+      <BackButton label={`Retour à ${category.name}`} className="mb-6" />
 
       {/* Post */}
       <article className="flex gap-5">
