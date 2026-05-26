@@ -11,6 +11,8 @@ import (
 type Handlers struct {
 	Auth      *handler.AuthHandler
 	OAuth     *handler.OAuthHandler
+	Category  *handler.CategoryHandler
+	Post      *handler.PostHandler
 	JWTSecret string
 }
 
@@ -55,11 +57,9 @@ func New(h *Handlers) *gin.Engine {
 		protected.POST("/auth/set-password", h.Auth.SetPassword)
 
 		// Posts
-		// protected.GET("/posts", h.Post.List)
-		// protected.POST("/posts", h.Post.Create)
-		// protected.GET("/posts/:id", h.Post.Get)
-		// protected.PUT("/posts/:id", h.Post.Update)
-		// protected.DELETE("/posts/:id", h.Post.Delete)
+		protected.POST("/posts", h.Post.Create)
+		protected.PUT("/posts/:id", h.Post.Update)
+		protected.DELETE("/posts/:id", h.Post.Delete)
 
 		// Comments
 		// protected.POST("/posts/:id/comments", h.Comment.Create)
@@ -102,13 +102,22 @@ func New(h *Handlers) *gin.Engine {
 		// admin.PATCH("/moderation/:id", h.Admin.OverrideVerdict)
 	}
 
+	// Catégories (lecture publique)
+	api.GET("/categories", h.Category.List)
+	api.GET("/categories/:slug", h.Category.GetBySlug)
+
+	// Posts (lecture publique)
+	api.GET("/posts", h.Post.List)
+	api.GET("/posts/:id", h.Post.Get)
+
 	// Routes admin seul
 	adminOnly := protected.Group("/admin")
 	adminOnly.Use(middleware.RequireRole("admin"))
 	{
-		// adminOnly.POST("/categories", h.Category.Create)
-		// adminOnly.PUT("/categories/:id", h.Category.Update)
-		// adminOnly.DELETE("/categories/:id", h.Category.Delete)
+		adminOnly.POST("/categories", h.Category.Create)
+		adminOnly.PUT("/categories/:id", h.Category.Update)
+		adminOnly.DELETE("/categories/:id", h.Category.Delete)
+		adminOnly.PATCH("/posts/:id/status", h.Post.SetStatus)
 	}
 
 	return r

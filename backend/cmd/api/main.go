@@ -31,6 +31,8 @@ func main() {
 
 	// ─── Repositories ─────────────────────────────────────────────
 	userRepo := repository.NewUserRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
+	postRepo := repository.NewPostRepository(db)
 
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _ := time.ParseDuration(cfg.JWTAccessExpiry)
@@ -54,14 +56,21 @@ func main() {
 		cfg.GitHubClientID, cfg.GitHubClientSecret, cfg.GitHubRedirectURL,
 	)
 
+	categoryService := service.NewCategoryService(categoryRepo)
+	postService := service.NewPostService(postRepo, categoryRepo)
+
 	// ─── Handlers ─────────────────────────────────────────────────
 	authHandler := handler.NewAuthHandler(authService, emailService, captchaService)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
+	postHandler := handler.NewPostHandler(postService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
 		Auth:      authHandler,
 		OAuth:     oauthHandler,
+		Category:  categoryHandler,
+		Post:      postHandler,
 		JWTSecret: cfg.JWTAccessSecret,
 	})
 
