@@ -15,11 +15,12 @@ func NewPostRepository(db *gorm.DB) *PostRepository {
 }
 
 type PostFilters struct {
-	CategoryID *uuid.UUID
-	AuthorID   *uuid.UUID
-	Status     *model.ContentStatus // nil = approved uniquement (public)
-	Page       int
-	PageSize   int
+	CategoryID  *uuid.UUID
+	AuthorID    *uuid.UUID
+	Status      *model.ContentStatus // nil = approved uniquement (public)
+	AllStatuses bool                 // admin: ignorer le filtre approved par défaut
+	Page        int
+	PageSize    int
 }
 
 func (r *PostRepository) FindAll(f PostFilters) ([]model.Post, int64, error) {
@@ -36,7 +37,7 @@ func (r *PostRepository) FindAll(f PostFilters) ([]model.Post, int64, error) {
 	}
 	if f.Status != nil {
 		q = q.Where("status = ?", *f.Status)
-	} else {
+	} else if !f.AllStatuses {
 		q = q.Where("status = ? AND is_hidden = false", model.StatusApproved)
 	}
 

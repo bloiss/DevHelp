@@ -15,6 +15,7 @@ var (
 	ErrUserNotFound      = errors.New("user not found")
 	ErrUsernameTaken     = errors.New("username already taken")
 	ErrUsernameInvalid   = errors.New("username must be 3-30 chars, alphanumeric and underscores only")
+	ErrRoleInvalid       = errors.New("invalid role")
 )
 
 type UserService struct {
@@ -65,6 +66,42 @@ func (s *UserService) GetProfile(username string) (*PublicProfile, error) {
 		PostCount: postCount,
 	}, nil
 }
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+type UserListResult struct {
+	Data    []model.User `json:"data"`
+	Total   int64        `json:"total"`
+	Page    int          `json:"page"`
+	PerPage int          `json:"per_page"`
+}
+
+func (s *UserService) ListUsers(page, pageSize int) (*UserListResult, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+	users, total, err := s.userRepo.FindAll(pageSize, offset)
+	if err != nil {
+		return nil, err
+	}
+	return &UserListResult{Data: users, Total: total, Page: page, PerPage: pageSize}, nil
+}
+
+func (s *UserService) SetRole(userID uuid.UUID, role model.UserRole) error {
+	switch role {
+	case model.RoleUser, model.RoleModerator, model.RoleAdmin:
+		// valid
+	default:
+		return ErrRoleInvalid
+	}
+	return s.userRepo.UpdateRole(userID, role)
+}
+
+// ─── UpdateMe ─────────────────────────────────────────────────────────────────
 
 type UpdateMeInput struct {
 	Username  *string `json:"username"`

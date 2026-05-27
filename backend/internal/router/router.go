@@ -16,6 +16,7 @@ type Handlers struct {
 	Comment   *handler.CommentHandler
 	Like      *handler.LikeHandler
 	User      *handler.UserHandler
+	Admin     *handler.AdminHandler
 	JWTSecret string
 }
 
@@ -83,7 +84,8 @@ func New(h *Handlers) *gin.Engine {
 	admin := protected.Group("/admin")
 	admin.Use(middleware.RequireRole("admin", "moderator"))
 	{
-		// (routes modération à venir)
+		admin.GET("/users", h.Admin.ListUsers)
+		admin.GET("/posts", h.Admin.ListPosts)
 	}
 
 	// ─── Admin seul ───────────────────────────────
@@ -94,6 +96,7 @@ func New(h *Handlers) *gin.Engine {
 		adminOnly.PUT("/categories/:id", h.Category.Update)
 		adminOnly.DELETE("/categories/:id", h.Category.Delete)
 		adminOnly.PATCH("/posts/:id/status", h.Post.SetStatus)
+		adminOnly.PATCH("/users/:id/role", h.Admin.SetUserRole)
 	}
 
 	return r

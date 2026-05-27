@@ -72,6 +72,7 @@ func main() {
 	commentHandler := handler.NewCommentHandler(commentService)
 	likeHandler := handler.NewLikeHandler(likeService)
 	userHandler := handler.NewUserHandler(userService)
+	adminHandler := handler.NewAdminHandler(userService, postService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
@@ -82,6 +83,7 @@ func main() {
 		Comment:   commentHandler,
 		Like:      likeHandler,
 		User:      userHandler,
+		Admin:     adminHandler,
 		JWTSecret: cfg.JWTAccessSecret,
 	})
 

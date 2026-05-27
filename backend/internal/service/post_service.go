@@ -29,6 +29,7 @@ type PostListInput struct {
 	AuthorID       *uuid.UUID
 	AuthorUsername *string
 	Status         *model.ContentStatus // admin uniquement
+	AllStatuses    bool                 // admin : retourner tous les statuts
 	Page           int
 	PageSize       int
 }
@@ -60,11 +61,12 @@ func (s *PostService) List(input PostListInput) (*PostListResult, error) {
 	}
 
 	posts, total, err := s.repo.FindAll(repository.PostFilters{
-		CategoryID: input.CategoryID,
-		AuthorID:   input.AuthorID,
-		Status:     input.Status,
-		Page:       input.Page,
-		PageSize:   input.PageSize,
+		CategoryID:  input.CategoryID,
+		AuthorID:    input.AuthorID,
+		Status:      input.Status,
+		AllStatuses: input.AllStatuses,
+		Page:        input.Page,
+		PageSize:    input.PageSize,
 	})
 	if err != nil {
 		return nil, err
