@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MessageSquare } from 'lucide-react'
 import { BackButton } from '@/components/shared/BackButton'
 import { VoteButtons } from '@/components/forum/VoteButtons'
@@ -8,10 +8,8 @@ import { CommentForm } from '@/components/forum/CommentForm'
 import { Avatar } from '@/components/shared/Avatar'
 import { Badge } from '@/components/ui/badge'
 import { getCategoryBySlug } from '@/data/categories'
-import { getMockPostsByCategory } from '@/data/mockPosts'
-import { getMockComments } from '@/data/mockComments'
+import { postService } from '@/services/post.service'
 import { formatRelativeDate } from '@/lib/utils'
-import type { Comment } from '@/types/post'
 
 export const Route = createFileRoute('/forum/$category/$postId')({
   component: PostPage,
@@ -19,71 +17,79 @@ export const Route = createFileRoute('/forum/$category/$postId')({
 
 function PostPage() {
   const { category: slug, postId } = Route.useParams()
+  const queryClient = useQueryClient()
+
+  const { data: post, isLoading, isError } = useQuery({
+    queryKey: ['post', postId],
+    queryFn: () => postService.get(postId),
+  })
+
+  const { data: comments = [], isLoading: commentsLoading } = useQuery({
+    queryKey: ['comments', postId],
+    queryFn: () => postService.getComments(postId),
+    enabled: !!post,
+  })
+
+  const voteMutation = useMutation({
+    mutationFn: (value: 1 | -1) => postService.vote(postId, value),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['post', postId] }),
+  })
+
+  const commentMutation = useMutation({
+    mutationFn: (content: string) => postService.createComment(postId, content),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+  })
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <div className="h-5 w-28 bg-muted animate-pulse rounded mb-6" />
+        <div className="h-8 w-3/4 bg-muted animate-pulse rounded" />
+        <div className="h-4 w-48 bg-muted animate-pulse rounded mt-2" />
+        <div className="space-y-2 mt-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-4 bg-muted animate-pulse rounded" style={{ width: `${85 - i * 5}%` }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (isError || !post) throw notFound()
 
   const category = getCategoryBySlug(slug)
-  const post = getMockPostsByCategory(slug).find((p) => p.id === postId)
-
-  if (!category || !post) throw notFound()
-
-  const [score, setScore] = useState(post.vote_count ?? 0)
-  const [userVote, setUserVote] = useState<1 | -1 | null>(post.user_vote ?? null)
-  const [comments, setComments] = useState<Comment[]>(getMockComments(postId))
-
-  function handleVote(value: 1 | -1) {
-    if (userVote === value) {
-      // Annule le vote
-      setScore((s) => s - value)
-      setUserVote(null)
-    } else {
-      // Change ou pose le vote
-      setScore((s) => s - (userVote ?? 0) + value)
-      setUserVote(value)
-    }
-  }
-
-  async function handleComment(content: string) {
-    // Mock : ajoute le commentaire localement — remplacé par appel API en semaine 2
-    const newComment: Comment = {
-      id: `mock-${Date.now()}`,
-      post_id: postId,
-      user_id: 'me',
-      content,
-      status: 'approved',
-      is_hidden: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      vote_count: 0,
-      user_vote: null,
-      author: { id: 'me', email: '', username: 'moi', role: 'user', email_verified: true, created_at: '', updated_at: '' },
-    }
-    setComments((prev) => [...prev, newComment])
-  }
-
-  const Icon = category.icon
+  const Icon = category?.icon
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
 
-      <BackButton label={`Retour à ${category.name}`} className="mb-6" />
+      <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-6" />
 
       {/* Post */}
       <article className="flex gap-5">
 
         {/* Votes — colonne gauche */}
         <div className="hidden sm:flex flex-col items-center pt-1">
-          <VoteButtons score={score} userVote={userVote} onVote={handleVote} orientation="vertical" />
+          <VoteButtons
+            score={post.vote_count ?? 0}
+            userVote={post.user_vote ?? null}
+            onVote={(value) => voteMutation.mutate(value)}
+            orientation="vertical"
+          />
         </div>
 
         {/* Contenu */}
         <div className="flex flex-col gap-4 flex-1 min-w-0">
 
           {/* Badge catégorie */}
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-md ${category.color}`}>
-              <Icon className="h-3.5 w-3.5" />
+          {category && Icon && (
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-md ${category.color}`}>
+                <Icon className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-sm font-medium">{category.name}</span>
             </div>
-            <span className="text-sm font-medium">{category.name}</span>
-          </div>
+          )}
 
           {/* Titre */}
           <h1 className="text-2xl font-bold tracking-tight leading-snug">
@@ -110,7 +116,12 @@ function PostPage() {
 
           {/* Votes mobile */}
           <div className="flex sm:hidden">
-            <VoteButtons score={score} userVote={userVote} onVote={handleVote} orientation="horizontal" />
+            <VoteButtons
+              score={post.vote_count ?? 0}
+              userVote={post.user_vote ?? null}
+              onVote={(value) => voteMutation.mutate(value)}
+              orientation="horizontal"
+            />
           </div>
         </div>
       </article>
@@ -126,11 +137,24 @@ function PostPage() {
 
       {/* Formulaire */}
       <div className="mb-8">
-        <CommentForm onSubmit={handleComment} />
+        <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
       </div>
 
       {/* Liste des commentaires */}
-      {comments.length > 0 ? (
+      {commentsLoading ? (
+        <div className="space-y-4">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="flex gap-4 py-4">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : comments.length > 0 ? (
         <div className="divide-y divide-border">
           {comments.map((comment) => (
             <CommentItem key={comment.id} comment={comment} />
