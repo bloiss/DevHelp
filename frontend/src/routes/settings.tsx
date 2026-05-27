@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Camera, ChevronRight, Lock } from 'lucide-react'
+import { Camera, ChevronRight, Loader2, Lock } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
 import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { useAuthStore } from '@/stores/authStore'
+import { userService } from '@/services/user.service'
+import { toast } from '@/stores/toastStore'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
@@ -32,13 +35,25 @@ function Section({ title, description, children }: {
 }
 
 function SettingsPage() {
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
 
   const [username, setUsername] = useState(user?.username ?? '')
   const [notifComment, setNotifComment] = useState(true)
   const [notifLike, setNotifLike] = useState(true)
   const [notifMessage, setNotifMessage] = useState(true)
   const [notifPush, setNotifPush] = useState(false)
+
+  const { mutate: saveProfile, isPending } = useMutation({
+    mutationFn: () => userService.updateMe({ username }),
+    onSuccess: (updatedUser) => {
+      updateUser(updatedUser)
+      toast.success('Profil mis à jour !', { description: `Ton pseudo est maintenant @${updatedUser.username}` })
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error ?? 'Impossible de mettre à jour le profil.'
+      toast.error('Erreur', { description: msg })
+    },
+  })
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -82,6 +97,7 @@ function SettingsPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="ton_pseudo"
+                disabled={isPending}
               />
             </div>
 
@@ -100,7 +116,14 @@ function SettingsPage() {
             </div>
 
             <div className="flex justify-end">
-              <Button size="sm">Sauvegarder</Button>
+              <Button
+                size="sm"
+                onClick={() => saveProfile()}
+                disabled={isPending || !username.trim() || username === user?.username}
+              >
+                {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                Sauvegarder
+              </Button>
             </div>
           </div>
         </Section>
