@@ -47,7 +47,7 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
     ],
     editorProps: {
       attributes: {
-        class: 'min-h-[200px] px-4 py-3 text-sm leading-relaxed focus:outline-none prose prose-sm max-w-none',
+        class: 'min-h-[200px] px-4 py-3 focus:outline-none prose prose-sm dark:prose-invert max-w-none',
       },
     },
     onUpdate: ({ editor }) => {

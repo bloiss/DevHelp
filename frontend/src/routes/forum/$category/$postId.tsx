@@ -110,9 +110,10 @@ function PostPage() {
           </div>
 
           {/* Contenu du post */}
-          <div className="prose prose-sm max-w-none text-foreground leading-relaxed whitespace-pre-wrap">
-            {post.content}
-          </div>
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
 
           {/* Votes mobile */}
           <div className="flex sm:hidden">
