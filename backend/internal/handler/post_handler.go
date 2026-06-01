@@ -78,7 +78,7 @@ func (h *PostHandler) List(c *gin.Context) {
 // @Failure      404 {object} map[string]string
 // @Router       /posts/{id} [get]
 func (h *PostHandler) Get(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	postID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
@@ -87,7 +87,14 @@ func (h *PostHandler) Get(c *gin.Context) {
 	role, _ := c.Get("user_role")
 	roleStr, _ := role.(string)
 
-	post, err := h.svc.GetByID(id, roleStr)
+	var requesterID *uuid.UUID
+	if raw, exists := c.Get("user_id"); exists {
+		if uid, ok := raw.(uuid.UUID); ok {
+			requesterID = &uid
+		}
+	}
+
+	post, err := h.svc.GetByID(postID, roleStr, requesterID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return
@@ -267,7 +274,7 @@ func (h *PostHandler) SetStatus(c *gin.Context) {
 		return
 	}
 
-	post, err := h.svc.GetByID(id, "admin")
+	post, err := h.svc.GetByID(id, "admin", nil)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return

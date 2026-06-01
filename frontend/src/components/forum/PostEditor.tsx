@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
-  Bold, Italic, Code, List, ListOrdered, Heading2, Terminal,
+  Bold, Italic, Strikethrough, Code, List, ListOrdered, Heading2, Terminal, Minus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -23,14 +24,14 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
     <button
       type="button"
       onMouseDown={(e) => {
-        e.preventDefault() // évite de perdre le focus de l'éditeur
+        e.preventDefault()
         onClick()
       }}
       title={title}
       className={cn(
-        'p-1.5 rounded-md transition-colors',
+        'p-1.5 rounded-md transition-all duration-100 text-sm',
         active
-          ? 'bg-primary/10 text-primary'
+          ? 'bg-primary/15 text-primary shadow-inner'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
@@ -39,11 +40,19 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
   )
 }
 
+function Divider() {
+  return <div className="w-px h-4 bg-border mx-0.5 shrink-0" />
+}
+
 export function PostEditor({ onChange, error }: PostEditorProps) {
+  const [wordCount, setWordCount] = useState(0)
+
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Placeholder.configure({ placeholder: 'Décris ton problème ou partage ta découverte…' }),
+      Placeholder.configure({
+        placeholder: 'Décris ton problème ou partage ta découverte…',
+      }),
     ],
     editorProps: {
       attributes: {
@@ -51,7 +60,10 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      const html = editor.getHTML()
+      onChange(html)
+      const text = editor.getText().trim()
+      setWordCount(text === '' ? 0 : text.split(/\s+/).length)
     },
   })
 
@@ -59,14 +71,20 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
 
   return (
     <div className={cn(
-      'rounded-md border bg-transparent transition-colors',
-      error ? 'border-destructive' : 'border-input focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+      'rounded-xl border bg-card overflow-hidden transition-all duration-150',
+      error
+        ? 'border-destructive'
+        : 'border-input focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20',
     )}>
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border flex-wrap">
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-2 py-1.5 bg-muted/50 border-b border-border flex-wrap">
+
+        {/* Texte */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           active={editor.isActive('heading', { level: 2 })}
-          title="Titre"
+          title="Titre (Ctrl+Alt+2)"
         >
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
@@ -74,7 +92,7 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive('bold')}
-          title="Gras"
+          title="Gras (Ctrl+B)"
         >
           <Bold className="h-4 w-4" />
         </ToolbarButton>
@@ -82,17 +100,26 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
           active={editor.isActive('italic')}
-          title="Italique"
+          title="Italique (Ctrl+I)"
         >
           <Italic className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-4 bg-border mx-1" />
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={editor.isActive('strike')}
+          title="Barré (Ctrl+Shift+S)"
+        >
+          <Strikethrough className="h-4 w-4" />
+        </ToolbarButton>
 
+        <Divider />
+
+        {/* Code */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCode().run()}
           active={editor.isActive('code')}
-          title="Code inline"
+          title="Code inline (Ctrl+E)"
         >
           <Code className="h-4 w-4" />
         </ToolbarButton>
@@ -100,13 +127,14 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           active={editor.isActive('codeBlock')}
-          title="Bloc de code"
+          title="Bloc de code (Ctrl+Alt+C)"
         >
           <Terminal className="h-4 w-4" />
         </ToolbarButton>
 
-        <div className="w-px h-4 bg-border mx-1" />
+        <Divider />
 
+        {/* Listes */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive('bulletList')}
@@ -122,9 +150,27 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
         >
           <ListOrdered className="h-4 w-4" />
         </ToolbarButton>
+
+        <Divider />
+
+        {/* Séparateur horizontal */}
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Séparateur"
+        >
+          <Minus className="h-4 w-4" />
+        </ToolbarButton>
       </div>
 
+      {/* Zone de saisie */}
       <EditorContent editor={editor} />
+
+      {/* Pied de l'éditeur — compte de mots */}
+      <div className="flex items-center justify-end px-3 py-1.5 bg-muted/30 border-t border-border">
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {wordCount} mot{wordCount > 1 ? 's' : ''}
+        </span>
+      </div>
     </div>
   )
 }

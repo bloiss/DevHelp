@@ -11,10 +11,13 @@ interface PostCardProps {
   categorySlug: string
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 export function PostCard({ post, categorySlug }: PostCardProps) {
-  const excerpt = post.content.length > 160
-    ? post.content.slice(0, 160).trimEnd() + '…'
-    : post.content
+  const plain = stripHtml(post.content)
+  const excerpt = plain.length > 160 ? plain.slice(0, 160).trimEnd() + '…' : plain
 
   const votes = post.vote_count ?? 0
 

@@ -51,7 +51,7 @@ func New(h *Handlers) *gin.Engine {
 	api.GET("/categories", h.Category.List)
 	api.GET("/categories/:slug", h.Category.GetBySlug)
 	api.GET("/posts", h.Post.List)
-	api.GET("/posts/:id", h.Post.Get)
+	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
 	api.GET("/posts/:id/comments", h.Comment.List)
 	api.GET("/users/:username", h.User.GetProfile)
 

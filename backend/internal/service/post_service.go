@@ -78,14 +78,17 @@ func (s *PostService) List(input PostListInput) (*PostListResult, error) {
 	return &PostListResult{Data: posts, Total: total, Page: input.Page, PerPage: pageSize}, nil
 }
 
-func (s *PostService) GetByID(id uuid.UUID, requesterRole string) (*model.Post, error) {
+func (s *PostService) GetByID(id uuid.UUID, requesterRole string, requesterID *uuid.UUID) (*model.Post, error) {
 	post, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, ErrPostNotFound
 	}
-	// Utilisateurs non-admin ne voient pas les posts non approuvés (sauf le leur)
-	if post.Status != model.StatusApproved && requesterRole != "admin" && requesterRole != "moderator" {
-		return nil, ErrPostNotFound
+	if post.Status != model.StatusApproved {
+		isAdminOrMod := requesterRole == "admin" || requesterRole == "moderator"
+		isAuthor := requesterID != nil && post.UserID == *requesterID
+		if !isAdminOrMod && !isAuthor {
+			return nil, ErrPostNotFound
+		}
 	}
 	return post, nil
 }
@@ -108,7 +111,7 @@ func (s *PostService) Create(input PostCreateInput) (*model.Post, error) {
 		CategoryID: input.CategoryID,
 		Title:      input.Title,
 		Content:    input.Content,
-		Status:     model.StatusPendingModeration,
+		Status:     model.StatusApproved,
 	}
 	if err := s.repo.Create(post); err != nil {
 		return nil, err

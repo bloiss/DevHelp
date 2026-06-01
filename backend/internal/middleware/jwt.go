@@ -75,6 +75,22 @@ func AuthRequired(secret string) gin.HandlerFunc {
 	}
 }
 
+// OptionalAuth tente de décoder le JWT mais laisse passer même si absent ou invalide.
+// Utile pour les routes publiques qui bénéficient du contexte utilisateur si disponible.
+func OptionalAuth(secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+			if claims, err := ParseAccessToken(tokenStr, secret); err == nil {
+				c.Set("user_id", claims.UserID)
+				c.Set("user_role", claims.Role)
+			}
+		}
+		c.Next()
+	}
+}
+
 // RequireRole vérifie que l'utilisateur a le rôle requis (moderator ou admin).
 func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {

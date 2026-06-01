@@ -43,7 +43,7 @@ type Post struct {
 	UserID     uuid.UUID     `gorm:"type:uuid;not null;index"                       json:"user_id"`
 	CategoryID uuid.UUID     `gorm:"type:uuid;not null;index"                       json:"category_id"`
 	Title      string        `gorm:"not null"                                       json:"title"`
-	Content    string        `gorm:"type:jsonb;not null"                            json:"content"` // TipTap JSON
+	Content    string        `gorm:"type:text;not null"                             json:"content"` // TipTap HTML
 	Status     ContentStatus `gorm:"type:varchar(30);not null;default:'pending_moderation'" json:"status"`
 	IsHidden   bool          `gorm:"not null;default:false"                         json:"is_hidden"`
 	CreatedAt  time.Time     `                                                      json:"created_at"`
