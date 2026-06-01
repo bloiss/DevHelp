@@ -18,6 +18,9 @@ type Handlers struct {
 	User         *handler.UserHandler
 	Admin        *handler.AdminHandler
 	Notification *handler.NotificationHandler
+	Follow       *handler.FollowHandler
+	Message      *handler.MessageHandler
+	WS           *handler.WSHandler
 	JWTSecret    string
 }
 
@@ -48,13 +51,18 @@ func New(h *Handlers) *gin.Engine {
 		auth.GET("/github/callback", h.OAuth.GitHubCallback)
 	}
 
+	// ─── WebSocket (auth via query param) ─────────
+	r.GET("/ws", h.WS.Handle)
+
 	// ─── Lecture publique ──────────────────────────
 	api.GET("/categories", h.Category.List)
 	api.GET("/categories/:slug", h.Category.GetBySlug)
 	api.GET("/posts", middleware.OptionalAuth(h.JWTSecret), h.Post.List)
 	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
 	api.GET("/posts/:id/comments", middleware.OptionalAuth(h.JWTSecret), h.Comment.List)
-	api.GET("/users/:username", h.User.GetProfile)
+	api.GET("/users/:username", middleware.OptionalAuth(h.JWTSecret), h.User.GetProfile)
+	api.GET("/users/:username/followers", h.Follow.Followers)
+	api.GET("/users/:username/following", h.Follow.Following)
 
 	// ─── Routes protégées (JWT requis) ────────────
 	protected := api.Group("/")
@@ -79,6 +87,18 @@ func New(h *Handlers) *gin.Engine {
 
 		// Profil utilisateur
 		protected.PATCH("/users/me", h.User.UpdateMe)
+
+		// Follow
+		protected.POST("/users/:username/follow", h.Follow.Follow)
+		protected.DELETE("/users/:username/follow", h.Follow.Unfollow)
+
+		// Conversations / Messages
+		protected.GET("/conversations", h.Message.List)
+		protected.POST("/conversations", h.Message.Open)
+		protected.GET("/conversations/unread-count", h.Message.UnreadCount)
+		protected.GET("/conversations/:id/messages", h.Message.GetMessages)
+		protected.POST("/conversations/:id/messages", h.Message.Send)
+		protected.POST("/conversations/:id/accept", h.Message.Accept)
 
 		// Notifications
 		protected.GET("/notifications", h.Notification.List)

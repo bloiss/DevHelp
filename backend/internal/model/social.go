@@ -28,8 +28,10 @@ type PushSubscription struct {
 // ─── Messagerie privée ────────────────────────────────────────────
 
 type Conversation struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	CreatedAt time.Time `                                                      json:"created_at"`
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"          json:"id"`
+	Status          string     `gorm:"type:varchar(20);not null;default:'active'"              json:"status"` // "active" | "request"
+	RequestSenderID *uuid.UUID `gorm:"type:uuid"                                               json:"request_sender_id,omitempty"`
+	CreatedAt       time.Time  `                                                               json:"created_at"`
 
 	Participants []User    `gorm:"many2many:conversation_participants;" json:"participants,omitempty"`
 	Messages     []Message `gorm:"foreignKey:ConversationID"           json:"messages,omitempty"`

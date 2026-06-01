@@ -1,15 +1,22 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
+import { useState } from 'react'
+import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { MessageSquare } from 'lucide-react'
-import { BackButton } from '@/components/shared/BackButton'
-import { VoteButtons } from '@/components/forum/VoteButtons'
-import { CommentItem } from '@/components/forum/CommentItem'
-import { CommentForm } from '@/components/forum/CommentForm'
-import { Avatar } from '@/components/shared/Avatar'
-import { Badge } from '@/components/ui/badge'
+import {
+  MessageSquare, ArrowUp, ArrowDown, Share2,
+  Trash2, EyeOff, Eye, ShieldAlert, MoreHorizontal, CheckCircle, XCircle, Flag,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { BackButton }    from '@/components/shared/BackButton'
+import { CommentItem }   from '@/components/forum/CommentItem'
+import { CommentForm }   from '@/components/forum/CommentForm'
+import { Avatar }        from '@/components/shared/Avatar'
+import { Badge }         from '@/components/ui/badge'
 import { getCategoryBySlug } from '@/data/categories'
-import { postService } from '@/services/post.service'
-import { formatRelativeDate } from '@/lib/utils'
+import { postService }   from '@/services/post.service'
+import { adminService }  from '@/services/admin.service'
+import { useAuthStore }  from '@/stores/authStore'
+import { toast }         from '@/stores/toastStore'
+import { formatRelativeDate, cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/forum/$category/$postId')({
   component: PostPage,
@@ -17,7 +24,13 @@ export const Route = createFileRoute('/forum/$category/$postId')({
 
 function PostPage() {
   const { category: slug, postId } = Route.useParams()
+  const { user } = useAuthStore()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const isAdminOrMod = user?.role === 'admin' || user?.role === 'moderator'
+  const isAdmin      = user?.role === 'admin'
 
   const { data: post, isLoading, isError } = useQuery({
     queryKey: ['post', postId],
@@ -37,120 +50,265 @@ function PostPage() {
 
   const commentMutation = useMutation({
     mutationFn: (content: string) => postService.createComment(postId, content),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+      queryClient.invalidateQueries({ queryKey: ['post', postId] })
+    },
   })
 
-  if (isLoading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
-        <div className="h-5 w-28 bg-muted animate-pulse rounded mb-6" />
-        <div className="h-8 w-3/4 bg-muted animate-pulse rounded" />
-        <div className="h-4 w-48 bg-muted animate-pulse rounded mt-2" />
-        <div className="space-y-2 mt-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-4 bg-muted animate-pulse rounded" style={{ width: `${85 - i * 5}%` }} />
-          ))}
+  const deleteMutation = useMutation({
+    mutationFn: () => postService.delete(postId),
+    onSuccess: () => {
+      toast.success('Post supprimé')
+      navigate({ to: `/forum/${slug}` })
+    },
+    onError: () => toast.error('Erreur', { description: 'Impossible de supprimer.' }),
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: ({ status, is_hidden }: { status?: string; is_hidden?: boolean }) =>
+      adminService.setPostStatus(postId, status ?? post!.status, is_hidden),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post', postId] })
+      toast.success('Statut mis à jour')
+      setMenuOpen(false)
+    },
+    onError: () => toast.error('Erreur'),
+  })
+
+  if (isLoading) return (
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+      <div className="h-5 w-28 bg-muted animate-pulse rounded mb-6" />
+      <div className="flex gap-3">
+        <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-40 bg-muted animate-pulse rounded" />
+          <div className="h-6 w-3/4 bg-muted animate-pulse rounded" />
+          {[...Array(4)].map((_, i) => <div key={i} className="h-4 bg-muted animate-pulse rounded" style={{ width: `${90 - i * 8}%` }} />)}
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 
   if (isError || !post) throw notFound()
 
   const category = getCategoryBySlug(slug)
   const Icon = category?.icon
+  const isOwner = user?.id === post.user_id
+
+  const STATUS_COLOR: Record<string, string> = {
+    pending_moderation: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    flagged:            'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    blocked:            'bg-red-500/10 text-red-500 border-red-500/20',
+    approved:           '',
+  }
+  const STATUS_LABEL: Record<string, string> = {
+    pending_moderation: 'En attente',
+    flagged:            'Signalé',
+    blocked:            'Bloqué',
+  }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-4" />
 
-      <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-6" />
+      {/* ── Post — layout Twitter ── */}
+      <article className="border-b border-border pb-4">
+        <div className="flex gap-3">
 
-      {/* Post */}
-      <article className="flex gap-5">
-
-        {/* Votes — colonne gauche */}
-        <div className="hidden sm:flex flex-col items-center pt-1">
-          <VoteButtons
-            score={post.vote_count ?? 0}
-            userVote={post.user_vote ?? null}
-            onVote={(value) => voteMutation.mutate(value)}
-            orientation="vertical"
-          />
-        </div>
-
-        {/* Contenu */}
-        <div className="flex flex-col gap-4 flex-1 min-w-0">
-
-          {/* Badge catégorie */}
-          {category && Icon && (
-            <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-md ${category.color}`}>
-                <Icon className="h-3.5 w-3.5" />
-              </div>
-              <span className="text-sm font-medium">{category.name}</span>
-            </div>
-          )}
-
-          {/* Titre */}
-          <h1 className="text-2xl font-bold tracking-tight leading-snug">
-            {post.title}
-          </h1>
-
-          {/* Auteur + date */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Avatar user={post.author} size="sm" />
-            <span className="font-medium text-foreground">{post.author.username}</span>
-            {post.author.role !== 'user' && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                {post.author.role === 'moderator' ? 'Modo' : 'Admin'}
-              </Badge>
-            )}
-            <span>·</span>
-            <span>{formatRelativeDate(post.created_at)}</span>
+          {/* Avatar gauche */}
+          <div className="shrink-0">
+            <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full" />
           </div>
 
-          {/* Contenu du post */}
-          <div
-            className="prose prose-sm dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
+          {/* Contenu droite */}
+          <div className="flex-1 min-w-0">
 
-          {/* Votes mobile */}
-          <div className="flex sm:hidden">
-            <VoteButtons
-              score={post.vote_count ?? 0}
-              userVote={post.user_vote ?? null}
-              onVote={(value) => voteMutation.mutate(value)}
-              orientation="horizontal"
+            {/* Header : username · date · badges */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-sm">{post.author.username}</span>
+                {post.author.role !== 'user' && (
+                  <Badge className="text-[10px] px-1.5 py-0"
+                    style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid var(--gold-border)' }}>
+                    {post.author.role === 'moderator' ? 'Modo' : 'Admin'}
+                  </Badge>
+                )}
+                <span className="text-muted-foreground text-xs">· {formatRelativeDate(post.created_at)}</span>
+                {category && Icon && (
+                  <div className={cn('flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium', category.color)}>
+                    <Icon className="h-2.5 w-2.5" />{category.name}
+                  </div>
+                )}
+              </div>
+
+              {/* Menu modération (admin/modo/owner) */}
+              {(isAdminOrMod || isOwner) && (
+                <div className="relative">
+                  <button
+                    onClick={() => setMenuOpen((v) => !v)}
+                    className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                  <AnimatePresence>
+                    {menuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.12 }}
+                        className="absolute right-0 top-8 z-50 w-52 rounded-xl border border-border bg-popover shadow-xl overflow-hidden"
+                      >
+                        {/* Status badges */}
+                        {post.status !== 'approved' && (
+                          <div className={cn('px-3 py-2 text-xs font-medium border-b border-border', STATUS_COLOR[post.status])}>
+                            Statut : {STATUS_LABEL[post.status]}
+                          </div>
+                        )}
+
+                        {isAdminOrMod && (
+                          <>
+                            {post.status !== 'approved' && (
+                              <button onClick={() => statusMutation.mutate({ status: 'approved' })}
+                                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-muted transition-colors text-green-600">
+                                <CheckCircle className="h-4 w-4" /> Approuver
+                              </button>
+                            )}
+                            {post.status !== 'flagged' && (
+                              <button onClick={() => statusMutation.mutate({ status: 'flagged' })}
+                                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-muted transition-colors text-orange-500">
+                                <Flag className="h-4 w-4" /> Signaler
+                              </button>
+                            )}
+                            {post.status !== 'blocked' && (
+                              <button onClick={() => statusMutation.mutate({ status: 'blocked' })}
+                                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-muted transition-colors text-red-500">
+                                <XCircle className="h-4 w-4" /> Bloquer
+                              </button>
+                            )}
+                            <button onClick={() => statusMutation.mutate({ status: post.status, is_hidden: !post.is_hidden })}
+                              className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-muted transition-colors text-muted-foreground border-t border-border">
+                              {post.is_hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                              {post.is_hidden ? 'Rendre visible' : 'Masquer'}
+                            </button>
+                          </>
+                        )}
+
+                        {(isOwner || isAdminOrMod) && (
+                          <button
+                            onClick={() => { if (confirm('Supprimer ce post ?')) deleteMutation.mutate() }}
+                            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-destructive/10 transition-colors text-destructive border-t border-border"
+                          >
+                            <Trash2 className="h-4 w-4" /> Supprimer
+                          </button>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+
+            {/* Titre */}
+            <h1 className="text-xl font-bold mt-1 mb-3 leading-snug">{post.title}</h1>
+
+            {/* Contenu HTML */}
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none mb-4"
+              dangerouslySetInnerHTML={{ __html: post.content }}
             />
+
+            {/* Barre d'actions */}
+            <div className="flex items-center gap-1 -ml-2 border-t border-border/60 pt-3">
+
+              {/* Commentaires */}
+              <div className="flex items-center gap-1.5 p-2 rounded-full text-muted-foreground text-sm">
+                <MessageSquare className="h-[18px] w-[18px]" />
+                <span>{comments.length}</span>
+              </div>
+
+              {/* Vote up */}
+              <button
+                onClick={() => user && voteMutation.mutate(1)}
+                disabled={!user}
+                className={cn(
+                  'flex items-center gap-1.5 p-2 rounded-full text-sm transition-colors duration-150',
+                  !user && 'opacity-40 cursor-not-allowed',
+                  post.user_vote === 1
+                    ? 'text-emerald-500 bg-emerald-500/10'
+                    : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
+                )}
+              >
+                <ArrowUp className="h-[18px] w-[18px]" />
+                <span className={cn('tabular-nums', post.user_vote === 1 && 'text-emerald-500')}>
+                  {post.vote_count ?? 0}
+                </span>
+              </button>
+
+              {/* Vote down */}
+              <button
+                onClick={() => user && voteMutation.mutate(-1)}
+                disabled={!user}
+                className={cn(
+                  'p-2 rounded-full text-sm transition-colors duration-150',
+                  !user && 'opacity-40 cursor-not-allowed',
+                  post.user_vote === -1
+                    ? 'text-rose-500 bg-rose-500/10'
+                    : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
+                )}
+              >
+                <ArrowDown className="h-[18px] w-[18px]" />
+              </button>
+
+              {/* Partager */}
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(window.location.href)
+                  toast.success('Lien copié !')
+                }}
+                className="p-2 rounded-full text-muted-foreground hover:text-sky-500 hover:bg-sky-500/10 transition-colors"
+              >
+                <Share2 className="h-[18px] w-[18px]" />
+              </button>
+
+              {/* Badge admin pour statut visible */}
+              {isAdminOrMod && post.status !== 'approved' && (
+                <span className={cn('ml-auto text-xs px-2 py-0.5 rounded-full border font-medium', STATUS_COLOR[post.status])}>
+                  <ShieldAlert className="inline h-3 w-3 mr-1" />{STATUS_LABEL[post.status]}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </article>
 
-      {/* Séparateur commentaires */}
-      <div className="flex items-center gap-3 mt-10 mb-6">
-        <MessageSquare className="h-5 w-5 text-muted-foreground" />
-        <h2 className="font-semibold text-base">
+      {/* ── Commentaires ── */}
+      <div className="flex items-center gap-3 mt-6 mb-4">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-sm">
           {comments.length} commentaire{comments.length > 1 ? 's' : ''}
         </h2>
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      {/* Formulaire */}
-      <div className="mb-8">
-        <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
-      </div>
+      {user && (
+        <div className="flex gap-3 mb-6">
+          <Avatar user={user} size="md" className="h-10 w-10 rounded-full shrink-0" />
+          <div className="flex-1">
+            <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
+          </div>
+        </div>
+      )}
 
-      {/* Liste des commentaires */}
       {commentsLoading ? (
         <div className="space-y-4">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex gap-4 py-4">
-              <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
-              <div className="flex-1 space-y-2">
+            <div key={i} className="flex gap-3 py-3">
+              <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2 pt-1">
                 <div className="h-3 w-32 bg-muted animate-pulse rounded" />
                 <div className="h-4 w-full bg-muted animate-pulse rounded" />
-                <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
               </div>
             </div>
           ))}
@@ -158,12 +316,12 @@ function PostPage() {
       ) : comments.length > 0 ? (
         <div className="divide-y divide-border">
           {comments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} postId={postId} />
+            <CommentItem key={comment.id} comment={comment} postId={postId} isAdminOrMod={isAdminOrMod} />
           ))}
         </div>
       ) : (
-        <p className="text-center text-sm text-muted-foreground py-8">
-          Aucun commentaire pour l'instant. Sois le premier à répondre !
+        <p className="text-center text-sm text-muted-foreground py-10">
+          Aucun commentaire. Sois le premier à répondre !
         </p>
       )}
     </div>

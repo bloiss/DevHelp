@@ -16,9 +16,13 @@ export interface PublicProfile {
   id: string
   username: string
   avatar_url?: string
+  bio?: string
   role: UserRole
   created_at: string
   post_count: number
+  follower_count: number
+  following_count: number
+  is_following: boolean
 }
 
 export interface AuthResponse {

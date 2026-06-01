@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/bloiss/devhelp/backend/internal/model"
 	"github.com/bloiss/devhelp/backend/internal/repository"
@@ -19,25 +18,29 @@ var (
 )
 
 type UserService struct {
-	userRepo *repository.UserRepository
-	postRepo *repository.PostRepository
+	userRepo   *repository.UserRepository
+	postRepo   *repository.PostRepository
+	followRepo *repository.FollowRepository
 }
 
-func NewUserService(userRepo *repository.UserRepository, postRepo *repository.PostRepository) *UserService {
-	return &UserService{userRepo: userRepo, postRepo: postRepo}
+func NewUserService(userRepo *repository.UserRepository, postRepo *repository.PostRepository, followRepo *repository.FollowRepository) *UserService {
+	return &UserService{userRepo: userRepo, postRepo: postRepo, followRepo: followRepo}
 }
 
-// PublicProfile est la réponse publique du profil utilisateur.
-type PublicProfile struct {
-	ID        uuid.UUID      `json:"id"`
-	Username  string         `json:"username"`
-	AvatarURL *string        `json:"avatar_url,omitempty"`
-	Role      model.UserRole `json:"role"`
-	CreatedAt time.Time      `json:"created_at"`
-	PostCount int64          `json:"post_count"`
+// ProfileResponse est la réponse publique enrichie du profil utilisateur.
+type ProfileResponse struct {
+	User           *model.User  `json:"user"`
+	PostCount      int64        `json:"post_count"`
+	FollowerCount  int64        `json:"follower_count"`
+	FollowingCount int64        `json:"following_count"`
+	IsFollowing    bool         `json:"is_following"`
+	RecentPosts    []model.Post `json:"recent_posts"`
 }
 
-func (s *UserService) GetProfile(username string) (*PublicProfile, error) {
+// PublicProfile est conservé pour la compatibilité (non utilisé en externe).
+type PublicProfile = ProfileResponse
+
+func (s *UserService) GetProfile(username string, requesterID *uuid.UUID) (*ProfileResponse, error) {
 	user, err := s.userRepo.FindByUsername(username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -47,23 +50,32 @@ func (s *UserService) GetProfile(username string) (*PublicProfile, error) {
 	}
 
 	approved := model.StatusApproved
-	_, postCount, err := s.postRepo.FindAll(repository.PostFilters{
-		AuthorID: &user.ID,
-		Status:   &approved,
-		Page:     1,
-		PageSize: 1,
+	recentPosts, postCount, err := s.postRepo.FindAll(repository.PostFilters{
+		AuthorID:    &user.ID,
+		Status:      &approved,
+		Page:        1,
+		PageSize:    5,
+		RequesterID: requesterID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &PublicProfile{
-		ID:        user.ID,
-		Username:  user.Username,
-		AvatarURL: user.AvatarURL,
-		Role:      user.Role,
-		CreatedAt: user.CreatedAt,
-		PostCount: postCount,
+	followerCount := s.followRepo.CountFollowers(user.ID)
+	followingCount := s.followRepo.CountFollowing(user.ID)
+
+	isFollowing := false
+	if requesterID != nil {
+		isFollowing = s.followRepo.IsFollowing(*requesterID, user.ID)
+	}
+
+	return &ProfileResponse{
+		User:           user,
+		PostCount:      postCount,
+		FollowerCount:  followerCount,
+		FollowingCount: followingCount,
+		IsFollowing:    isFollowing,
+		RecentPosts:    recentPosts,
 	}, nil
 }
 

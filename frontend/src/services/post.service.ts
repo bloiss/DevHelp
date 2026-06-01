@@ -29,4 +29,7 @@ export const postService = {
 
   voteComment: (postId: string, commentId: string, value: 1 | -1) =>
     api.post(`/posts/${postId}/comments/${commentId}/like`, { value }),
+
+  deleteComment: (postId: string, commentId: string) =>
+    api.delete(`/posts/${postId}/comments/${commentId}`),
 }

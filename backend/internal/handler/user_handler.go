@@ -26,7 +26,14 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 // @Router       /users/{username} [get]
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	username := c.Param("username")
-	profile, err := h.svc.GetProfile(username)
+
+	var requesterID *uuid.UUID
+	if id, exists := c.Get("user_id"); exists {
+		uid := id.(uuid.UUID)
+		requesterID = &uid
+	}
+
+	profile, err := h.svc.GetProfile(username, requesterID)
 	if err != nil {
 		switch err {
 		case service.ErrUserNotFound:
