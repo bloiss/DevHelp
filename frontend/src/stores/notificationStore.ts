@@ -1,6 +1,7 @@
 import { create } from 'zustand'
+import { notificationService, type ApiNotification } from '@/services/notification.service'
 
-export type NotifKind = 'reply' | 'vote' | 'mention' | 'resolved' | 'new_post'
+export type NotifKind = 'comment' | 'like' | 'reply' | 'vote' | 'mention' | 'resolved' | 'new_post'
 
 export interface Notification {
   id: string
@@ -13,97 +14,109 @@ export interface Notification {
   created_at: string
 }
 
+function mapApiNotif(n: ApiNotification): Notification {
+  const p = n.payload
+  const href = p.post_category && p.post_id
+    ? `/forum/${p.post_category}/${p.post_id}`
+    : undefined
+
+  if (n.type === 'comment') {
+    return {
+      id: n.id,
+      kind: 'reply',
+      title: `${p.actor} a commenté ton post`,
+      body: p.post_title ? `"${p.post_title}"` : '',
+      fromUser: p.actor,
+      href,
+      read: n.read,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'like') {
+    return {
+      id: n.id,
+      kind: 'vote',
+      title: `${p.actor} a aimé ton post`,
+      body: p.post_title ? `"${p.post_title}"` : '',
+      fromUser: p.actor,
+      href,
+      read: n.read,
+      created_at: n.created_at,
+    }
+  }
+  return {
+    id: n.id,
+    kind: 'mention',
+    title: n.type,
+    body: '',
+    read: n.read,
+    created_at: n.created_at,
+  }
+}
+
 interface NotificationState {
   notifications: Notification[]
   unreadCount: number
   isOpen: boolean
-  open:  () => void
-  close: () => void
+  open:   () => void
+  close:  () => void
   toggle: () => void
-  markAllRead: () => void
-  markRead: (id: string) => void
+  fetchNotifications: () => Promise<void>
+  fetchUnreadCount:   () => Promise<void>
+  markAllRead: () => Promise<void>
+  markRead:    (id: string) => Promise<void>
 }
 
-const MOCK: Notification[] = [
-  {
-    id: 'n1',
-    kind: 'reply',
-    title: 'alex_dev a répondu à ton post',
-    body: '"Pourquoi useEffect se déclenche deux fois en React 18 ?"',
-    fromUser: 'alex_dev',
-    href: '/forum/react/1',
-    read: false,
-    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-  },
-  {
-    id: 'n2',
-    kind: 'vote',
-    title: 'Ton post a reçu 8 votes utiles',
-    body: '"TanStack Query vs SWR en 2025 — lequel choisir ?"',
-    href: '/forum/react/2',
-    read: false,
-    created_at: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
-  },
-  {
-    id: 'n3',
-    kind: 'mention',
-    title: 'thomas_w t\'a mentionné',
-    body: 'Dans "Comment structurer les dossiers d\'un projet React"',
-    fromUser: 'thomas_w',
-    href: '/forum/react/3',
-    read: false,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-  {
-    id: 'n4',
-    kind: 'resolved',
-    title: 'Ta question a été marquée comme résolue',
-    body: '"Gestion des erreurs dans les Server Components Next.js 14"',
-    href: '/forum/react/5',
-    read: false,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-  },
-  {
-    id: 'n5',
-    kind: 'new_post',
-    title: 'Nouveau post dans TypeScript',
-    body: '"Utility types méconnus qui changent la vie" par thomas_w',
-    fromUser: 'thomas_w',
-    href: '/forum/typescript/12',
-    read: true,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-  },
-  {
-    id: 'n6',
-    kind: 'vote',
-    title: 'Ton post a reçu 3 nouveaux votes',
-    body: '"Zustand ou Redux Toolkit pour une appli de taille moyenne ?"',
-    href: '/forum/react/4',
-    read: true,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-]
-
 export const useNotificationStore = create<NotificationState>((set) => ({
-  notifications: MOCK,
-  unreadCount: MOCK.filter((n) => !n.read).length,
+  notifications: [],
+  unreadCount: 0,
   isOpen: false,
 
   open:   () => set({ isOpen: true }),
   close:  () => set({ isOpen: false }),
   toggle: () => set((s) => ({ isOpen: !s.isOpen })),
 
-  markAllRead: () =>
-    set((state) => ({
-      notifications: state.notifications.map((n) => ({ ...n, read: true })),
-      unreadCount: 0,
-    })),
+  fetchNotifications: async () => {
+    try {
+      const data = await notificationService.list()
+      const notifications = data.map(mapApiNotif)
+      set({ notifications, unreadCount: notifications.filter((n) => !n.read).length })
+    } catch {
+      // not authenticated yet — silently ignore
+    }
+  },
 
-  markRead: (id) =>
-    set((state) => ({
-      notifications: state.notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n,
-      ),
-      unreadCount: Math.max(0, state.unreadCount - (state.notifications.find((n) => n.id === id && !n.read) ? 1 : 0)),
-    })),
+  fetchUnreadCount: async () => {
+    try {
+      const count = await notificationService.unreadCount()
+      set({ unreadCount: count })
+    } catch {
+      // not authenticated yet — silently ignore
+    }
+  },
+
+  markAllRead: async () => {
+    try {
+      await notificationService.markAllRead()
+      set((state) => ({
+        notifications: state.notifications.map((n) => ({ ...n, read: true })),
+        unreadCount: 0,
+      }))
+    } catch { /* ignore */ }
+  },
+
+  markRead: async (id: string) => {
+    try {
+      await notificationService.markRead(id)
+      set((state) => ({
+        notifications: state.notifications.map((n) =>
+          n.id === id ? { ...n, read: true } : n,
+        ),
+        unreadCount: Math.max(
+          0,
+          state.unreadCount - (state.notifications.find((n) => n.id === id && !n.read) ? 1 : 0),
+        ),
+      }))
+    } catch { /* ignore */ }
+  },
 }))

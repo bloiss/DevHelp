@@ -50,10 +50,15 @@ type Post struct {
 	UpdatedAt  time.Time     `                                                      json:"updated_at"`
 
 	// Relations
-	Author   User     `gorm:"foreignKey:UserID"   json:"author,omitempty"`
-	Category Category `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
-	Images   []PostImage `gorm:"foreignKey:PostID" json:"images,omitempty"`
-	Comments []Comment   `gorm:"foreignKey:PostID"  json:"comments,omitempty"`
+	Author   User        `gorm:"foreignKey:UserID"     json:"author,omitempty"`
+	Category Category    `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Images   []PostImage `gorm:"foreignKey:PostID"     json:"images,omitempty"`
+	Comments []Comment   `gorm:"foreignKey:PostID"     json:"-"`
+
+	// Champs calculés (non stockés en DB)
+	VoteCount    int64 `gorm:"-" json:"vote_count"`
+	CommentCount int64 `gorm:"-" json:"comment_count"`
+	UserVote     *int  `gorm:"-" json:"user_vote"`
 }
 
 func (p *Post) BeforeCreate(tx *gorm.DB) error {
@@ -85,6 +90,10 @@ type Comment struct {
 	UpdatedAt time.Time     `                                                      json:"updated_at"`
 
 	Author User `gorm:"foreignKey:UserID" json:"author,omitempty"`
+
+	// Champs calculés (non stockés en DB)
+	VoteCount int64 `gorm:"-" json:"vote_count"`
+	UserVote  *int  `gorm:"-" json:"user_vote"`
 }
 
 func (c *Comment) BeforeCreate(tx *gorm.DB) error {

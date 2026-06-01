@@ -28,8 +28,9 @@ type PostListInput struct {
 	CategorySlug   *string
 	AuthorID       *uuid.UUID
 	AuthorUsername *string
-	Status         *model.ContentStatus // admin uniquement
-	AllStatuses    bool                 // admin : retourner tous les statuts
+	Status         *model.ContentStatus
+	AllStatuses    bool
+	RequesterID    *uuid.UUID // pour user_vote
 	Page           int
 	PageSize       int
 }
@@ -65,6 +66,7 @@ func (s *PostService) List(input PostListInput) (*PostListResult, error) {
 		AuthorID:    input.AuthorID,
 		Status:      input.Status,
 		AllStatuses: input.AllStatuses,
+		RequesterID: input.RequesterID,
 		Page:        input.Page,
 		PageSize:    input.PageSize,
 	})
@@ -79,7 +81,7 @@ func (s *PostService) List(input PostListInput) (*PostListResult, error) {
 }
 
 func (s *PostService) GetByID(id uuid.UUID, requesterRole string, requesterID *uuid.UUID) (*model.Post, error) {
-	post, err := s.repo.FindByID(id)
+	post, err := s.repo.FindByID(id, requesterID)
 	if err != nil {
 		return nil, ErrPostNotFound
 	}
@@ -117,7 +119,7 @@ func (s *PostService) Create(input PostCreateInput) (*model.Post, error) {
 		return nil, err
 	}
 	// Reload avec les relations
-	return s.repo.FindByID(post.ID)
+	return s.repo.FindByID(post.ID, &input.UserID)
 }
 
 type PostUpdateInput struct {
@@ -127,7 +129,7 @@ type PostUpdateInput struct {
 }
 
 func (s *PostService) Update(id, requesterID uuid.UUID, requesterRole string, input PostUpdateInput) (*model.Post, error) {
-	post, err := s.repo.FindByID(id)
+	post, err := s.repo.FindByID(id, nil)
 	if err != nil {
 		return nil, ErrPostNotFound
 	}
@@ -152,7 +154,7 @@ func (s *PostService) Update(id, requesterID uuid.UUID, requesterRole string, in
 	if err := s.repo.Update(post); err != nil {
 		return nil, err
 	}
-	return s.repo.FindByID(post.ID)
+	return s.repo.FindByID(post.ID, nil)
 }
 
 func (s *PostService) AdminUpdate(post *model.Post) error {
@@ -160,7 +162,7 @@ func (s *PostService) AdminUpdate(post *model.Post) error {
 }
 
 func (s *PostService) Delete(id, requesterID uuid.UUID, requesterRole string) error {
-	post, err := s.repo.FindByID(id)
+	post, err := s.repo.FindByID(id, nil)
 	if err != nil {
 		return ErrPostNotFound
 	}

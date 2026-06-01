@@ -61,6 +61,13 @@ func (h *PostHandler) List(c *gin.Context) {
 		input.AuthorUsername = &v
 	}
 
+	// Enrichir avec user_vote si connecté (OptionalAuth)
+	if raw, exists := c.Get("user_id"); exists {
+		if uid, ok := raw.(uuid.UUID); ok {
+			input.RequesterID = &uid
+		}
+	}
+
 	result, err := h.svc.List(input)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch posts"})
@@ -274,7 +281,7 @@ func (h *PostHandler) SetStatus(c *gin.Context) {
 		return
 	}
 
-	post, err := h.svc.GetByID(id, "admin", nil)
+	post, err := h.svc.GetByID(id, "admin", nil) // admin : pas besoin de user_vote
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return

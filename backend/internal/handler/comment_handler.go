@@ -34,7 +34,13 @@ func (h *CommentHandler) List(c *gin.Context) {
 		return
 	}
 
-	comments, err := h.svc.ListByPost(postID)
+	var requesterID *uuid.UUID
+	if raw, exists := c.Get("user_id"); exists {
+		if uid, ok := raw.(uuid.UUID); ok {
+			requesterID = &uid
+		}
+	}
+	comments, err := h.svc.ListByPost(postID, requesterID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch comments"})
 		return

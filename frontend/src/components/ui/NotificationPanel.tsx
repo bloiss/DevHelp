@@ -15,6 +15,8 @@ const KIND_CONFIG: Record<NotifKind, {
   iconClass: string
   bgClass: string
 }> = {
+  comment:  { Icon: MessageSquare, iconClass: 'text-blue-500',    bgClass: 'bg-blue-500/10'    },
+  like:     { Icon: ThumbsUp,      iconClass: 'text-gold',        bgClass: 'bg-gold/10'        },
   reply:    { Icon: MessageSquare, iconClass: 'text-blue-500',    bgClass: 'bg-blue-500/10'    },
   vote:     { Icon: ThumbsUp,      iconClass: 'text-gold',        bgClass: 'bg-gold/10'        },
   mention:  { Icon: AtSign,        iconClass: 'text-violet-500',  bgClass: 'bg-violet-500/10'  },

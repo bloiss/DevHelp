@@ -17,8 +17,9 @@ func NewPostRepository(db *gorm.DB) *PostRepository {
 type PostFilters struct {
 	CategoryID  *uuid.UUID
 	AuthorID    *uuid.UUID
-	Status      *model.ContentStatus // nil = approved uniquement (public)
-	AllStatuses bool                 // admin: ignorer le filtre approved par défaut
+	Status      *model.ContentStatus
+	AllStatuses bool
+	RequesterID *uuid.UUID // pour populer user_vote
 	Page        int
 	PageSize    int
 }
@@ -55,11 +56,15 @@ func (r *PostRepository) FindAll(f PostFilters) ([]model.Post, int64, error) {
 	offset := (f.Page - 1) * f.PageSize
 
 	var posts []model.Post
-	err := q.Order("created_at DESC").Limit(f.PageSize).Offset(offset).Find(&posts).Error
-	return posts, total, err
+	if err := q.Order("created_at DESC").Limit(f.PageSize).Offset(offset).Find(&posts).Error; err != nil {
+		return nil, 0, err
+	}
+
+	r.enrichPosts(posts, f.RequesterID)
+	return posts, total, nil
 }
 
-func (r *PostRepository) FindByID(id uuid.UUID) (*model.Post, error) {
+func (r *PostRepository) FindByID(id uuid.UUID, requesterID *uuid.UUID) (*model.Post, error) {
 	var post model.Post
 	err := r.db.
 		Preload("Author").
@@ -69,7 +74,9 @@ func (r *PostRepository) FindByID(id uuid.UUID) (*model.Post, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &post, nil
+	posts := []model.Post{post}
+	r.enrichPosts(posts, requesterID)
+	return &posts[0], nil
 }
 
 func (r *PostRepository) Create(post *model.Post) error {
@@ -82,4 +89,73 @@ func (r *PostRepository) Update(post *model.Post) error {
 
 func (r *PostRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Post{}, "id = ?", id).Error
+}
+
+// enrichPosts remplit VoteCount, CommentCount et UserVote en 3 requêtes batch.
+func (r *PostRepository) enrichPosts(posts []model.Post, requesterID *uuid.UUID) {
+	if len(posts) == 0 {
+		return
+	}
+
+	ids := make([]uuid.UUID, len(posts))
+	idx := make(map[uuid.UUID]int, len(posts))
+	for i, p := range posts {
+		ids[i] = p.ID
+		idx[p.ID] = i
+	}
+
+	// ── Vote counts ────────────────────────────────────────────
+	type voteRow struct {
+		TargetID uuid.UUID
+		Total    int64
+	}
+	var voteRows []voteRow
+	r.db.Raw(
+		`SELECT target_id, COALESCE(SUM(value), 0) AS total
+		 FROM likes WHERE target_type = 'post' AND target_id IN ?
+		 GROUP BY target_id`, ids,
+	).Scan(&voteRows)
+	for _, row := range voteRows {
+		if i, ok := idx[row.TargetID]; ok {
+			posts[i].VoteCount = row.Total
+		}
+	}
+
+	// ── Comment counts ─────────────────────────────────────────
+	type commentRow struct {
+		PostID uuid.UUID
+		Total  int64
+	}
+	var commentRows []commentRow
+	r.db.Raw(
+		`SELECT post_id, COUNT(*) AS total
+		 FROM comments WHERE post_id IN ?
+		 GROUP BY post_id`, ids,
+	).Scan(&commentRows)
+	for _, row := range commentRows {
+		if i, ok := idx[row.PostID]; ok {
+			posts[i].CommentCount = row.Total
+		}
+	}
+
+	// ── UserVote (si connecté) ─────────────────────────────────
+	if requesterID == nil {
+		return
+	}
+	type userVoteRow struct {
+		TargetID uuid.UUID
+		Value    int
+	}
+	var userVoteRows []userVoteRow
+	r.db.Raw(
+		`SELECT target_id, value
+		 FROM likes WHERE user_id = ? AND target_type = 'post' AND target_id IN ?`,
+		*requesterID, ids,
+	).Scan(&userVoteRows)
+	for _, row := range userVoteRows {
+		if i, ok := idx[row.TargetID]; ok {
+			v := row.Value
+			posts[i].UserVote = &v
+		}
+	}
 }

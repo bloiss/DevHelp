@@ -1,14 +1,28 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Avatar } from '@/components/shared/Avatar'
 import { Badge } from '@/components/ui/badge'
 import { VoteButtons } from './VoteButtons'
 import { formatRelativeDate } from '@/lib/utils'
+import { postService } from '@/services/post.service'
+import { useAuthStore } from '@/stores/authStore'
 import type { Comment } from '@/types/post'
 
 interface CommentItemProps {
   comment: Comment
+  postId: string
 }
 
-export function CommentItem({ comment }: CommentItemProps) {
+export function CommentItem({ comment, postId }: CommentItemProps) {
+  const { user } = useAuthStore()
+  const queryClient = useQueryClient()
+
+  const voteMutation = useMutation({
+    mutationFn: (value: 1 | -1) =>
+      postService.voteComment(postId, comment.id, value),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+  })
+
   return (
     <div className="flex gap-4 py-4">
 
@@ -16,6 +30,7 @@ export function CommentItem({ comment }: CommentItemProps) {
       <VoteButtons
         score={comment.vote_count ?? 0}
         userVote={comment.user_vote ?? null}
+        onVote={user ? (value) => voteMutation.mutate(value) : undefined}
         orientation="vertical"
       />
 

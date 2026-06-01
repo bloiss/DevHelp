@@ -26,4 +26,7 @@ export const postService = {
 
   createComment: (postId: string, content: string) =>
     api.post<Comment>(`/posts/${postId}/comments`, { content }).then((r) => r.data),
+
+  voteComment: (postId: string, commentId: string, value: 1 | -1) =>
+    api.post(`/posts/${postId}/comments/${commentId}/like`, { value }),
 }

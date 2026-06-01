@@ -158,7 +158,7 @@ function PostPage() {
       ) : comments.length > 0 ? (
         <div className="divide-y divide-border">
           {comments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} />
+            <CommentItem key={comment.id} comment={comment} postId={postId} />
           ))}
         </div>
       ) : (

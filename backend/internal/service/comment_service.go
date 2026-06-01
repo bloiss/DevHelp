@@ -10,21 +10,27 @@ import (
 )
 
 var (
-	ErrCommentNotFound   = errors.New("comment not found")
-	ErrCommentForbidden  = errors.New("not allowed to delete this comment")
-	ErrCommentEmpty      = errors.New("comment content cannot be empty")
+	ErrCommentNotFound  = errors.New("comment not found")
+	ErrCommentForbidden = errors.New("not allowed to delete this comment")
+	ErrCommentEmpty     = errors.New("comment content cannot be empty")
 )
 
 type CommentService struct {
-	repo *repository.CommentRepository
+	repo     *repository.CommentRepository
+	postRepo *repository.PostRepository
+	notifSvc *NotificationService
 }
 
-func NewCommentService(repo *repository.CommentRepository) *CommentService {
-	return &CommentService{repo: repo}
+func NewCommentService(
+	repo *repository.CommentRepository,
+	postRepo *repository.PostRepository,
+	notifSvc *NotificationService,
+) *CommentService {
+	return &CommentService{repo: repo, postRepo: postRepo, notifSvc: notifSvc}
 }
 
-func (s *CommentService) ListByPost(postID uuid.UUID) ([]model.Comment, error) {
-	return s.repo.FindByPost(postID)
+func (s *CommentService) ListByPost(postID uuid.UUID, requesterID *uuid.UUID) ([]model.Comment, error) {
+	return s.repo.FindByPost(postID, requesterID)
 }
 
 func (s *CommentService) Create(postID, userID uuid.UUID, content string) (*model.Comment, error) {
@@ -35,11 +41,30 @@ func (s *CommentService) Create(postID, userID uuid.UUID, content string) (*mode
 		PostID:  postID,
 		UserID:  userID,
 		Content: content,
+		Status:  model.StatusApproved,
 	}
 	if err := s.repo.Create(c); err != nil {
 		return nil, err
 	}
-	return c, nil
+	// Reload with author
+	full, err := s.repo.FindByID(c.ID)
+	if err != nil {
+		return c, nil
+	}
+
+	// Notification au propriétaire du post (si différent du commentateur)
+	post, err := s.postRepo.FindByID(postID, nil)
+	if err == nil && post.UserID != userID {
+		_ = s.notifSvc.CreateCommentNotif(post.UserID, NotifPayload{
+			Actor:        full.Author.Username,
+			PostID:       postID.String(),
+			PostTitle:    post.Title,
+			PostCategory: post.Category.Slug,
+			CommentID:    c.ID.String(),
+		})
+	}
+
+	return full, nil
 }
 
 func (s *CommentService) Delete(id, requesterID uuid.UUID, requesterRole string) error {
@@ -50,10 +75,8 @@ func (s *CommentService) Delete(id, requesterID uuid.UUID, requesterRole string)
 		}
 		return err
 	}
-
 	if requesterRole != "admin" && requesterRole != "moderator" && comment.UserID != requesterID {
 		return ErrCommentForbidden
 	}
-
 	return s.repo.Delete(id)
 }

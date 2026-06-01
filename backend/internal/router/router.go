@@ -9,15 +9,16 @@ import (
 )
 
 type Handlers struct {
-	Auth      *handler.AuthHandler
-	OAuth     *handler.OAuthHandler
-	Category  *handler.CategoryHandler
-	Post      *handler.PostHandler
-	Comment   *handler.CommentHandler
-	Like      *handler.LikeHandler
-	User      *handler.UserHandler
-	Admin     *handler.AdminHandler
-	JWTSecret string
+	Auth         *handler.AuthHandler
+	OAuth        *handler.OAuthHandler
+	Category     *handler.CategoryHandler
+	Post         *handler.PostHandler
+	Comment      *handler.CommentHandler
+	Like         *handler.LikeHandler
+	User         *handler.UserHandler
+	Admin        *handler.AdminHandler
+	Notification *handler.NotificationHandler
+	JWTSecret    string
 }
 
 func New(h *Handlers) *gin.Engine {
@@ -50,9 +51,9 @@ func New(h *Handlers) *gin.Engine {
 	// ─── Lecture publique ──────────────────────────
 	api.GET("/categories", h.Category.List)
 	api.GET("/categories/:slug", h.Category.GetBySlug)
-	api.GET("/posts", h.Post.List)
+	api.GET("/posts", middleware.OptionalAuth(h.JWTSecret), h.Post.List)
 	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
-	api.GET("/posts/:id/comments", h.Comment.List)
+	api.GET("/posts/:id/comments", middleware.OptionalAuth(h.JWTSecret), h.Comment.List)
 	api.GET("/users/:username", h.User.GetProfile)
 
 	// ─── Routes protégées (JWT requis) ────────────
@@ -78,6 +79,12 @@ func New(h *Handlers) *gin.Engine {
 
 		// Profil utilisateur
 		protected.PATCH("/users/me", h.User.UpdateMe)
+
+		// Notifications
+		protected.GET("/notifications", h.Notification.List)
+		protected.GET("/notifications/unread-count", h.Notification.UnreadCount)
+		protected.PATCH("/notifications/:id/read", h.Notification.MarkRead)
+		protected.PATCH("/notifications/read-all", h.Notification.MarkAllRead)
 	}
 
 	// ─── Admin + modérateur ───────────────────────

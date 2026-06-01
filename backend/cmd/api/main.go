@@ -35,6 +35,7 @@ func main() {
 	postRepo := repository.NewPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	likeRepo := repository.NewLikeRepository(db)
+	notifRepo := repository.NewNotificationRepository(db)
 
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _ := time.ParseDuration(cfg.JWTAccessExpiry)
@@ -60,7 +61,8 @@ func main() {
 
 	categoryService := service.NewCategoryService(categoryRepo)
 	postService := service.NewPostService(postRepo, categoryRepo, userRepo)
-	commentService := service.NewCommentService(commentRepo)
+	notifService := service.NewNotificationService(notifRepo)
+	commentService := service.NewCommentService(commentRepo, postRepo, notifService)
 	likeService := service.NewLikeService(likeRepo)
 	userService := service.NewUserService(userRepo, postRepo)
 
@@ -73,6 +75,7 @@ func main() {
 	likeHandler := handler.NewLikeHandler(likeService)
 	userHandler := handler.NewUserHandler(userService)
 	adminHandler := handler.NewAdminHandler(userService, postService)
+	notificationHandler := handler.NewNotificationHandler(notifService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
@@ -82,9 +85,10 @@ func main() {
 		Post:      postHandler,
 		Comment:   commentHandler,
 		Like:      likeHandler,
-		User:      userHandler,
-		Admin:     adminHandler,
-		JWTSecret: cfg.JWTAccessSecret,
+		User:         userHandler,
+		Admin:        adminHandler,
+		Notification: notificationHandler,
+		JWTSecret:    cfg.JWTAccessSecret,
 	})
 
 	log.Printf("DevHelp API starting on :%s (env: %s)", cfg.Port, cfg.Env)
