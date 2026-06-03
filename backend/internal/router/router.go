@@ -11,6 +11,7 @@ import (
 type Handlers struct {
 	Auth      *handler.AuthHandler
 	OAuth     *handler.OAuthHandler
+	Post      *handler.PostHandler
 	JWTSecret string
 }
 func New(h *Handlers) *gin.Engine {
@@ -54,11 +55,12 @@ func New(h *Handlers) *gin.Engine {
 		protected.POST("/auth/set-password", h.Auth.SetPassword)
 
 		// Posts
-		// protected.GET("/posts", h.Post.List)
-		// protected.POST("/posts", h.Post.Create)
-		// protected.GET("/posts/:id", h.Post.Get)
-		// protected.PUT("/posts/:id", h.Post.Update)
-		// protected.DELETE("/posts/:id", h.Post.Delete)
+protected.GET("/posts", h.Post.ListPosts)
+protected.POST("/posts", h.Post.CreatePost)
+protected.GET("/posts/:id", h.Post.GetPost)
+protected.PUT("/posts/:id", h.Post.UpdatePost)
+protected.DELETE("/posts/:id", h.Post.DeletePost)
+
 
 		// Comments
 		// protected.POST("/posts/:id/comments", h.Comment.Create)
