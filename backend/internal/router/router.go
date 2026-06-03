@@ -13,7 +13,6 @@ type Handlers struct {
 	OAuth     *handler.OAuthHandler
 	JWTSecret string
 }
-
 func New(h *Handlers) *gin.Engine {
 	r := gin.Default()
 
