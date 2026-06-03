@@ -31,7 +31,7 @@ func main() {
 
 	// ─── Repositories ─────────────────────────────────────────────
 	userRepo := repository.NewUserRepository(db)
-
+	postRepo := repository.NewPostRepository(db)
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _ := time.ParseDuration(cfg.JWTAccessExpiry)
 	refreshExpiry, _ := time.ParseDuration(cfg.JWTRefreshExpiry)
@@ -51,15 +51,20 @@ func main() {
 		cfg.GitHubClientID, cfg.GitHubClientSecret, cfg.GitHubRedirectURL,
 	)
 
+	postService := service.NewPostService(postRepo)
+
 	// ─── Handlers ─────────────────────────────────────────────────
 	authHandler := handler.NewAuthHandler(authService)
 	oauthHandler := handler.NewOAuthHandler(oauthService)
+	postHandler := handler.NewPostHandler(postService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
 		Auth:      authHandler,
 		OAuth:     oauthHandler,
 		JWTSecret: cfg.JWTAccessSecret,
+		Post: postHandler,
+
 	})
 
 	log.Printf("DevHelp API starting on :%s (env: %s)", cfg.Port, cfg.Env)
