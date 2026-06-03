@@ -9,11 +9,13 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
+	authService    *service.AuthService
+	emailService   *service.EmailService
+	captchaService *service.CaptchaService
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *service.AuthService, emailService *service.EmailService, captchaService *service.CaptchaService) *AuthHandler {
+	return &AuthHandler{authService: authService, emailService: emailService, captchaService: captchaService}
 }
 
 // ─── Register ─────────────────────────────────────────────────────
@@ -42,8 +44,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// TODO: valider le captcha via service dédié
-	// if err := captchaService.Verify(req.CaptchaToken); err != nil { ... }
+	if err := h.captchaService.Verify(req.CaptchaToken); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "captcha validation failed"})
+		return
+	}
 
 	user, access, refresh, err := h.authService.Register(service.RegisterInput{
 		Email:    req.Email,
@@ -165,10 +169,10 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	// TODO: envoyer l'email avec le lien contenant rawToken
-	// emailService.SendResetLink(req.Email, rawToken)
-
-	_ = rawToken
+	// Envoyer l'email uniquement si un token a été généré (email existant)
+	if rawToken != "" {
+		_ = h.emailService.SendPasswordReset(req.Email, rawToken)
+	}
 
 	// Toujours répondre 200 pour ne pas révéler si l'email existe
 	c.JSON(http.StatusOK, gin.H{"message": "if this email exists, a reset link has been sent"})
@@ -260,4 +264,16 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "password set successfully"})
+}
+
+// ─── Me ───────────────────────────────────────────────────────────
+
+func (h *AuthHandler) Me(c *gin.Context) {
+	userID := c.MustGet("user_id").(uuid.UUID)
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }

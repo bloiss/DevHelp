@@ -43,17 +43,22 @@ type Post struct {
 	UserID     uuid.UUID     `gorm:"type:uuid;not null;index"                       json:"user_id"`
 	CategoryID uuid.UUID     `gorm:"type:uuid;not null;index"                       json:"category_id"`
 	Title      string        `gorm:"not null"                                       json:"title"`
-	Content    string        `gorm:"type:jsonb;not null"                            json:"content"` // TipTap JSON
+	Content    string        `gorm:"type:text;not null"                             json:"content"` // TipTap HTML
 	Status     ContentStatus `gorm:"type:varchar(30);not null;default:'pending_moderation'" json:"status"`
 	IsHidden   bool          `gorm:"not null;default:false"                         json:"is_hidden"`
 	CreatedAt  time.Time     `                                                      json:"created_at"`
 	UpdatedAt  time.Time     `                                                      json:"updated_at"`
 
 	// Relations
-	Author   User     `gorm:"foreignKey:UserID"   json:"author,omitempty"`
-	Category Category `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
-	Images   []PostImage `gorm:"foreignKey:PostID" json:"images,omitempty"`
-	Comments []Comment   `gorm:"foreignKey:PostID"  json:"comments,omitempty"`
+	Author   User        `gorm:"foreignKey:UserID"     json:"author,omitempty"`
+	Category Category    `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Images   []PostImage `gorm:"foreignKey:PostID"     json:"images,omitempty"`
+	Comments []Comment   `gorm:"foreignKey:PostID"     json:"-"`
+
+	// Champs calculés (non stockés en DB)
+	VoteCount    int64 `gorm:"-" json:"vote_count"`
+	CommentCount int64 `gorm:"-" json:"comment_count"`
+	UserVote     *int  `gorm:"-" json:"user_vote"`
 }
 
 func (p *Post) BeforeCreate(tx *gorm.DB) error {
@@ -85,6 +90,10 @@ type Comment struct {
 	UpdatedAt time.Time     `                                                      json:"updated_at"`
 
 	Author User `gorm:"foreignKey:UserID" json:"author,omitempty"`
+
+	// Champs calculés (non stockés en DB)
+	VoteCount int64 `gorm:"-" json:"vote_count"`
+	UserVote  *int  `gorm:"-" json:"user_vote"`
 }
 
 func (c *Comment) BeforeCreate(tx *gorm.DB) error {

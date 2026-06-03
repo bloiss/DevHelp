@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"strconv"
 )
 
 type Config struct {
@@ -24,13 +23,12 @@ type Config struct {
 	GitHubClientSecret string
 	GitHubRedirectURL  string
 
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUser     string
-	SMTPPassword string
-	SMTPFrom     string
+	ResendAPIKey string
+	ResendFrom   string
+	AppURL       string
 
-	CaptchaSecret string
+	HCaptchaSecret  string
+	HCaptchaSiteKey string
 
 	S3Endpoint  string
 	S3AccessKey string
@@ -54,8 +52,6 @@ type Config struct {
 }
 
 func Load() *Config {
-	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
-
 	return &Config{
 		Port: getEnv("PORT", "8080"),
 		Env:  getEnv("ENV", "development"),
@@ -71,17 +67,16 @@ func Load() *Config {
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleRedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 
-		GitHubClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		GitHubClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		GitHubRedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+		GitHubClientID:     os.Getenv("GH_CLIENT_ID"),
+		GitHubClientSecret: os.Getenv("GH_CLIENT_SECRET"),
+		GitHubRedirectURL:  os.Getenv("GH_REDIRECT_URL"),
 
-		SMTPHost:     os.Getenv("SMTP_HOST"),
-		SMTPPort:     smtpPort,
-		SMTPUser:     os.Getenv("SMTP_USER"),
-		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
-		SMTPFrom:     getEnv("SMTP_FROM", "noreply@devhelp.app"),
+		ResendAPIKey: os.Getenv("RESEND_API_KEY"),
+		ResendFrom:   getEnv("RESEND_FROM", "onboarding@resend.dev"),
+		AppURL:       getEnv("APP_URL", "http://localhost:5173"),
 
-		CaptchaSecret: os.Getenv("CAPTCHA_SECRET"),
+		HCaptchaSecret:  os.Getenv("HCAPTCHA_SECRET"),
+		HCaptchaSiteKey: os.Getenv("HCAPTCHA_SITE_KEY"),
 
 		S3Endpoint:  getEnv("S3_ENDPOINT", "http://localhost:9000"),
 		S3AccessKey: os.Getenv("S3_ACCESS_KEY"),

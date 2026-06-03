@@ -40,6 +40,7 @@ func Migrate(db *gorm.DB) error {
 		&model.PostImage{},
 		&model.Comment{},
 		&model.Like{},
+		&model.Follow{},
 		&model.Notification{},
 		&model.NotificationPrefs{},
 		&model.PushSubscription{},
