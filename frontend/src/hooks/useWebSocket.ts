@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -7,15 +7,18 @@ const WS_BASE = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080'
 const RECONNECT_DELAY_MS = 3000
 const MAX_RECONNECT_ATTEMPTS = 10
 
+export type WsStatus = 'connecting' | 'connected' | 'disconnected'
+
 type WSEvent =
   | { type: 'notification'; payload: unknown }
   | { type: 'message'; payload: { conversation_id: string } }
-  | { type: 'ping' }
+  | { type: string; payload: unknown }
 
 export function useWebSocket() {
   const { accessToken, isAuthenticated } = useAuthStore()
   const { fetchNotifications, fetchUnreadCount } = useNotificationStore()
   const queryClient = useQueryClient()
+  const [status, setStatus] = useState<WsStatus>('disconnected')
 
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectAttempts = useRef(0)
@@ -24,9 +27,7 @@ export function useWebSocket() {
 
   useEffect(() => {
     isMounted.current = true
-    return () => {
-      isMounted.current = false
-    }
+    return () => { isMounted.current = false }
   }, [])
 
   useEffect(() => {
@@ -34,23 +35,21 @@ export function useWebSocket() {
       closeConnection()
       return
     }
-
     connect()
-
-    return () => {
-      closeConnection()
-    }
+    return () => { closeConnection() }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, accessToken])
 
   function connect() {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-    const url = `${WS_BASE}/ws?token=${accessToken}`
+    setStatus('connecting')
+    const url = `${WS_BASE}/ws?token=${encodeURIComponent(accessToken!)}`
     const ws = new WebSocket(url)
     wsRef.current = ws
 
     ws.onopen = () => {
+      setStatus('connected')
       reconnectAttempts.current = 0
     }
 
@@ -64,13 +63,14 @@ export function useWebSocket() {
     }
 
     ws.onclose = (event) => {
+      setStatus('disconnected')
       if (!isMounted.current) return
-      // Ne pas reconnecter si fermeture volontaire (logout)
       if (event.code === 1000) return
       scheduleReconnect()
     }
 
     ws.onerror = () => {
+      setStatus('disconnected')
       ws.close()
     }
   }
@@ -80,10 +80,8 @@ export function useWebSocket() {
       fetchNotifications()
       fetchUnreadCount()
     }
-
     if (event.type === 'message') {
-      const { conversation_id } = event.payload
-      // Invalide la liste des conversations + les messages de cette conversation
+      const { conversation_id } = event.payload as { conversation_id: string }
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
       queryClient.invalidateQueries({ queryKey: ['messages', conversation_id] })
     }
@@ -92,13 +90,9 @@ export function useWebSocket() {
   function scheduleReconnect() {
     if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) return
     reconnectAttempts.current += 1
-
     const delay = Math.min(RECONNECT_DELAY_MS * reconnectAttempts.current, 30_000)
-
     reconnectTimeout.current = setTimeout(() => {
-      if (isMounted.current && useAuthStore.getState().isAuthenticated) {
-        connect()
-      }
+      if (isMounted.current && useAuthStore.getState().isAuthenticated) connect()
     }, delay)
   }
 
@@ -108,10 +102,13 @@ export function useWebSocket() {
       reconnectTimeout.current = null
     }
     if (wsRef.current) {
-      wsRef.current.onclose = null // évite le reconnect automatique
+      wsRef.current.onclose = null
       wsRef.current.close(1000, 'logout')
       wsRef.current = null
     }
     reconnectAttempts.current = 0
+    setStatus('disconnected')
   }
+
+  return { status }
 }

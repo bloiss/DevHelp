@@ -28,7 +28,7 @@ function RootLayout() {
   }, [isAuthenticated, fetchNotifications])
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen bg-background flex flex-col relative">
 
       {/* ── Global ambient background ── */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

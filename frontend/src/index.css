@@ -112,6 +112,9 @@
   html {
     scroll-behavior: smooth;
     transition: background-color 0.3s ease, color 0.3s ease;
+    /* Reserve scrollbar gutter to prevent layout shift when scrollbar appears/disappears */
+    scrollbar-gutter: stable;
+    overflow-x: hidden;
   }
 
   body {
@@ -119,6 +122,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv11", "ss01", "ss03";
+    overflow-x: hidden;
   }
 
   /* Text selection */

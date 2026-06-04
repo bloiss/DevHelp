@@ -91,29 +91,27 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           <Link
             {...postLink}
             className="group/btn flex items-center gap-1.5 p-2 rounded-full text-muted-foreground
-              hover:text-sky-500 hover:bg-sky-500/10 transition-colors duration-150"
+              hover:text-sky-500 hover:bg-sky-500/10 transition-colors duration-150 min-w-[36px]"
           >
-            <MessageSquare className="h-[18px] w-[18px]" />
-            {comments > 0 && (
-              <span className="text-xs tabular-nums group-hover/btn:text-sky-500">{comments}</span>
-            )}
+            <MessageSquare className="h-[18px] w-[18px] shrink-0" />
+            <span className="text-xs tabular-nums group-hover/btn:text-sky-500 w-4 text-left">
+              {comments > 0 ? comments : ''}
+            </span>
           </Link>
 
           {/* Vote up */}
           <button
             className={cn(
-              'group/up flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150',
+              'group/up flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150 min-w-[36px]',
               post.user_vote === 1
                 ? 'text-emerald-500 bg-emerald-500/10'
                 : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
             )}
           >
-            <ThumbsUp className="h-[18px] w-[18px]" />
-            {votes > 0 && (
-              <span className={cn('text-xs tabular-nums', post.user_vote === 1 ? 'text-emerald-500' : 'group-hover/up:text-emerald-500')}>
-                {votes}
-              </span>
-            )}
+            <ThumbsUp className="h-[18px] w-[18px] shrink-0" />
+            <span className={cn('text-xs tabular-nums w-4 text-left', post.user_vote === 1 ? 'text-emerald-500' : 'group-hover/up:text-emerald-500')}>
+              {votes > 0 ? votes : ''}
+            </span>
           </button>
 
           {/* Vote down */}
