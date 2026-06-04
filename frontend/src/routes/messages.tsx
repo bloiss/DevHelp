@@ -209,6 +209,7 @@ function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [pendingMsgs, setPendingMsgs] = useState<ApiMessage[]>([])
+  const [showUserSearch, setShowUserSearch] = useState(false)
 
   const { data: convs = [], isLoading: convsLoading } = useQuery({
     queryKey: ['conversations'],
