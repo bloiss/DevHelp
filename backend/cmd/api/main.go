@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/bloiss/devhelp/backend/internal/config"
@@ -15,13 +16,26 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// loadEnv remonte l'arborescence depuis le répertoire courant jusqu'à trouver un .env.
+func loadEnv() {
+	dir, _ := os.Getwd()
+	for {
+		path := filepath.Join(dir, ".env")
+		if err := godotenv.Load(path); err == nil {
+			return
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	log.Println("No .env file found, using environment variables")
+}
+
 func main() {
 	if os.Getenv("ENV") != "production" {
-		if err := godotenv.Load(".env"); err != nil {
-			if err := godotenv.Load("../.env"); err != nil {
-				log.Println("No .env file found, using environment variables")
-			}
-		}
+		loadEnv()
 	}
 
 	cfg := config.Load()
