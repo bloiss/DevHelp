@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { userService } from '@/services/user.service'
 import { postService } from '@/services/post.service'
 import { followService } from '@/services/follow.service'
+import { messageService } from '@/services/message.service'
 import { toast } from '@/stores/toastStore'
 import { formatDate, cn } from '@/lib/utils'
 
@@ -121,7 +122,14 @@ function ProfilePage() {
                     <Button
                       variant="outline" size="sm"
                       className="rounded-full gap-2"
-                      onClick={() => navigate({ to: '/messages' })}
+                      onClick={async () => {
+                        try {
+                          const conv = await messageService.openConversation(profile.id)
+                          navigate({ to: '/messages', search: { conv: conv.id } })
+                        } catch {
+                          toast.error('Impossible d\'ouvrir la conversation')
+                        }
+                      }}
                     >
                       <MessageSquare className="h-3.5 w-3.5" /> Message
                     </Button>

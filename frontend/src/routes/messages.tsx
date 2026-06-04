@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Send, ArrowLeft, MessageSquare, CheckCheck, Clock } from 'lucide-react'
@@ -12,6 +12,9 @@ import { messageService, type ApiConversation, type ApiMessage } from '@/service
 import { cn, formatRelativeDate } from '@/lib/utils'
 
 export const Route = createFileRoute('/messages')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    conv: typeof search.conv === 'string' ? search.conv : undefined,
+  }),
   component: MessagesPage,
 })
 
@@ -93,7 +96,8 @@ function MessagesPage() {
   const { isAuthenticated, user } = useAuthStore()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { conv } = useSearch({ from: '/messages' })
+  const [selectedId, setSelectedId] = useState<string | null>(conv ?? null)
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
