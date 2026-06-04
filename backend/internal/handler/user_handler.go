@@ -49,6 +49,8 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 type updateMeRequest struct {
 	Username  *string `json:"username"`
 	AvatarURL *string `json:"avatar_url"`
+	BannerURL *string `json:"banner_url"`
+	Bio       *string `json:"bio"`
 }
 
 // UpdateMe godoc
@@ -72,6 +74,8 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 	user, err := h.svc.UpdateMe(userID, service.UpdateMeInput{
 		Username:  req.Username,
 		AvatarURL: req.AvatarURL,
+		BannerURL: req.BannerURL,
+		Bio:       req.Bio,
 	})
 	if err != nil {
 		switch err {
