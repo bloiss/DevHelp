@@ -3,7 +3,7 @@ import {
   useState, useRef, useEffect, useCallback,
   type KeyboardEvent, type ChangeEvent,
 } from 'react'
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Send, ArrowLeft, MessageSquare, CheckCheck, Check,
   Loader2, Search, Image, Share2, X,
@@ -11,12 +11,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/shared/EmptyState'
 import { AuthWall } from '@/components/shared/AuthWall'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/stores/authStore'
 import { useMessagingStore } from '@/stores/messagingStore'
 import { messageService, type ApiConversation, type ApiMessage } from '@/services/message.service'
+import { postService } from '@/services/post.service'
+import type { Post } from '@/types/post'
 import { UserSearchDialog } from '@/components/messages/UserSearchDialog'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
@@ -282,6 +283,89 @@ function TypingBubble() {
   )
 }
 
+// ─── PostShareDialog ──────────────────────────────────────────────────────────
+
+function PostShareDialog({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (post: Post) => void
+  onClose:  () => void
+}) {
+  const [q, setQ] = useState('')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['posts-share'],
+    queryFn:  () => postService.list({ per_page: 30 }),
+  })
+
+  const posts = data?.data ?? []
+  const filtered = q.trim()
+    ? posts.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()))
+    : posts
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4"
+        onClick={onClose}
+      >
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+
+        <motion.div
+          initial={{ opacity: 0, y: -12, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.97 }}
+          transition={{ duration: 0.18 }}
+          className="relative z-10 w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <Share2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <input
+              autoFocus
+              placeholder="Rechercher un post…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
+            <button onClick={onClose} className="p-1 rounded-full hover:bg-muted transition-colors">
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Liste */}
+          <div className="max-h-72 overflow-y-auto divide-y divide-border/50">
+            {filtered.length === 0 && !isLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {q ? `Aucun résultat pour « ${q} »` : 'Aucun post disponible'}
+              </p>
+            ) : (
+              filtered.map((post) => (
+                <button
+                  key={post.id}
+                  onClick={() => onSelect(post)}
+                  className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors"
+                >
+                  <p className="text-sm font-semibold line-clamp-1">{post.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    par {post.author.username} · {post.category?.name}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function MessagesPage() {
@@ -295,6 +379,7 @@ function MessagesPage() {
   const [input,          setInput]          = useState('')
   const [search,         setSearch]         = useState('')
   const [showUserSearch, setShowUserSearch] = useState(false)
+  const [showPostShare,  setShowPostShare]  = useState(false)
   const [pendingMsgs,    setPendingMsgs]    = useState<(ApiMessage & { _pending?: boolean; _error?: boolean })[]>([])
 
   const bottomRef       = useRef<HTMLDivElement>(null)
@@ -390,6 +475,21 @@ function MessagesPage() {
     mutationFn: (convId: string) => messageService.acceptConversation(convId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
   })
+
+  const shareMutation = useMutation({
+    mutationFn: (postId: string) =>
+      messageService.sendMessage(selectedId!, '', undefined, undefined, postId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedId] })
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+    },
+    onError: () => toast.error('Impossible de partager ce post'),
+  })
+
+  const handleSharePost = useCallback((post: Post) => {
+    setShowPostShare(false)
+    shareMutation.mutate(post.id)
+  }, [shareMutation])
 
   // ── Send presence + mark_read on conv open ────────────────────────
   useEffect(() => {
@@ -686,13 +786,30 @@ function MessagesPage() {
               </div>
             )}
 
+            {/* ── Dialog partage post ── */}
+            {showPostShare && (
+              <PostShareDialog
+                onSelect={handleSharePost}
+                onClose={() => setShowPostShare(false)}
+              />
+            )}
+
             {/* ── Input ── */}
             <div className="px-4 py-3 border-t border-border bg-background shrink-0">
               <div className="flex items-center gap-2 bg-muted rounded-2xl px-3 py-2">
 
+                {/* Partager un post */}
+                <button
+                  onClick={() => setShowPostShare(true)}
+                  className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors shrink-0"
+                  title="Partager un post"
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+
                 {/* Bouton image (placeholder) */}
                 <button
-                  onClick={() => toast.info('Bientôt disponible', { description: 'L\'upload d\'images arrive prochainement.' })}
+                  onClick={() => toast.info('Bientôt disponible', { description: "L'upload d'images arrive prochainement." })}
                   className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors shrink-0"
                   title="Envoyer une image"
                 >
