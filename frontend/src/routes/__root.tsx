@@ -7,6 +7,7 @@ import { CommandPalette } from '@/components/ui/CommandPalette'
 import { Toaster }        from '@/components/ui/Toaster'
 import { useAuthStore }          from '@/stores/authStore'
 import { useNotificationStore }  from '@/stores/notificationStore'
+import { useWebSocket }          from '@/hooks/useWebSocket'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -15,6 +16,9 @@ export const Route = createRootRoute({
 function RootLayout() {
   const { isAuthenticated } = useAuthStore()
   const { fetchNotifications } = useNotificationStore()
+
+  // Connexion WebSocket temps réel (notifications + messages)
+  useWebSocket()
 
   // Charger les notifications au montage (si connecté) et quand l'état d'auth change
   useEffect(() => {
