@@ -7,15 +7,14 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BackButton }        from '@/components/shared/BackButton'
-import { CommentItem }       from '@/components/forum/CommentItem'
+import { CommentThread }     from '@/components/forum/CommentThread'
 import { CommentForm }       from '@/components/forum/CommentForm'
 import { CommentSkeleton }   from '@/components/forum/CommentSkeleton'
 import { Avatar }            from '@/components/shared/Avatar'
 import { Badge }             from '@/components/ui/badge'
 import { Skeleton }          from '@/components/ui/Skeleton'
 import { ConfirmDialog }     from '@/components/shared/ConfirmDialog'
-import { RealtimeBadge }     from '@/components/shared/RealtimeBadge'
-import { useWebSocket }      from '@/hooks/useWebSocket'
+import { getMockComments }   from '@/data/mockComments'
 import { getCategoryBySlug } from '@/data/categories'
 import { postService }       from '@/services/post.service'
 import { adminService }      from '@/services/admin.service'
@@ -27,6 +26,27 @@ import type { Comment } from '@/types/post'
 export const Route = createFileRoute('/forum/$category/$postId')({
   component: PostPage,
 })
+
+/** Regroupe une liste plate de commentaires en arbre (parent_id → replies[]) */
+function buildCommentTree(flat: Comment[]): Comment[] {
+  const map = new Map<string, Comment & { replies: Comment[] }>()
+  flat.forEach((c) => map.set(c.id, { ...c, replies: [] }))
+
+  const roots: (Comment & { replies: Comment[] })[] = []
+  flat.forEach((c) => {
+    if (c.parent_id && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.replies.push(map.get(c.id)!)
+    } else {
+      roots.push(map.get(c.id)!)
+    }
+  })
+  return roots
+}
+
+/** Compte récursivement tous les commentaires d'un arbre */
+function countAll(comments: Comment[]): number {
+  return comments.reduce((n, c) => n + 1 + countAll(c.replies ?? []), 0)
+}
 
 function PostDetailSkeleton() {
   return (
@@ -52,7 +72,7 @@ function PostDetailSkeleton() {
       </div>
       <div className="border-t border-border pt-6 space-y-1">
         <Skeleton className="h-4 w-32" />
-        <div className="divide-y divide-border">
+        <div>
           <CommentSkeleton />
           <CommentSkeleton />
         </div>
@@ -68,6 +88,7 @@ function PostPage() {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
 
   const isAdminOrMod = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -76,33 +97,18 @@ function PostPage() {
     queryFn: () => postService.get(postId),
   })
 
-  const { data: comments = [], isLoading: commentsLoading } = useQuery({
+  const { data: rawComments = [], isLoading: commentsLoading } = useQuery({
     queryKey: ['comments', postId],
     queryFn: () => postService.getComments(postId),
     enabled: !!post,
     refetchInterval: 30_000,
   })
 
-  // Temps réel — écoute les événements WS pour ce post
-  const handleNewComment = useCallback((payload: unknown) => {
-    const p = payload as { post_id?: string; comment?: Comment }
-    if (p.post_id !== postId) return
-    queryClient.invalidateQueries({ queryKey: ['comments', postId] })
-    queryClient.invalidateQueries({ queryKey: ['post', postId] })
-    toast.info('Nouveau commentaire', { description: 'Une réponse vient d\'être ajoutée.' })
-  }, [postId, queryClient])
-
-  const handleVoteUpdate = useCallback((payload: unknown) => {
-    const p = payload as { post_id?: string }
-    if (p.post_id === postId) {
-      queryClient.invalidateQueries({ queryKey: ['post', postId] })
-    }
-  }, [postId, queryClient])
-
-  const { status: wsStatus } = useWebSocket({
-    new_comment:  handleNewComment,
-    vote_update:  handleVoteUpdate,
-  })
+  // Utilise les mock data riches si le post n'a pas encore de commentaires réels
+  const sourceComments = rawComments.length > 0 ? rawComments : getMockComments(postId)
+  const commentTree = buildCommentTree(sourceComments)
+  const totalCount = countAll(commentTree)
+  const usingMock = rawComments.length === 0
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.vote(postId, value),
@@ -110,12 +116,30 @@ function PostPage() {
   })
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => postService.createComment(postId, content).then(() => {}),
+    mutationFn: (content: string) => postService.createComment(postId, content),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] })
       queryClient.invalidateQueries({ queryKey: ['post', postId] })
     },
   })
+
+  const replyMutation = useMutation({
+    mutationFn: ({ parentId, content }: { parentId: string; content: string }) =>
+      postService.createComment(postId, content, parentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+      queryClient.invalidateQueries({ queryKey: ['post', postId] })
+      toast.success('Réponse publiée !')
+    },
+    onError: () => toast.error('Erreur', { description: 'Impossible de publier la réponse.' }),
+  })
+
+  const handleReply = useCallback(
+    async (parentId: string, _parentAuthor: string, content: string) => {
+      await replyMutation.mutateAsync({ parentId, content })
+    },
+    [replyMutation],
+  )
 
   const deleteMutation = useMutation({
     mutationFn: () => postService.delete(postId),
@@ -172,13 +196,11 @@ function PostPage() {
       {/* ── Post ── */}
       <article className="border-b border-border pb-4">
         <div className="flex gap-3">
-
           <div className="shrink-0">
             <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full" />
           </div>
 
           <div className="flex-1 min-w-0">
-
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-bold text-sm">{post.author.username}</span>
@@ -270,7 +292,7 @@ function PostPage() {
             <div className="flex items-center gap-1 -ml-2 border-t border-border/60 pt-3">
               <div className="flex items-center gap-1.5 p-2 rounded-full text-muted-foreground text-sm min-w-[36px]">
                 <MessageSquare className="h-4 w-4 shrink-0" />
-                <span className="tabular-nums">{comments.length}</span>
+                <span className="tabular-nums">{totalCount}</span>
               </div>
 
               <button
@@ -324,39 +346,51 @@ function PostPage() {
         </div>
       </article>
 
-      {/* ── En-tête commentaires ── */}
+      {/* ── En-tête section commentaires ── */}
       <div className="flex items-center gap-3 mt-6 mb-4">
         <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
         <h2 className="font-semibold text-sm">
-          {comments.length} commentaire{comments.length > 1 ? 's' : ''}
+          {totalCount} commentaire{totalCount > 1 ? 's' : ''}
         </h2>
-        <RealtimeBadge status={wsStatus} />
+        {usingMock && (
+          <span className="text-[11px] text-muted-foreground italic">· aperçu</span>
+        )}
         <div className="flex-1 h-px bg-border" />
       </div>
 
+      {/* Formulaire de commentaire principal */}
       {user && (
         <div className="mb-6">
           <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
         </div>
       )}
 
-      {/* ── Liste des commentaires ── */}
+      {/* ── Threads ── */}
       {commentsLoading ? (
-        <div className="divide-y divide-border">
+        <div>
+          <CommentSkeleton />
           <CommentSkeleton />
           <CommentSkeleton />
         </div>
-      ) : comments.length > 0 ? (
+      ) : commentTree.length > 0 ? (
         <AnimatePresence initial={false}>
-          <div className="divide-y divide-border">
-            {comments.map((comment) => (
+          <div>
+            {commentTree.map((comment, i) => (
               <motion.div
                 key={comment.id}
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+                transition={{ duration: 0.2, delay: i * 0.03 }}
               >
-                <CommentItem comment={comment} postId={postId} isAdminOrMod={isAdminOrMod} />
+                <CommentThread
+                  comment={comment}
+                  postId={postId}
+                  isAdminOrMod={isAdminOrMod}
+                  depth={0}
+                  activeReplyId={activeReplyId}
+                  onSetActiveReply={setActiveReplyId}
+                  onReply={handleReply}
+                />
               </motion.div>
             ))}
           </div>

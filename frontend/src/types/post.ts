@@ -42,6 +42,7 @@ export interface Comment {
   id: string
   post_id: string
   user_id: string
+  parent_id?: string | null
   content: string
   status: ContentStatus
   is_hidden: boolean
@@ -50,4 +51,5 @@ export interface Comment {
   author: User
   vote_count?: number
   user_vote?: 1 | -1 | null
+  replies?: Comment[]
 }
