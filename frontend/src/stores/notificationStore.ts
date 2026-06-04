@@ -11,10 +11,12 @@ export interface Notification {
   fromUser?: string
   href?: string
   read: boolean
+  isStarred: boolean
+  isArchived: boolean
   created_at: string
 }
 
-function mapApiNotif(n: ApiNotification): Notification {
+export function mapApiNotif(n: ApiNotification): Notification {
   const p = n.payload
   const href = p.post_category && p.post_id
     ? `/forum/${p.post_category}/${p.post_id}`
@@ -29,6 +31,8 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href,
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -41,6 +45,8 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href,
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -53,6 +59,8 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href: p.conv_id ? `/messages?conv=${p.conv_id}` : '/messages',
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -65,6 +73,8 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href: p.conv_id ? `/messages?conv=${p.conv_id}` : '/messages',
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -77,6 +87,8 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href: `/profile/${p.actor}`,
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -86,6 +98,8 @@ function mapApiNotif(n: ApiNotification): Notification {
     title: n.type,
     body: '',
     read: n.read,
+    isStarred: n.is_starred ?? false,
+    isArchived: n.is_archived ?? false,
     created_at: n.created_at,
   }
 }

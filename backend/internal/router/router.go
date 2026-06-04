@@ -105,9 +105,14 @@ func New(h *Handlers) *gin.Engine {
 
 		// Notifications
 		protected.GET("/notifications", h.Notification.List)
+		protected.GET("/notifications/inbox", h.Notification.Inbox)
 		protected.GET("/notifications/unread-count", h.Notification.UnreadCount)
-		protected.PATCH("/notifications/:id/read", h.Notification.MarkRead)
 		protected.PATCH("/notifications/read-all", h.Notification.MarkAllRead)
+		protected.PATCH("/notifications/:id/read", h.Notification.MarkRead)
+		protected.PATCH("/notifications/:id/unread", h.Notification.MarkUnread)
+		protected.PATCH("/notifications/:id/star", h.Notification.Star)
+		protected.PATCH("/notifications/:id/archive", h.Notification.Archive)
+		protected.DELETE("/notifications/:id", h.Notification.Delete)
 	}
 
 	// ─── Admin + modérateur ───────────────────────

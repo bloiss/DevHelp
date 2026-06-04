@@ -175,6 +175,21 @@ func (r *MessageRepository) CreateMessage(msg *model.Message) error {
 	return r.db.Create(msg).Error
 }
 
+// GetMessageByID retourne un message avec toutes ses relations préchargées.
+func (r *MessageRepository) GetMessageByID(msgID uuid.UUID) (*model.Message, error) {
+	var msg model.Message
+	err := r.db.Preload("Sender").
+		Preload("Reads").
+		Preload("SharedPost").
+		Preload("SharedPost.Author").
+		Preload("SharedPost.Category").
+		First(&msg, "id = ?", msgID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
 // UpdateMessageStatus met à jour le statut d'un message.
 func (r *MessageRepository) UpdateMessageStatus(msgID uuid.UUID, status string) error {
 	return r.db.Model(&model.Message{}).

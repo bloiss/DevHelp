@@ -15,7 +15,7 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   const { isAuthenticated } = useAuthStore()
-  const { fetchNotifications } = useNotificationStore()
+  const { fetchNotifications, fetchUnreadCount } = useNotificationStore()
 
   // Connexion WebSocket temps réel (notifications + messages)
   useWebSocket()
@@ -26,6 +26,13 @@ function RootLayout() {
       fetchNotifications()
     }
   }, [isAuthenticated, fetchNotifications])
+
+  // Polling de secours : rafraîchit le compteur toutes les 30s
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const id = setInterval(() => fetchUnreadCount(), 30_000)
+    return () => clearInterval(id)
+  }, [isAuthenticated, fetchUnreadCount])
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative">

@@ -178,7 +178,22 @@ function ReadReceipt({ msg, isMe }: { msg: ApiMessage; isMe: boolean }) {
 
 function SharedPostCard({ post }: { post: NonNullable<ApiMessage['shared_post']> }) {
   const slug = post.category?.slug
-  if (!slug) return null
+  const inner = (
+    <>
+      <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide font-medium">
+        Post partagé
+      </p>
+      <p className="text-sm font-semibold line-clamp-2 leading-snug">{post.title}</p>
+      <p className="text-xs text-muted-foreground mt-1">par {post.author?.username}</p>
+    </>
+  )
+  if (!slug) {
+    return (
+      <div className="block mt-1 rounded-xl border border-border/60 bg-background/60 p-3 text-left max-w-70">
+        {inner}
+      </div>
+    )
+  }
   return (
     <Link
       to="/forum/$category/$postId"
@@ -186,11 +201,7 @@ function SharedPostCard({ post }: { post: NonNullable<ApiMessage['shared_post']>
       className="block mt-1 rounded-xl border border-border/60 bg-background/60 p-3 text-left hover:bg-muted/40 transition-colors max-w-70"
       onClick={(e) => e.stopPropagation()}
     >
-      <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide font-medium">
-        Post partagé
-      </p>
-      <p className="text-sm font-semibold line-clamp-2 leading-snug">{post.title}</p>
-      <p className="text-xs text-muted-foreground mt-1">par {post.author?.username}</p>
+      {inner}
     </Link>
   )
 }

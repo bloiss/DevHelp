@@ -72,10 +72,15 @@ func (s *MessageService) SendMessage(convID, senderID uuid.UUID, content string,
 		return nil, err
 	}
 
-	// Charger le sender
-	sender, _ := s.userRepo.FindByID(senderID)
-	if sender != nil {
-		msg.Sender = *sender
+	// Charger le message complet avec toutes les relations (SharedPost, Sender, etc.)
+	if fullMsg, err := s.repo.GetMessageByID(msg.ID); err == nil {
+		msg = fullMsg
+	} else {
+		// Fallback : charger au moins le sender
+		sender, _ := s.userRepo.FindByID(senderID)
+		if sender != nil {
+			msg.Sender = *sender
+		}
 	}
 
 	// Trouver les destinataires (autres participants)

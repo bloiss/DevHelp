@@ -109,6 +109,11 @@ export function useWebSocket() {
             }),
           }
         })
+        // Si le message contient un post partagé, invalider pour recharger
+        // les données complètes (SharedPost.Author, SharedPost.Category)
+        if (p.message.shared_post_id) {
+          queryClient.invalidateQueries({ queryKey: ['messages', p.conv_id] })
+        }
         queryClient.invalidateQueries({ queryKey: ['conversations'] })
         break
       }
