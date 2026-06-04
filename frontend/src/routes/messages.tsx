@@ -177,11 +177,13 @@ function ReadReceipt({ msg, isMe }: { msg: ApiMessage; isMe: boolean }) {
 // ─── SharedPostCard ────────────────────────────────────────────────────────────
 
 function SharedPostCard({ post }: { post: NonNullable<ApiMessage['shared_post']> }) {
+  const slug = post.category?.slug
+  if (!slug) return null
   return (
     <Link
       to="/forum/$category/$postId"
-      params={{ category: post.category?.slug ?? 'general', postId: post.id }}
-      className="block mt-1 rounded-xl border border-border/60 bg-background/60 p-3 text-left hover:bg-muted/40 transition-colors max-w-[280px]"
+      params={{ category: slug, postId: post.id }}
+      className="block mt-1 rounded-xl border border-border/60 bg-background/60 p-3 text-left hover:bg-muted/40 transition-colors max-w-70"
       onClick={(e) => e.stopPropagation()}
     >
       <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide font-medium">
@@ -225,7 +227,7 @@ function MessageBubble({
           <img
             src={msg.attachment_url}
             alt="image"
-            className={cn('rounded-xl max-w-[240px] max-h-[300px] object-cover mb-1', br)}
+            className={cn('rounded-xl max-w-60 max-h-75 object-cover mb-1', br)}
           />
         )}
 
@@ -233,7 +235,7 @@ function MessageBubble({
         {(msg.content || isDeleted) && (
           <div
             className={cn(
-              'px-3.5 py-2 text-sm leading-relaxed break-words',
+              'px-3.5 py-2 text-sm leading-relaxed wrap-break-word',
               br,
               isMe ? 'text-primary-foreground' : 'bg-muted text-foreground',
               isPending && 'opacity-60',
