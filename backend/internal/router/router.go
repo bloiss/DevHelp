@@ -100,6 +100,8 @@ func New(h *Handlers) *gin.Engine {
 		protected.GET("/conversations/:id/messages", h.Message.GetMessages)
 		protected.POST("/conversations/:id/messages", h.Message.Send)
 		protected.POST("/conversations/:id/accept", h.Message.Accept)
+		protected.POST("/conversations/:id/read", h.Message.MarkRead)
+		protected.GET("/conversations/:id/presence", h.Message.GetPresence)
 
 		// Notifications
 		protected.GET("/notifications", h.Notification.List)

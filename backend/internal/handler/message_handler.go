@@ -2,7 +2,7 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/bloiss/devhelp/backend/internal/service"
 	"github.com/gin-gonic/gin"
@@ -48,7 +48,7 @@ func (h *MessageHandler) Open(c *gin.Context) {
 	c.JSON(http.StatusOK, conv)
 }
 
-// GET /conversations/:id/messages
+// GET /conversations/:id/messages?before=<ISO timestamp>&limit=20
 func (h *MessageHandler) GetMessages(c *gin.Context) {
 	convIDStr := c.Param("id")
 	convID, err := uuid.Parse(convIDStr)
@@ -59,14 +59,15 @@ func (h *MessageHandler) GetMessages(c *gin.Context) {
 
 	userID := c.MustGet("user_id").(uuid.UUID)
 
-	page := 1
-	if p := c.Query("page"); p != "" {
-		if n, err := strconv.Atoi(p); err == nil && n > 0 {
-			page = n
+	var before *time.Time
+	if b := c.Query("before"); b != "" {
+		t, err := time.Parse(time.RFC3339, b)
+		if err == nil {
+			before = &t
 		}
 	}
 
-	messages, err := h.svc.GetMessages(convID, userID, page)
+	messages, hasMore, err := h.svc.GetMessages(convID, userID, before)
 	if err != nil {
 		switch err {
 		case service.ErrNotParticipant:
@@ -76,11 +77,11 @@ func (h *MessageHandler) GetMessages(c *gin.Context) {
 		}
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": messages})
+	c.JSON(http.StatusOK, gin.H{"data": messages, "has_more": hasMore})
 }
 
 // POST /conversations/:id/messages
-// Body: { "content": "..." }
+// Body: { "content": "...", "attachment_url": "...", "attachment_type": "...", "shared_post_id": "uuid" }
 func (h *MessageHandler) Send(c *gin.Context) {
 	convIDStr := c.Param("id")
 	convID, err := uuid.Parse(convIDStr)
@@ -90,15 +91,22 @@ func (h *MessageHandler) Send(c *gin.Context) {
 	}
 
 	var req struct {
-		Content string `json:"content" binding:"required"`
+		Content        string     `json:"content"`
+		AttachmentURL  *string    `json:"attachment_url"`
+		AttachmentType *string    `json:"attachment_type"`
+		SharedPostID   *uuid.UUID `json:"shared_post_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if req.Content == "" && req.AttachmentURL == nil && req.SharedPostID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message must have content, attachment or shared post"})
+		return
+	}
 
 	senderID := c.MustGet("user_id").(uuid.UUID)
-	msg, err := h.svc.SendMessage(convID, senderID, req.Content)
+	msg, err := h.svc.SendMessage(convID, senderID, req.Content, req.AttachmentURL, req.AttachmentType, req.SharedPostID)
 	if err != nil {
 		switch err {
 		case service.ErrNotParticipant:
@@ -131,6 +139,40 @@ func (h *MessageHandler) Accept(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "conversation accepted"})
+}
+
+// POST /conversations/:id/read
+func (h *MessageHandler) MarkRead(c *gin.Context) {
+	convIDStr := c.Param("id")
+	convID, err := uuid.Parse(convIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
+		return
+	}
+
+	userID := c.MustGet("user_id").(uuid.UUID)
+	h.svc.MarkRead(userID, convID)
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// GET /conversations/:id/presence
+func (h *MessageHandler) GetPresence(c *gin.Context) {
+	convIDStr := c.Param("id")
+	convID, err := uuid.Parse(convIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
+		return
+	}
+
+	userID := c.MustGet("user_id").(uuid.UUID)
+	if !h.svc.IsParticipant(convID, userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not a participant"})
+		return
+	}
+
+	// Retourner la présence des autres participants
+	presences := h.svc.GetConvPresences(convID, userID)
+	c.JSON(http.StatusOK, gin.H{"data": presences})
 }
 
 // GET /conversations/unread-count

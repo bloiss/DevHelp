@@ -23,6 +23,7 @@ type NotifPayload struct {
 	PostTitle    string `json:"post_title,omitempty"`
 	PostCategory string `json:"post_category,omitempty"`
 	CommentID    string `json:"comment_id,omitempty"`
+	ConvID       string `json:"conv_id,omitempty"`
 }
 
 type NotifResponse struct {
@@ -49,6 +50,14 @@ func (s *NotificationService) CreateCommentNotif(recipientID uuid.UUID, payload 
 
 func (s *NotificationService) CreateLikeNotif(recipientID uuid.UUID, payload NotifPayload) error {
 	return s.create(recipientID, "like", payload)
+}
+
+func (s *NotificationService) CreateFollowNotif(recipientID uuid.UUID, payload NotifPayload) error {
+	return s.create(recipientID, "follow", payload)
+}
+
+func (s *NotificationService) CreateMessageAcceptedNotif(recipientID uuid.UUID, payload NotifPayload) error {
+	return s.create(recipientID, "message_accepted", payload)
 }
 
 func (s *NotificationService) List(userID uuid.UUID) ([]NotifResponse, error) {

@@ -51,25 +51,41 @@ func (h *Hub) Run() {
 }
 
 // Send envoie un événement à un utilisateur connecté.
-// Silencieux si l'utilisateur n'est pas connecté.
-func (h *Hub) Send(userID uuid.UUID, event Event) {
+// Retourne true si l'utilisateur était connecté.
+func (h *Hub) Send(userID uuid.UUID, event Event) bool {
 	h.mu.RLock()
 	client, ok := h.clients[userID]
 	h.mu.RUnlock()
 	if !ok {
-		return
+		return false
 	}
 
 	data, err := json.Marshal(event)
 	if err != nil {
-		return
+		return false
 	}
 
 	select {
 	case client.send <- data:
+		return true
 	default:
-		// Le buffer est plein, on abandonne silencieusement.
+		return false
 	}
+}
+
+// SendToUsers envoie un événement à une liste d'utilisateurs.
+func (h *Hub) SendToUsers(userIDs []uuid.UUID, event Event) {
+	for _, id := range userIDs {
+		h.Send(id, event)
+	}
+}
+
+// IsOnline indique si un utilisateur est actuellement connecté via WS.
+func (h *Hub) IsOnline(userID uuid.UUID) bool {
+	h.mu.RLock()
+	_, ok := h.clients[userID]
+	h.mu.RUnlock()
+	return ok
 }
 
 // Register enregistre un client dans le hub.

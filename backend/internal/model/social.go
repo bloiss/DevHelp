@@ -44,15 +44,23 @@ func (c *Conversation) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// Message représente un message dans une conversation.
+// Status: "sent" | "delivered" | "read"
 type Message struct {
-	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	ConversationID uuid.UUID `gorm:"type:uuid;not null;index"                       json:"conversation_id"`
-	SenderID       uuid.UUID `gorm:"type:uuid;not null;index"                       json:"sender_id"`
-	Content        string    `gorm:"not null"                                       json:"content"`
-	Read           bool      `gorm:"not null;default:false"                         json:"read"`
-	CreatedAt      time.Time `                                                      json:"created_at"`
+	ID             uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ConversationID uuid.UUID  `gorm:"type:uuid;not null;index"                       json:"conversation_id"`
+	SenderID       uuid.UUID  `gorm:"type:uuid;not null;index"                       json:"sender_id"`
+	Content        string     `gorm:"not null"                                       json:"content"`
+	Status         string     `gorm:"type:varchar(20);not null;default:'sent'"       json:"status"`
+	AttachmentURL  *string    `gorm:"type:text"                                      json:"attachment_url,omitempty"`
+	AttachmentType *string    `gorm:"type:varchar(20)"                               json:"attachment_type,omitempty"` // "image" | "gif"
+	SharedPostID   *uuid.UUID `gorm:"type:uuid"                                      json:"shared_post_id,omitempty"`
+	IsDeleted      bool       `gorm:"not null;default:false"                         json:"is_deleted"`
+	CreatedAt      time.Time  `                                                      json:"created_at"`
 
-	Sender User `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
+	Sender     User          `gorm:"foreignKey:SenderID"     json:"sender,omitempty"`
+	SharedPost *Post         `gorm:"foreignKey:SharedPostID" json:"shared_post,omitempty"`
+	Reads      []MessageRead `gorm:"foreignKey:MessageID"    json:"reads,omitempty"`
 }
 
 func (m *Message) BeforeCreate(tx *gorm.DB) error {
@@ -60,6 +68,20 @@ func (m *Message) BeforeCreate(tx *gorm.DB) error {
 		m.ID = uuid.New()
 	}
 	return nil
+}
+
+// MessageRead enregistre qui a lu quel message et quand.
+type MessageRead struct {
+	MessageID uuid.UUID `gorm:"type:uuid;primaryKey;index" json:"message_id"`
+	UserID    uuid.UUID `gorm:"type:uuid;primaryKey;index" json:"user_id"`
+	ReadAt    time.Time `gorm:"not null"                   json:"read_at"`
+}
+
+// UserPresence suit la présence en ligne et la conversation active.
+type UserPresence struct {
+	UserID       uuid.UUID  `gorm:"type:uuid;primaryKey"     json:"user_id"`
+	LastSeen     time.Time  `gorm:"not null"                 json:"last_seen"`
+	ActiveConvID *uuid.UUID `gorm:"type:uuid"                json:"active_conv_id,omitempty"`
 }
 
 // ─── Modération ───────────────────────────────────────────────────

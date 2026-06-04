@@ -76,7 +76,7 @@ func main() {
 	notifService    := service.NewNotificationService(notifRepo)
 	commentService  := service.NewCommentService(commentRepo, postRepo, notifService)
 	likeService     := service.NewLikeService(likeRepo)
-	followService   := service.NewFollowService(followRepo)
+	followService   := service.NewFollowService(followRepo, userRepo, notifService, wsHub)
 	messageService  := service.NewMessageService(messageRepo, wsHub, notifService, userRepo, followRepo)
 	userService     := service.NewUserService(userRepo, postRepo, followRepo)
 
@@ -92,7 +92,7 @@ func main() {
 	notificationHandler := handler.NewNotificationHandler(notifService)
 	followHandler       := handler.NewFollowHandler(followService, userRepo)
 	messageHandler      := handler.NewMessageHandler(messageService)
-	wsHandler           := handler.NewWSHandler(wsHub, cfg.JWTAccessSecret)
+	wsHandler           := handler.NewWSHandler(wsHub, cfg.JWTAccessSecret, messageService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
