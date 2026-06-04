@@ -49,6 +49,8 @@ func Migrate(db *gorm.DB) error {
 		&model.PushSubscription{},
 		&model.Conversation{},
 		&model.Message{},
+		&model.MessageRead{},
+		&model.UserPresence{},
 		&model.ModerationLog{},
 		&model.Report{},
 	)

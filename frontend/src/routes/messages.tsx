@@ -1,9 +1,12 @@
-import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate, useSearch, Link } from '@tanstack/react-router'
 import {
-  Send, ArrowLeft, MessageSquare, CheckCheck,
-  Loader2, AlertCircle, Search,
+  useState, useRef, useEffect, useCallback,
+  type KeyboardEvent, type ChangeEvent,
+} from 'react'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  Send, ArrowLeft, MessageSquare, CheckCheck, Check,
+  Loader2, Search, Image, Share2, X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar } from '@/components/shared/Avatar'
@@ -12,9 +15,11 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { AuthWall } from '@/components/shared/AuthWall'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/stores/authStore'
+import { useMessagingStore } from '@/stores/messagingStore'
 import { messageService, type ApiConversation, type ApiMessage } from '@/services/message.service'
 import { UserSearchDialog } from '@/components/messages/UserSearchDialog'
 import { cn, formatRelativeDate } from '@/lib/utils'
+import { toast } from '@/stores/toastStore'
 
 export const Route = createFileRoute('/messages')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -25,25 +30,53 @@ export const Route = createFileRoute('/messages')({
 
 // ─── Utilitaires ─────────────────────────────────────────────────────────────
 
-function formatMessageTime(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function isSameGroup(a: ApiMessage, b: ApiMessage): boolean {
+function isSameGroup(a: ApiMessage, b: ApiMessage) {
   return (
     a.sender_id === b.sender_id &&
     Math.abs(new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) < 5 * 60 * 1000
   )
 }
 
+function useTypingDebounce(convId: string | null, enabled: boolean) {
+  const { wsSend } = useMessagingStore()
+  const typingRef   = useRef(false)
+  const stopTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const onKeyPress = useCallback(() => {
+    if (!convId || !enabled || !wsSend) return
+    if (!typingRef.current) {
+      typingRef.current = true
+      wsSend({ type: 'typing_start', payload: { conv_id: convId } })
+    }
+    if (stopTimeout.current) clearTimeout(stopTimeout.current)
+    stopTimeout.current = setTimeout(() => {
+      typingRef.current = false
+      wsSend({ type: 'typing_stop', payload: { conv_id: convId } })
+    }, 2500)
+  }, [convId, enabled, wsSend])
+
+  const stopTyping = useCallback(() => {
+    if (stopTimeout.current) clearTimeout(stopTimeout.current)
+    if (typingRef.current && wsSend && convId) {
+      typingRef.current = false
+      wsSend({ type: 'typing_stop', payload: { conv_id: convId } })
+    }
+  }, [convId, wsSend])
+
+  return { onKeyPress, stopTyping }
+}
+
 // ─── ConvItem ─────────────────────────────────────────────────────────────────
 
 function ConvItem({ conv, selected, onClick }: {
-  conv: ApiConversation
-  selected: boolean
-  onClick: () => void
+  conv: ApiConversation; selected: boolean; onClick: () => void
 }) {
+  const { presences } = useMessagingStore()
+  const isOnline  = presences[conv.other_user.id]?.isOnline ?? false
   const isRequest = conv.status === 'request'
 
   return (
@@ -52,13 +85,14 @@ function ConvItem({ conv, selected, onClick }: {
       onClick={onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors',
-        selected
-          ? 'bg-accent text-accent-foreground'
-          : 'hover:bg-muted/60',
+        selected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/60',
       )}
     >
       <div className="relative shrink-0">
         <Avatar user={conv.other_user} size="md" />
+        {isOnline && (
+          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+        )}
         {conv.unread_count > 0 && (
           <span
             className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
@@ -83,94 +117,21 @@ function ConvItem({ conv, selected, onClick }: {
         <p className={cn('text-xs truncate mt-0.5', conv.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground')}>
           {isRequest
             ? <span className="italic" style={{ color: 'var(--gold)' }}>Demande de conversation</span>
-            : (conv.last_message?.content ?? 'Aucun message')}
+            : (conv.last_message?.content || (conv.last_message?.attachment_url ? '📷 Image' : 'Aucun message'))}
         </p>
       </div>
     </motion.button>
   )
 }
 
-// ─── Skeleton conv ────────────────────────────────────────────────────────────
-
 function ConvSkeleton() {
   return (
     <div className="flex items-center gap-3 px-3 py-2.5">
       <Skeleton className="h-9 w-9 rounded-full shrink-0" />
       <div className="flex-1 space-y-1.5">
-        <Skeleton className="h-3.5 w-28" />
-        <Skeleton className="h-3 w-36" />
+        <Skeleton className="h-3.5 w-28" /><Skeleton className="h-3 w-36" />
       </div>
     </div>
-  )
-}
-
-// ─── MessageBubble ────────────────────────────────────────────────────────────
-
-function MessageBubble({
-  msg,
-  isMe,
-  isFirst,
-  isLast,
-  showTime,
-  isPending,
-  isError,
-}: {
-  msg: ApiMessage
-  isMe: boolean
-  isFirst: boolean   // premier d'un groupe
-  isLast: boolean    // dernier d'un groupe
-  showTime: boolean
-  isPending?: boolean
-  isError?: boolean
-}) {
-  const br = isMe
-    ? cn('rounded-2xl rounded-br-sm', !isLast && 'rounded-br-2xl', isFirst && isLast && 'rounded-2xl rounded-br-sm')
-    : cn('rounded-2xl rounded-bl-sm', !isLast && 'rounded-bl-2xl', isFirst && isLast && 'rounded-2xl rounded-bl-sm')
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-      className={cn('flex items-end gap-2', isMe ? 'flex-row-reverse' : 'flex-row', !isLast && 'mb-0.5')}
-    >
-      {/* Avatar — only on last of a received group */}
-      <div className="w-7 shrink-0">
-        {!isMe && isLast && (
-          <Avatar user={msg.sender} size="sm" className="h-7 w-7" />
-        )}
-      </div>
-
-      <div className={cn('flex flex-col max-w-[72%] sm:max-w-[60%]', isMe ? 'items-end' : 'items-start')}>
-        <div
-          className={cn(
-            'px-3.5 py-2 text-sm leading-relaxed break-words',
-            br,
-            isMe
-              ? 'text-primary-foreground'
-              : 'bg-muted text-foreground',
-            isPending && 'opacity-60',
-            isError && 'bg-destructive/20 text-destructive',
-          )}
-          style={isMe && !isError ? { background: 'var(--gold)' } : undefined}
-        >
-          {msg.content}
-        </div>
-
-        {/* Timestamp + status */}
-        {(showTime || isPending || isError) && (
-          <div className={cn('flex items-center gap-1 mt-1 px-1', isMe ? 'flex-row-reverse' : 'flex-row')}>
-            <span className="text-[10px] text-muted-foreground/60">
-              {isPending ? 'Envoi…' : isError ? 'Erreur' : formatMessageTime(msg.created_at)}
-            </span>
-            {isMe && !isPending && !isError && (
-              <CheckCheck className="h-3 w-3 text-muted-foreground/50" />
-            )}
-            {isError && <AlertCircle className="h-3 w-3 text-destructive" />}
-          </div>
-        )}
-      </div>
-    </motion.div>
   )
 }
 
@@ -179,14 +140,11 @@ function MessageBubble({
 function DateSeparator({ date }: { date: string }) {
   const d = new Date(date)
   const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
   let label: string
-  if (d.toDateString() === today.toDateString()) label = "Aujourd'hui"
+  if (d.toDateString() === today.toDateString())      label = "Aujourd'hui"
   else if (d.toDateString() === yesterday.toDateString()) label = 'Hier'
   else label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-
   return (
     <div className="flex items-center gap-3 my-4">
       <div className="flex-1 h-px bg-border" />
@@ -196,47 +154,222 @@ function DateSeparator({ date }: { date: string }) {
   )
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+// ─── ReadReceipt ──────────────────────────────────────────────────────────────
+
+function ReadReceipt({ msg, isMe }: { msg: ApiMessage; isMe: boolean }) {
+  if (!isMe) return null
+  const readEntry = msg.reads?.[0]
+  if (msg.status === 'read' && readEntry) {
+    return (
+      <span className="flex items-center gap-0.5 text-[10px] text-sky-400">
+        <CheckCheck className="h-3 w-3" />
+        <span>{formatTime(readEntry.read_at)}</span>
+      </span>
+    )
+  }
+  if (msg.status === 'delivered') {
+    return <CheckCheck className="h-3 w-3 text-muted-foreground/50" />
+  }
+  return <Check className="h-3 w-3 text-muted-foreground/40" />
+}
+
+// ─── SharedPostCard ────────────────────────────────────────────────────────────
+
+function SharedPostCard({ post }: { post: NonNullable<ApiMessage['shared_post']> }) {
+  return (
+    <Link
+      to="/forum/$category/$postId"
+      params={{ category: post.category?.slug ?? 'general', postId: post.id }}
+      className="block mt-1 rounded-xl border border-border/60 bg-background/60 p-3 text-left hover:bg-muted/40 transition-colors max-w-[280px]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide font-medium">
+        Post partagé
+      </p>
+      <p className="text-sm font-semibold line-clamp-2 leading-snug">{post.title}</p>
+      <p className="text-xs text-muted-foreground mt-1">par {post.author?.username}</p>
+    </Link>
+  )
+}
+
+// ─── MessageBubble ────────────────────────────────────────────────────────────
+
+function MessageBubble({
+  msg, isMe, isFirst, isLast, isPending, isError,
+}: {
+  msg: ApiMessage & { _pending?: boolean; _error?: boolean }
+  isMe: boolean; isFirst: boolean; isLast: boolean
+  isPending?: boolean; isError?: boolean
+}) {
+  const br = isMe
+    ? cn('rounded-2xl rounded-br-sm', !isLast && 'rounded-br-2xl', isFirst && isLast && 'rounded-2xl rounded-br-sm')
+    : cn('rounded-2xl rounded-bl-sm', !isLast && 'rounded-bl-2xl', isFirst && isLast && 'rounded-2xl rounded-bl-sm')
+
+  const isDeleted = msg.is_deleted
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+      className={cn('flex items-end gap-2', isMe ? 'flex-row-reverse' : 'flex-row', !isLast && 'mb-0.5')}
+    >
+      <div className="w-7 shrink-0">
+        {!isMe && isLast && <Avatar user={msg.sender} size="sm" className="h-7 w-7" />}
+      </div>
+
+      <div className={cn('flex flex-col max-w-[72%] sm:max-w-[60%]', isMe ? 'items-end' : 'items-start')}>
+        {/* Image attachment */}
+        {msg.attachment_url && msg.attachment_type === 'image' && !isDeleted && (
+          <img
+            src={msg.attachment_url}
+            alt="image"
+            className={cn('rounded-xl max-w-[240px] max-h-[300px] object-cover mb-1', br)}
+          />
+        )}
+
+        {/* Texte */}
+        {(msg.content || isDeleted) && (
+          <div
+            className={cn(
+              'px-3.5 py-2 text-sm leading-relaxed break-words',
+              br,
+              isMe ? 'text-primary-foreground' : 'bg-muted text-foreground',
+              isPending && 'opacity-60',
+              isError && 'bg-destructive/20 text-destructive border border-destructive/30',
+              isDeleted && 'italic text-muted-foreground bg-muted/50',
+            )}
+            style={isMe && !isError && !isDeleted ? { background: 'var(--gold)' } : undefined}
+          >
+            {isDeleted ? 'Message supprimé' : msg.content}
+          </div>
+        )}
+
+        {/* Post partagé */}
+        {msg.shared_post && !isDeleted && <SharedPostCard post={msg.shared_post} />}
+
+        {/* Timestamp + statut */}
+        {isLast && (
+          <div className={cn('flex items-center gap-1 mt-1 px-1', isMe ? 'flex-row-reverse' : 'flex-row')}>
+            <span className="text-[10px] text-muted-foreground/60">
+              {isPending ? 'Envoi…' : isError ? 'Erreur' : formatTime(msg.created_at)}
+            </span>
+            {isMe && !isPending && !isError && <ReadReceipt msg={msg} isMe={isMe} />}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── TypingBubble ─────────────────────────────────────────────────────────────
+
+function TypingBubble() {
+  return (
+    <div className="flex items-end gap-2">
+      <div className="w-7 shrink-0" />
+      <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex gap-1">
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60"
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 function MessagesPage() {
   const { isAuthenticated, user } = useAuthStore()
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-  const { conv } = useSearch({ from: '/messages' })
-  const [selectedId, setSelectedId] = useState<string | null>(conv ?? null)
-  const [input, setInput] = useState('')
-  const [search, setSearch] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [pendingMsgs, setPendingMsgs] = useState<ApiMessage[]>([])
+  const queryClient   = useQueryClient()
+  const navigate      = useNavigate()
+  const { conv }      = useSearch({ from: '/messages' })
+  const { wsSend, typingByConv, presences } = useMessagingStore()
+
+  const [selectedId,     setSelectedId]     = useState<string | null>(conv ?? null)
+  const [input,          setInput]          = useState('')
+  const [search,         setSearch]         = useState('')
   const [showUserSearch, setShowUserSearch] = useState(false)
+  const [pendingMsgs,    setPendingMsgs]    = useState<(ApiMessage & { _pending?: boolean; _error?: boolean })[]>([])
 
-  const { data: convs = [], isLoading: convsLoading } = useQuery({
+  const bottomRef       = useRef<HTMLDivElement>(null)
+  const inputRef        = useRef<HTMLInputElement>(null)
+  const scrollRef       = useRef<HTMLDivElement>(null)
+  const prevScrollHeight = useRef(0)
+  const isFirstLoad     = useRef(true)
+
+  // ── Typing debounce ──────────────────────────────────────────────
+  const { onKeyPress: onTypingKeyPress, stopTyping } = useTypingDebounce(selectedId, isAuthenticated)
+
+  // ── Conversations ────────────────────────────────────────────────
+  const { data: convs = [], isLoading: convsLoading } = useInfiniteQuery({
     queryKey: ['conversations'],
-    queryFn: messageService.listConversations,
+    queryFn: () => messageService.listConversations(),
+    initialPageParam: undefined,
+    getNextPageParam: () => undefined,
+    select: (d) => d.pages[0] ?? [],
     enabled: isAuthenticated,
-    refetchInterval: false,
+  }) as { data: ApiConversation[]; isLoading: boolean }
+
+  // ── Messages (pagination cursor) ─────────────────────────────────
+  const {
+    data:                 messagesData,
+    fetchNextPage:        loadOlderMessages,
+    hasNextPage:          hasOlderMessages,
+    isFetchingNextPage:   isLoadingOlder,
+    isLoading:            messagesLoading,
+  } = useInfiniteQuery({
+    queryKey:       ['messages', selectedId],
+    queryFn:        ({ pageParam }) =>
+      messageService.getMessages(selectedId!, pageParam as string | undefined),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (firstPage) =>
+      firstPage.has_more && firstPage.data.length > 0
+        ? firstPage.data[0].created_at
+        : undefined,
+    enabled: !!selectedId && isAuthenticated,
   })
 
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
-    queryKey: ['messages', selectedId],
-    queryFn: () => messageService.getMessages(selectedId!),
-    enabled: isAuthenticated && !!selectedId,
-    refetchInterval: false,
-  })
+  // ── Flatten messages: oldest at top, newest at bottom ────────────
+  const serverMessages: ApiMessage[] = messagesData
+    ? [...messagesData.pages].reverse().flatMap((p) => p.data)
+    : []
 
+  const allMessages = [
+    ...serverMessages,
+    ...pendingMsgs,
+  ]
+
+  // ── Typing users for current conv ────────────────────────────────
+  const typingUsers = selectedId ? (typingByConv[selectedId] ?? []) : []
+  // Auto-clear stale typing events (>3s old)
+  const activeTyping = typingUsers.filter((t) => t.isTyping && Date.now() - t.at < 3500)
+
+  // ── Presence for the other user ──────────────────────────────────
+  const selectedConv = convs.find((c) => c.id === selectedId) ?? null
+  const otherUser    = selectedConv?.other_user
+  const otherPresence = otherUser ? presences[otherUser.id] : undefined
+
+  // ── Mutations ─────────────────────────────────────────────────────
   const sendMutation = useMutation({
     mutationFn: (content: string) => messageService.sendMessage(selectedId!, content),
     onMutate: (content) => {
-      // Message optimiste local
-      const optimistic: ApiMessage = {
-        id: `pending-${Date.now()}`,
+      const optimistic: ApiMessage & { _pending: boolean } = {
+        id:              `pending-${Date.now()}`,
         conversation_id: selectedId!,
-        sender_id: user!.id,
+        sender_id:       user!.id,
         content,
-        read: false,
-        created_at: new Date().toISOString(),
-        sender: user!,
+        status:          'sent',
+        is_deleted:      false,
+        created_at:      new Date().toISOString(),
+        sender:          user!,
+        reads:           [],
+        _pending:        true,
       }
       setPendingMsgs((p) => [...p, optimistic])
       return { optimisticId: optimistic.id }
@@ -248,7 +381,7 @@ function MessagesPage() {
     },
     onError: (_, __, ctx) => {
       setPendingMsgs((p) =>
-        p.map((m) => m.id === ctx?.optimisticId ? { ...m, id: `error-${m.id}` } : m),
+        p.map((m) => m.id === ctx?.optimisticId ? { ...m, _pending: false, _error: true } : m),
       )
     },
   })
@@ -258,88 +391,121 @@ function MessagesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
   })
 
-  // Clear pending when real messages arrive
+  // ── Send presence + mark_read on conv open ────────────────────────
   useEffect(() => {
+    if (!selectedId || !wsSend) return
+    wsSend({ type: 'presence_update', payload: { conv_id: selectedId } })
+    wsSend({ type: 'mark_read',       payload: { conv_id: selectedId } })
+    messageService.markRead(selectedId).catch(() => {})
+    return () => {
+      wsSend({ type: 'presence_update', payload: { conv_id: null } })
+      stopTyping()
+    }
+  }, [selectedId, wsSend, stopTyping])
+
+  // ── Auto-scroll to bottom on initial load + new messages ──────────
+  useEffect(() => {
+    if (!scrollRef.current) return
+    if (isFirstLoad.current && serverMessages.length > 0) {
+      isFirstLoad.current = false
+      bottomRef.current?.scrollIntoView({ behavior: 'instant' })
+      return
+    }
+    // Scroll down for new messages if already near the bottom
+    const el = scrollRef.current
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (isNearBottom || pendingMsgs.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMessages.length])
+
+  // Reset on conv change
+  useEffect(() => {
+    isFirstLoad.current = true
     setPendingMsgs([])
-  }, [messages.length])
-
-  // Scroll to bottom
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length, pendingMsgs.length])
-
-  // Focus input on conv change
-  useEffect(() => {
     if (selectedId) setTimeout(() => inputRef.current?.focus(), 100)
   }, [selectedId])
+
+  // ── Preserve scroll position when loading older messages ──────────
+  useEffect(() => {
+    if (prevScrollHeight.current > 0 && scrollRef.current) {
+      const diff = scrollRef.current.scrollHeight - prevScrollHeight.current
+      scrollRef.current.scrollTop = diff
+      prevScrollHeight.current = 0
+    }
+  }, [messagesData?.pages.length])
+
+  // ── Scroll handler for lazy load ──────────────────────────────────
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current || !hasOlderMessages || isLoadingOlder) return
+    if (scrollRef.current.scrollTop < 80) {
+      prevScrollHeight.current = scrollRef.current.scrollHeight
+      loadOlderMessages()
+    }
+  }, [hasOlderMessages, isLoadingOlder, loadOlderMessages])
 
   const openConv = useCallback((id: string) => {
     setSelectedId(id)
     setPendingMsgs([])
-    setTimeout(() => queryClient.invalidateQueries({ queryKey: ['conversations'] }), 600)
-  }, [queryClient])
+    navigate({ to: '/messages', search: { conv: id } })
+  }, [navigate])
 
   const handleSend = useCallback(() => {
     const content = input.trim()
     if (!content || !selectedId || sendMutation.isPending) return
     setInput('')
+    stopTyping()
     sendMutation.mutate(content)
-  }, [input, selectedId, sendMutation])
+  }, [input, selectedId, sendMutation, stopTyping])
 
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+    onTypingKeyPress()
+  }
+
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  // ── Auth guard ────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <AuthWall
         icon={<MessageSquare className="h-8 w-8" />}
         title="Accède à tes messages"
-        description="Connecte-toi pour retrouver tes conversations avec la communauté."
+        description="Connecte-toi pour retrouver tes conversations."
       />
     )
   }
 
-  const selected = convs.find((c) => c.id === selectedId) ?? null
   const filteredConvs = search
     ? convs.filter((c) => c.other_user.username.toLowerCase().includes(search.toLowerCase()))
     : convs
 
-  // Fusionner messages réels + optimistes
-  const allMessages: (ApiMessage & { _pending?: boolean; _error?: boolean })[] = [
-    ...messages,
-    ...pendingMsgs.map((m) => ({
-      ...m,
-      _pending: !m.id.startsWith('error-'),
-      _error: m.id.startsWith('error-'),
-    })),
-  ]
-
   return (
-    <div
-      className="flex overflow-hidden border-t border-border"
-      style={{ height: 'calc(100vh - 56px)' }}
-    >
-      {/* ── Sidebar conversations ───────────────────────────────────── */}
-      <aside
-        className={cn(
-          'flex flex-col border-r border-border bg-background shrink-0',
-          'w-full md:w-72 lg:w-80',
-          selectedId ? 'hidden md:flex' : 'flex',
-        )}
-      >
-        {/* Dialog recherche utilisateur */}
+    <div className="flex overflow-hidden border-t border-border" style={{ height: 'calc(100vh - 56px)' }}>
+
+      {/* ── Sidebar ────────────────────────────────────────────────── */}
+      <aside className={cn(
+        'flex flex-col border-r border-border bg-background shrink-0 w-full md:w-72 lg:w-80',
+        selectedId ? 'hidden md:flex' : 'flex',
+      )}>
         {showUserSearch && <UserSearchDialog onClose={() => setShowUserSearch(false)} />}
 
-        {/* Header sidebar */}
         <div className="px-4 pt-4 pb-3 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-base font-semibold">Messages</h1>
             <button
               onClick={() => setShowUserSearch(true)}
               className="p-1.5 rounded-full hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-              title="Nouveau message"
             >
               <Search className="h-4 w-4" />
             </button>
           </div>
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
@@ -352,77 +518,75 @@ function MessagesPage() {
           </div>
         </div>
 
-        {/* Liste */}
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {convsLoading ? (
             Array.from({ length: 5 }).map((_, i) => <ConvSkeleton key={i} />)
           ) : filteredConvs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-10 text-center">
               <MessageSquare className="h-8 w-8 text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">
-                {search ? 'Aucun résultat' : 'Aucune conversation'}
-              </p>
-              {!search && (
-                <p className="text-xs text-muted-foreground/60 mt-1">
-                  Commence depuis le profil d'un membre
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">{search ? 'Aucun résultat' : 'Aucune conversation'}</p>
+              {!search && <p className="text-xs text-muted-foreground/60 mt-1">Commence depuis le profil d'un membre</p>}
             </div>
           ) : (
             filteredConvs.map((conv) => (
-              <ConvItem
-                key={conv.id}
-                conv={conv}
-                selected={conv.id === selectedId}
-                onClick={() => openConv(conv.id)}
-              />
+              <ConvItem key={conv.id} conv={conv} selected={conv.id === selectedId} onClick={() => openConv(conv.id)} />
             ))
           )}
         </div>
       </aside>
 
-      {/* ── Thread ──────────────────────────────────────────────────── */}
+      {/* ── Thread ─────────────────────────────────────────────────── */}
       <div className={cn('flex-1 flex flex-col min-w-0 bg-background', selectedId ? 'flex' : 'hidden md:flex')}>
-
-        {!selected ? (
-          /* Empty state desktop */
+        {!selectedConv ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-3">
               <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto">
                 <MessageSquare className="h-7 w-7 text-muted-foreground/50" />
               </div>
               <p className="font-medium text-sm">Sélectionne une conversation</p>
-              <p className="text-xs text-muted-foreground max-w-[200px]">
+              <p className="text-xs text-muted-foreground max-w-50">
                 Choisis une conversation dans la liste pour commencer à discuter.
               </p>
             </div>
           </div>
         ) : (
           <>
-            {/* ── Header thread ── */}
+            {/* ── Header ── */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
               <button
-                className="md:hidden p-1.5 rounded-md hover:bg-accent transition-colors -ml-1"
+                className="md:hidden p-1.5 rounded-md hover:bg-accent -ml-1"
                 onClick={() => setSelectedId(null)}
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
 
               <button
-                onClick={() => navigate({ to: '/profile/$username', params: { username: selected.other_user.username } })}
+                onClick={() => navigate({ to: '/profile/$username', params: { username: selectedConv.other_user.username } })}
                 className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
               >
-                <Avatar user={selected.other_user} size="sm" />
+                <div className="relative">
+                  <Avatar user={selectedConv.other_user} size="sm" />
+                  {otherPresence?.isOnline && (
+                    <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-background" />
+                  )}
+                </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold leading-none">{selected.other_user.username}</p>
+                  <p className="text-sm font-semibold leading-none">{selectedConv.other_user.username}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {otherPresence?.isOnline
+                      ? 'En ligne'
+                      : otherPresence?.lastSeen
+                        ? `Vu ${formatRelativeDate(otherPresence.lastSeen)}`
+                        : ''}
+                  </p>
                 </div>
               </button>
 
-              {selected.status === 'request' && selected.request_sender_id !== user?.id && (
+              {selectedConv.status === 'request' && selectedConv.request_sender_id !== user?.id && (
                 <Button
                   size="sm"
                   className="ml-auto h-7 text-xs rounded-full gap-1"
-                  onClick={() => acceptMutation.mutate(selected.id)}
+                  onClick={() => acceptMutation.mutate(selectedConv.id)}
                   disabled={acceptMutation.isPending}
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
@@ -432,7 +596,31 @@ function MessagesPage() {
             </div>
 
             {/* ── Messages ── */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto px-4 py-4"
+            >
+              {/* Loader ancien messages */}
+              {isLoadingOlder && (
+                <div className="flex justify-center py-2 mb-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {hasOlderMessages && !isLoadingOlder && (
+                <div className="flex justify-center mb-2">
+                  <button
+                    onClick={() => {
+                      prevScrollHeight.current = scrollRef.current?.scrollHeight ?? 0
+                      loadOlderMessages()
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground px-3 py-1 rounded-full border border-border hover:bg-muted transition-colors"
+                  >
+                    Charger les messages précédents
+                  </button>
+                </div>
+              )}
+
               {messagesLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -450,10 +638,9 @@ function MessagesPage() {
                     {allMessages.map((msg, i) => {
                       const prev = allMessages[i - 1]
                       const next = allMessages[i + 1]
-                      const isMe = msg.sender_id === user?.id
+                      const isMe    = msg.sender_id === user?.id
                       const isFirst = !prev || !isSameGroup(prev, msg)
                       const isLast  = !next || !isSameGroup(msg, next)
-                      const showTime = isLast
                       const differentDay = !prev || new Date(msg.created_at).toDateString() !== new Date(prev.created_at).toDateString()
 
                       return (
@@ -469,13 +656,23 @@ function MessagesPage() {
                             isMe={isMe}
                             isFirst={isFirst}
                             isLast={isLast}
-                            showTime={showTime}
-                            isPending={(msg as ApiMessage & { _pending?: boolean })._pending}
-                            isError={(msg as ApiMessage & { _error?: boolean })._error}
+                            isPending={(msg as any)._pending}
+                            isError={(msg as any)._error}
                           />
                         </div>
                       )
                     })}
+
+                    {/* Indicateur de frappe */}
+                    {activeTyping.length > 0 && (
+                      <div className="mt-1">
+                        <p className="text-[11px] text-muted-foreground ml-9 mb-0.5">
+                          {activeTyping[0].username} est en train de taper…
+                        </p>
+                        <TypingBubble />
+                      </div>
+                    )}
+
                     <div ref={bottomRef} />
                   </div>
                 </AnimatePresence>
@@ -483,7 +680,7 @@ function MessagesPage() {
             </div>
 
             {/* ── Bannière demande ── */}
-            {selected.status === 'request' && selected.request_sender_id !== user?.id && (
+            {selectedConv.status === 'request' && selectedConv.request_sender_id !== user?.id && (
               <div className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border bg-muted/30">
                 Cette personne t'a envoyé une demande de conversation.
               </div>
@@ -491,30 +688,34 @@ function MessagesPage() {
 
             {/* ── Input ── */}
             <div className="px-4 py-3 border-t border-border bg-background shrink-0">
-              <div className="flex items-center gap-2 bg-muted rounded-2xl px-4 py-2">
+              <div className="flex items-center gap-2 bg-muted rounded-2xl px-3 py-2">
+
+                {/* Bouton image (placeholder) */}
+                <button
+                  onClick={() => toast.info('Bientôt disponible', { description: 'L\'upload d\'images arrive prochainement.' })}
+                  className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors shrink-0"
+                  title="Envoyer une image"
+                >
+                  <Image className="h-4 w-4" />
+                </button>
+
                 <input
                   ref={inputRef}
                   type="text"
                   placeholder="Écrire un message…"
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSend()
-                    }
-                  }}
-                  disabled={sendMutation.isPending && pendingMsgs.length > 0}
+                  onChange={handleInputChange}
+                  onKeyDown={handleInputKeyDown}
+                  disabled={selectedConv.status === 'request' && selectedConv.request_sender_id === user?.id && false}
                   className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
+
                 <button
                   onClick={handleSend}
                   disabled={!input.trim()}
                   className={cn(
-                    'p-1.5 rounded-full transition-all duration-150',
-                    input.trim()
-                      ? 'text-primary-foreground scale-100'
-                      : 'text-muted-foreground scale-90 opacity-50',
+                    'p-1.5 rounded-full transition-all duration-150 shrink-0',
+                    input.trim() ? 'text-primary-foreground scale-100' : 'text-muted-foreground scale-90 opacity-50',
                   )}
                   style={input.trim() ? { background: 'var(--gold)' } : undefined}
                 >
@@ -522,7 +723,7 @@ function MessagesPage() {
                 </button>
               </div>
               <p className="text-[10px] text-muted-foreground/50 text-center mt-1.5">
-                Entrée pour envoyer
+                Entrée pour envoyer · Les messages sont chiffrés
               </p>
             </div>
           </>

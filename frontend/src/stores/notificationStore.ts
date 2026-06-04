@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { notificationService, type ApiNotification } from '@/services/notification.service'
 
-export type NotifKind = 'comment' | 'like' | 'reply' | 'vote' | 'mention' | 'resolved' | 'new_post'
+export type NotifKind = 'comment' | 'like' | 'reply' | 'vote' | 'mention' | 'resolved' | 'new_post' | 'follow' | 'message'
 
 export interface Notification {
   id: string
@@ -40,6 +40,42 @@ function mapApiNotif(n: ApiNotification): Notification {
       body: p.post_title ? `"${p.post_title}"` : '',
       fromUser: p.actor,
       href,
+      read: n.read,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'message_request') {
+    return {
+      id: n.id,
+      kind: 'message',
+      title: `${p.actor} t'a envoyé une demande de message`,
+      body: 'Clique pour voir la demande',
+      fromUser: p.actor,
+      href: p.conv_id ? `/messages?conv=${p.conv_id}` : '/messages',
+      read: n.read,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'message_accepted') {
+    return {
+      id: n.id,
+      kind: 'message',
+      title: `${p.actor} a accepté ta demande de message`,
+      body: 'Vous pouvez maintenant discuter',
+      fromUser: p.actor,
+      href: p.conv_id ? `/messages?conv=${p.conv_id}` : '/messages',
+      read: n.read,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'follow') {
+    return {
+      id: n.id,
+      kind: 'follow',
+      title: `${p.actor} te suit maintenant`,
+      body: 'Découvre son profil',
+      fromUser: p.actor,
+      href: `/profile/${p.actor}`,
       read: n.read,
       created_at: n.created_at,
     }

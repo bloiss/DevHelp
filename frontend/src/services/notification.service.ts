@@ -6,6 +6,7 @@ export interface NotifPayload {
   post_title?: string
   post_category?: string
   comment_id?: string
+  conv_id?: string
 }
 
 export interface ApiNotification {
