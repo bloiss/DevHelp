@@ -278,7 +278,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
   ]
 
   return (
-    <aside className="w-[260px] shrink-0 bg-card border-r border-border flex flex-col overflow-y-auto">
+    <aside className="w-65 shrink-0 bg-card border-r border-border flex flex-col overflow-y-auto">
       <div className="p-3 border-b border-border">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -309,7 +309,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
             </span>
             {count > 0 && (
               <span
-                className="text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+                className="text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-5 text-center"
                 style={{ background: 'var(--gold-soft)', color: 'var(--gold)' }}
               >
                 {count}
@@ -413,7 +413,7 @@ function SortDropdown({ sort, setSort }: { sort: SortMode; setSort: (s: SortMode
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[170px]">
+          <div className="absolute right-0 top-full mt-1 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-42.5">
             {options.map(({ key, label }) => (
               <button
                 key={key}
