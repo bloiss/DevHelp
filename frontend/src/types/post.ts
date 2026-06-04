@@ -36,6 +36,7 @@ export interface Post {
   vote_count?: number
   comment_count?: number
   user_vote?: 1 | -1 | null
+  tags?: string[]
 }
 
 export interface Comment {
