@@ -138,7 +138,9 @@ func (r *MessageRepository) FindMessages(convID uuid.UUID, before *time.Time, li
 
 	query := r.db.Preload("Sender").
 		Preload("Reads").
+		Preload("SharedPost").
 		Preload("SharedPost.Author").
+		Preload("SharedPost.Category").
 		Where("conversation_id = ? AND is_deleted = false", convID)
 
 	if before != nil {
