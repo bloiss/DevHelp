@@ -14,8 +14,10 @@ import { Avatar }            from '@/components/shared/Avatar'
 import { Badge }             from '@/components/ui/badge'
 import { Skeleton }          from '@/components/ui/Skeleton'
 import { ConfirmDialog }     from '@/components/shared/ConfirmDialog'
+import { TagList }           from '@/components/shared/TagBadge'
 import { getMockComments }   from '@/data/mockComments'
 import { getCategoryBySlug } from '@/data/categories'
+import { inferTags }         from '@/data/postTags'
 import { postService }       from '@/services/post.service'
 import { adminService }      from '@/services/admin.service'
 import { useAuthStore }      from '@/stores/authStore'
@@ -167,6 +169,7 @@ function PostPage() {
   const category = getCategoryBySlug(slug)
   const Icon = category?.icon
   const isOwner = user?.id === post.user_id
+  const tags = post.tags?.length ? post.tags : inferTags(slug, post.title)
 
   const STATUS_COLOR: Record<string, string> = {
     pending_moderation: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
@@ -282,7 +285,10 @@ function PostPage() {
               )}
             </div>
 
-            <h1 className="text-xl font-bold mt-1 mb-3 leading-snug">{post.title}</h1>
+            <h1 className="text-xl font-bold mt-1 mb-2 leading-snug">{post.title}</h1>
+
+            {/* Tags */}
+            {tags.length > 0 && <TagList tags={tags} max={5} className="mb-3" />}
 
             <div
               className="prose prose-sm dark:prose-invert max-w-none mb-4"

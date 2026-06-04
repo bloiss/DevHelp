@@ -3,8 +3,10 @@ import { MessageSquare, ThumbsUp, ThumbsDown, Share2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/shared/Avatar'
+import { TagList } from '@/components/shared/TagBadge'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { getCategoryBySlug } from '@/data/categories'
+import { inferTags } from '@/data/postTags'
 import type { Post } from '@/types/post'
 
 interface PostCardProps {
@@ -23,6 +25,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
   const comments = post.comment_count ?? 0
   const category = getCategoryBySlug(post.category?.slug ?? categorySlug)
   const Icon     = category?.icon
+  const tags     = post.tags?.length ? post.tags : inferTags(post.category?.slug ?? categorySlug, post.title)
 
   const postLink = {
     to: '/forum/$category/$postId' as const,
@@ -83,6 +86,9 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
             {excerpt}
           </p>
         )}
+
+        {/* Ligne 3b : tags */}
+        {tags.length > 0 && <TagList tags={tags} max={3} className="mt-0.5" />}
 
         {/* Ligne 4 : barre d'actions style Twitter */}
         <div className="flex items-center justify-between mt-1 -ml-2 max-w-xs">
