@@ -5,16 +5,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return 'Inconnu'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return 'Inconnu'
   return new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
-export function formatRelativeDate(date: string | Date): string {
-  const diff = Date.now() - new Date(date).getTime()
+export function formatRelativeDate(date: string | Date | null | undefined): string {
+  if (!date) return "à l'instant"
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return "à l'instant"
+  const diff = Date.now() - d.getTime()
   const minutes = Math.floor(diff / 60_000)
   if (minutes < 1) return "à l'instant"
   if (minutes < 60) return `il y a ${minutes} min`

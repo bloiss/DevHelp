@@ -18,13 +18,18 @@ interface ToastState {
 
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  add: (t) => set((s) => ({
-    // Keep at most 4 toasts visible — drop oldest if over limit
-    toasts: [
-      ...s.toasts.slice(-3),
-      { ...t, id: crypto.randomUUID() },
-    ],
-  })),
+  add: (t) => set((s) => {
+    // Déduplique : si un toast avec le même titre existe déjà, on ignore
+    if (s.toasts.some((existing) => existing.title === t.title && existing.type === t.type)) {
+      return s
+    }
+    return {
+      toasts: [
+        ...s.toasts.slice(-3),
+        { ...t, id: crypto.randomUUID() },
+      ],
+    }
+  }),
   remove: (id) => set((s) => ({ toasts: s.toasts.filter(t => t.id !== id) })),
 }))
 

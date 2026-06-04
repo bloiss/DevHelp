@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { MessageSquare, ArrowUp, ArrowDown, Share2 } from 'lucide-react'
+import { MessageSquare, ThumbsUp, ThumbsDown, Share2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/shared/Avatar'
@@ -108,7 +108,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
                 : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
             )}
           >
-            <ArrowUp className="h-[18px] w-[18px]" />
+            <ThumbsUp className="h-[18px] w-[18px]" />
             {votes > 0 && (
               <span className={cn('text-xs tabular-nums', post.user_vote === 1 ? 'text-emerald-500' : 'group-hover/up:text-emerald-500')}>
                 {votes}
@@ -125,7 +125,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
                 : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
             )}
           >
-            <ArrowDown className="h-[18px] w-[18px]" />
+            <ThumbsDown className="h-[18px] w-[18px]" />
           </button>
 
           {/* Partager */}

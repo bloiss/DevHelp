@@ -14,7 +14,7 @@ const sizes = {
 }
 
 export function Avatar({ user, size = 'md', className }: AvatarProps) {
-  const initials = user.username.slice(0, 2).toUpperCase()
+  const initials = (user?.username ?? '?').slice(0, 2).toUpperCase()
 
   if (user.avatar_url) {
     return (

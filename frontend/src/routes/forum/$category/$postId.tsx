@@ -2,20 +2,21 @@ import { useState } from 'react'
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  MessageSquare, ArrowUp, ArrowDown, Share2,
+  MessageSquare, ThumbsUp, ThumbsDown, Share2,
   Trash2, EyeOff, Eye, ShieldAlert, MoreHorizontal, CheckCircle, XCircle, Flag,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BackButton }    from '@/components/shared/BackButton'
-import { CommentItem }   from '@/components/forum/CommentItem'
-import { CommentForm }   from '@/components/forum/CommentForm'
-import { Avatar }        from '@/components/shared/Avatar'
-import { Badge }         from '@/components/ui/badge'
+import { BackButton }      from '@/components/shared/BackButton'
+import { CommentItem }     from '@/components/forum/CommentItem'
+import { CommentForm }     from '@/components/forum/CommentForm'
+import { Avatar }          from '@/components/shared/Avatar'
+import { Badge }           from '@/components/ui/badge'
+import { ConfirmDialog }   from '@/components/shared/ConfirmDialog'
 import { getCategoryBySlug } from '@/data/categories'
-import { postService }   from '@/services/post.service'
-import { adminService }  from '@/services/admin.service'
-import { useAuthStore }  from '@/stores/authStore'
-import { toast }         from '@/stores/toastStore'
+import { postService }     from '@/services/post.service'
+import { adminService }    from '@/services/admin.service'
+import { useAuthStore }    from '@/stores/authStore'
+import { toast }           from '@/stores/toastStore'
 import { formatRelativeDate, cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/forum/$category/$postId')({
@@ -28,9 +29,9 @@ function PostPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const isAdminOrMod = user?.role === 'admin' || user?.role === 'moderator'
-  const isAdmin      = user?.role === 'admin'
 
   const { data: post, isLoading, isError } = useQuery({
     queryKey: ['post', postId],
@@ -49,7 +50,7 @@ function PostPage() {
   })
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => postService.createComment(postId, content),
+    mutationFn: (content: string) => postService.createComment(postId, content).then(() => {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] })
       queryClient.invalidateQueries({ queryKey: ['post', postId] })
@@ -110,6 +111,15 @@ function PostPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Supprimer ce post ?"
+        description="Cette action est irréversible. Le post et tous ses commentaires seront supprimés."
+        confirmLabel="Supprimer"
+        onConfirm={() => { setConfirmDelete(false); deleteMutation.mutate() }}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
       <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-4" />
 
       {/* ── Post — layout Twitter ── */}
@@ -160,7 +170,7 @@ function PostPage() {
                         transition={{ duration: 0.12 }}
                         className="absolute right-0 top-8 z-50 w-52 rounded-xl border border-border bg-popover shadow-xl overflow-hidden"
                       >
-                        {/* Status badges */}
+                        {/* Status badge */}
                         {post.status !== 'approved' && (
                           <div className={cn('px-3 py-2 text-xs font-medium border-b border-border', STATUS_COLOR[post.status])}>
                             Statut : {STATUS_LABEL[post.status]}
@@ -197,7 +207,7 @@ function PostPage() {
 
                         {(isOwner || isAdminOrMod) && (
                           <button
-                            onClick={() => { if (confirm('Supprimer ce post ?')) deleteMutation.mutate() }}
+                            onClick={() => { setMenuOpen(false); setConfirmDelete(true) }}
                             className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-destructive/10 transition-colors text-destructive border-t border-border"
                           >
                             <Trash2 className="h-4 w-4" /> Supprimer
@@ -224,7 +234,7 @@ function PostPage() {
 
               {/* Commentaires */}
               <div className="flex items-center gap-1.5 p-2 rounded-full text-muted-foreground text-sm">
-                <MessageSquare className="h-[18px] w-[18px]" />
+                <MessageSquare className="h-4.5 w-4.5" />
                 <span>{comments.length}</span>
               </div>
 
@@ -240,7 +250,7 @@ function PostPage() {
                     : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
                 )}
               >
-                <ArrowUp className="h-[18px] w-[18px]" />
+                <ThumbsUp className="h-4.5 w-4.5" />
                 <span className={cn('tabular-nums', post.user_vote === 1 && 'text-emerald-500')}>
                   {post.vote_count ?? 0}
                 </span>
@@ -258,7 +268,7 @@ function PostPage() {
                     : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
                 )}
               >
-                <ArrowDown className="h-[18px] w-[18px]" />
+                <ThumbsDown className="h-4.5 w-4.5" />
               </button>
 
               {/* Partager */}
@@ -269,10 +279,10 @@ function PostPage() {
                 }}
                 className="p-2 rounded-full text-muted-foreground hover:text-sky-500 hover:bg-sky-500/10 transition-colors"
               >
-                <Share2 className="h-[18px] w-[18px]" />
+                <Share2 className="h-4.5 w-4.5" />
               </button>
 
-              {/* Badge admin pour statut visible */}
+              {/* Badge statut pour admin */}
               {isAdminOrMod && post.status !== 'approved' && (
                 <span className={cn('ml-auto text-xs px-2 py-0.5 rounded-full border font-medium', STATUS_COLOR[post.status])}>
                   <ShieldAlert className="inline h-3 w-3 mr-1" />{STATUS_LABEL[post.status]}
@@ -293,11 +303,8 @@ function PostPage() {
       </div>
 
       {user && (
-        <div className="flex gap-3 mb-6">
-          <Avatar user={user} size="md" className="h-10 w-10 rounded-full shrink-0" />
-          <div className="flex-1">
-            <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
-          </div>
+        <div className="mb-6">
+          <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
         </div>
       )}
 
