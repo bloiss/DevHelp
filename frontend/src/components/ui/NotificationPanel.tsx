@@ -88,8 +88,13 @@ function NotifRow({ notif }: { notif: Notification }) {
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 export function NotificationPanel() {
-  const { notifications, unreadCount, isOpen, close, markAllRead } = useNotificationStore()
+  const { notifications, unreadCount, isOpen, close, markAllRead, fetchNotifications } = useNotificationStore()
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // Re-fetch à chaque ouverture pour avoir les données fraîches
+  useEffect(() => {
+    if (isOpen) fetchNotifications()
+  }, [isOpen, fetchNotifications])
 
   // Close on outside click
   useEffect(() => {
