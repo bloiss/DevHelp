@@ -60,6 +60,7 @@ func New(h *Handlers) *gin.Engine {
 	api.GET("/posts", middleware.OptionalAuth(h.JWTSecret), h.Post.List)
 	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
 	api.GET("/posts/:id/comments", middleware.OptionalAuth(h.JWTSecret), h.Comment.List)
+	api.GET("/users/search", h.User.SearchUsers)
 	api.GET("/users/:username", middleware.OptionalAuth(h.JWTSecret), h.User.GetProfile)
 	api.GET("/users/:username/followers", h.Follow.Followers)
 	api.GET("/users/:username/following", h.Follow.Following)

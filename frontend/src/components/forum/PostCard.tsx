@@ -40,7 +40,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
     >
       {/* ── Colonne gauche : avatar ── */}
       <div className="shrink-0 pt-0.5">
-        <Link {...postLink}>
+        <Link to="/profile/$username" params={{ username: post.author.username }} onClick={(e) => e.stopPropagation()}>
           <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full ring-1 ring-border hover:ring-primary/40 transition-all" />
         </Link>
       </div>
@@ -50,7 +50,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
 
         {/* Ligne 1 : username · date · badge catégorie */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-bold text-sm text-foreground">{post.author.username}</span>
+          <Link to="/profile/$username" params={{ username: post.author.username }} onClick={(e) => e.stopPropagation()} className="font-bold text-sm text-foreground hover:underline">{post.author.username}</Link>
           {post.author.role !== 'user' && (
             <Badge
               className="text-[10px] px-1.5 py-0"

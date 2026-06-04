@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Trash2, MoreHorizontal, CornerDownRight, Reply } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -70,14 +71,16 @@ export function CommentItem({
 
         {/* Avatar */}
         <div className="shrink-0 pt-0.5">
-          <Avatar
-            user={comment.author}
-            size={isReply ? 'sm' : 'md'}
-            className={cn(
-              'rounded-full',
-              isReply ? 'h-7 w-7' : 'h-9 w-9',
-            )}
-          />
+          <Link to="/profile/$username" params={{ username: comment.author.username }}>
+            <Avatar
+              user={comment.author}
+              size={isReply ? 'sm' : 'md'}
+              className={cn(
+                'rounded-full hover:opacity-80 transition-opacity',
+                isReply ? 'h-7 w-7' : 'h-9 w-9',
+              )}
+            />
+          </Link>
         </div>
 
         {/* Contenu */}
@@ -97,7 +100,7 @@ export function CommentItem({
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-sm">{comment.author.username}</span>
+              <Link to="/profile/$username" params={{ username: comment.author.username }} className="font-bold text-sm hover:underline">{comment.author.username}</Link>
               {comment.author.role !== 'user' && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                   {comment.author.role === 'moderator' ? 'Modo' : 'Admin'}

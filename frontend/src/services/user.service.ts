@@ -23,6 +23,9 @@ export const userService = {
       } as PublicProfile
     }),
 
+  searchUsers: (q: string) =>
+    api.get<{ data: User[] }>('/users/search', { params: { q, limit: 8 } }).then((r) => r.data.data),
+
   updateMe: (data: { username?: string; avatar_url?: string; banner_url?: string; bio?: string }) =>
     api.patch<User>('/users/me', data).then((r) => r.data),
 }

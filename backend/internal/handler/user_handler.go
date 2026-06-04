@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/bloiss/devhelp/backend/internal/service"
 	"github.com/gin-gonic/gin"
@@ -44,6 +45,26 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, profile)
+}
+
+func (h *UserHandler) SearchUsers(c *gin.Context) {
+	q := c.Query("q")
+	if len(q) < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "query too short"})
+		return
+	}
+	limit := 10
+	if l := c.Query("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	users, err := h.svc.SearchUsers(q, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": users})
 }
 
 type updateMeRequest struct {

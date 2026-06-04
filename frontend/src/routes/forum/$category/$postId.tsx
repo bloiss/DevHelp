@@ -200,13 +200,15 @@ function PostPage() {
       <article className="border-b border-border pb-4">
         <div className="flex gap-3">
           <div className="shrink-0">
-            <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full" />
+            <button onClick={() => navigate({ to: '/profile/$username', params: { username: post.author.username } })}>
+              <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full hover:opacity-80 transition-opacity" />
+            </button>
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-bold text-sm">{post.author.username}</span>
+                <button onClick={() => navigate({ to: '/profile/$username', params: { username: post.author.username } })} className="font-bold text-sm hover:underline">{post.author.username}</button>
                 {post.author.role !== 'user' && (
                   <Badge className="text-[10px] px-1.5 py-0"
                     style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid var(--gold-border)' }}>

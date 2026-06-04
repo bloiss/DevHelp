@@ -79,6 +79,14 @@ func (s *UserService) GetProfile(username string, requesterID *uuid.UUID) (*Prof
 	}, nil
 }
 
+// SearchUsers recherche des utilisateurs par username (ilike).
+func (s *UserService) SearchUsers(query string, limit int) ([]model.User, error) {
+	if limit <= 0 || limit > 20 {
+		limit = 10
+	}
+	return s.userRepo.SearchByUsername(query, limit)
+}
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 type UserListResult struct {

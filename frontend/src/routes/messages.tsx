@@ -13,6 +13,7 @@ import { AuthWall } from '@/components/shared/AuthWall'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/stores/authStore'
 import { messageService, type ApiConversation, type ApiMessage } from '@/services/message.service'
+import { UserSearchDialog } from '@/components/messages/UserSearchDialog'
 import { cn, formatRelativeDate } from '@/lib/utils'
 
 export const Route = createFileRoute('/messages')({
@@ -322,9 +323,21 @@ function MessagesPage() {
           selectedId ? 'hidden md:flex' : 'flex',
         )}
       >
+        {/* Dialog recherche utilisateur */}
+        {showUserSearch && <UserSearchDialog onClose={() => setShowUserSearch(false)} />}
+
         {/* Header sidebar */}
         <div className="px-4 pt-4 pb-3 border-b border-border">
-          <h1 className="text-base font-semibold mb-3">Messages</h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-base font-semibold">Messages</h1>
+            <button
+              onClick={() => setShowUserSearch(true)}
+              className="p-1.5 rounded-full hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              title="Nouveau message"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </div>
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
