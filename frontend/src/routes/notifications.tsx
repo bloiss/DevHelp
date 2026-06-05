@@ -154,7 +154,7 @@ function NotifRow({ notif, onMarkRead, onMarkUnread, onStar, onArchive, onDelete
       </div>
 
       <div className="flex-1 min-w-0 cursor-pointer" onClick={handleRowClick}>
-        <p className={cn('text-sm leading-snug', notif.read ? 'text-muted-foreground' : 'font-semibold text-foreground')}>
+        <p className={cn('text-sm leading-snug truncate', notif.read ? 'text-muted-foreground' : 'font-semibold text-foreground')}>
           {title}
         </p>
         {body && (
@@ -168,7 +168,7 @@ function NotifRow({ notif, onMarkRead, onMarkUnread, onStar, onArchive, onDelete
         </p>
       </div>
 
-      <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1">
+      <div className="flex items-center gap-0.5 shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
         {notif.read ? (
           <ActionBtn
             title="Marquer non lu"
@@ -561,11 +561,11 @@ function NotificationsPage() {
 
   return (
     <div
-      className="max-w-7xl mx-auto flex gap-0 overflow-hidden"
+      className="w-full flex overflow-hidden"
       style={{ height: 'calc(100vh - 56px)' }}
     >
       {/* Sidebar desktop */}
-      <div className="hidden md:flex">
+      <div className="hidden md:flex shrink-0">
         <Sidebar
           tab={tab}
           setTab={setTab}
@@ -597,9 +597,9 @@ function NotificationsPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="font-semibold text-base truncate">{tabLabel}</h1>
-            <span className="text-sm text-muted-foreground shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <h1 className="font-semibold text-base min-w-48">{tabLabel}</h1>
+            <span className="text-sm text-muted-foreground">
               ({filtered.length})
             </span>
           </div>
@@ -640,7 +640,7 @@ function NotificationsPage() {
               <div className="p-5 rounded-2xl bg-muted">
                 <BellOff className="h-8 w-8 text-muted-foreground" />
               </div>
-              <div>
+              <div className="w-72">
                 <p className="font-medium text-foreground">{emptyMsg.title}</p>
                 <p className="text-sm text-muted-foreground mt-1">{emptyMsg.description}</p>
               </div>
