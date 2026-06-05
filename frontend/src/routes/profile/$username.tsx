@@ -61,7 +61,7 @@ function ProfilePage() {
   })
 
   if (isLoading) return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="h-52 bg-muted animate-pulse" />
       <div className="px-4 pb-4">
         <div className="flex justify-between items-end -mt-12 mb-4">
@@ -84,7 +84,7 @@ function ProfilePage() {
   const roleLabel = ROLE_LABEL[profile.role] ?? null
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
 
       {/* ── Banner — pleine largeur ── */}
       <div className="h-52 relative overflow-hidden bg-linear-to-br from-primary/20 via-primary/10 to-muted">
@@ -96,7 +96,7 @@ function ProfilePage() {
       </div>
 
       {/* ── Grille desktop : contenu principal + sidebar ── */}
-      <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-0 lg:px-4">
+      <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-0 lg:px-6 w-full">
 
         {/* ── Colonne principale ── */}
         <div className="flex-1 min-w-0 border-r border-border lg:border-r lg:pr-0">
