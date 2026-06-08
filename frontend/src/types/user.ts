@@ -5,6 +5,8 @@ export interface User {
   email: string
   username: string
   avatar_url?: string
+  banner_url?: string
+  bio?: string
   role: UserRole
   email_verified: boolean
   created_at: string
@@ -16,6 +18,7 @@ export interface PublicProfile {
   id: string
   username: string
   avatar_url?: string
+  banner_url?: string
   bio?: string
   role: UserRole
   created_at: string

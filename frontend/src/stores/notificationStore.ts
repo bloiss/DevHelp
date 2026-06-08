@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { notificationService, type ApiNotification } from '@/services/notification.service'
 
-export type NotifKind = 'comment' | 'like' | 'reply' | 'vote' | 'mention' | 'resolved' | 'new_post'
+export type NotifKind = 'comment' | 'like' | 'reply' | 'vote' | 'mention' | 'resolved' | 'new_post' | 'follow' | 'message'
 
 export interface Notification {
   id: string
@@ -11,10 +11,12 @@ export interface Notification {
   fromUser?: string
   href?: string
   read: boolean
+  isStarred: boolean
+  isArchived: boolean
   created_at: string
 }
 
-function mapApiNotif(n: ApiNotification): Notification {
+export function mapApiNotif(n: ApiNotification): Notification {
   const p = n.payload
   const href = p.post_category && p.post_id
     ? `/forum/${p.post_category}/${p.post_id}`
@@ -29,6 +31,8 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href,
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -41,6 +45,50 @@ function mapApiNotif(n: ApiNotification): Notification {
       fromUser: p.actor,
       href,
       read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'message_request') {
+    return {
+      id: n.id,
+      kind: 'message',
+      title: `${p.actor} t'a envoyé une demande de message`,
+      body: 'Clique pour voir la demande',
+      fromUser: p.actor,
+      href: p.conv_id ? `/messages?conv=${p.conv_id}` : '/messages',
+      read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'message_accepted') {
+    return {
+      id: n.id,
+      kind: 'message',
+      title: `${p.actor} a accepté ta demande de message`,
+      body: 'Vous pouvez maintenant discuter',
+      fromUser: p.actor,
+      href: p.conv_id ? `/messages?conv=${p.conv_id}` : '/messages',
+      read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
+      created_at: n.created_at,
+    }
+  }
+  if (n.type === 'follow') {
+    return {
+      id: n.id,
+      kind: 'follow',
+      title: `${p.actor} te suit maintenant`,
+      body: 'Découvre son profil',
+      fromUser: p.actor,
+      href: `/profile/${p.actor}`,
+      read: n.read,
+      isStarred: n.is_starred ?? false,
+      isArchived: n.is_archived ?? false,
       created_at: n.created_at,
     }
   }
@@ -50,6 +98,8 @@ function mapApiNotif(n: ApiNotification): Notification {
     title: n.type,
     body: '',
     read: n.read,
+    isStarred: n.is_starred ?? false,
+    isArchived: n.is_archived ?? false,
     created_at: n.created_at,
   }
 }

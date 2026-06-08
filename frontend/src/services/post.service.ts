@@ -24,8 +24,11 @@ export const postService = {
   getComments: (postId: string) =>
     api.get<Comment[]>(`/posts/${postId}/comments`).then((r) => r.data),
 
-  createComment: (postId: string, content: string) =>
-    api.post<Comment>(`/posts/${postId}/comments`, { content }).then((r) => r.data),
+  createComment: (postId: string, content: string, parentId?: string | null) =>
+    api.post<Comment>(`/posts/${postId}/comments`, {
+      content,
+      ...(parentId ? { parent_id: parentId } : {}),
+    }).then((r) => r.data),
 
   voteComment: (postId: string, commentId: string, value: 1 | -1) =>
     api.post(`/posts/${postId}/comments/${commentId}/like`, { value }),

@@ -1,8 +1,28 @@
+// @title           DevHelp API
+// @version         1.0
+// @description     API REST du forum DevHelp — entraide Dev & IA.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   DevHelp Team
+// @contact.url    https://github.com/bloiss/DevHelp
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Entrez "Bearer <token>"
+
 package main
 
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/bloiss/devhelp/backend/internal/config"
@@ -12,17 +32,47 @@ import (
 	"github.com/bloiss/devhelp/backend/internal/repository"
 	"github.com/bloiss/devhelp/backend/internal/router"
 	"github.com/bloiss/devhelp/backend/internal/service"
+	"github.com/getsentry/sentry-go"
 	"github.com/joho/godotenv"
 )
 
+// loadEnv remonte l'arborescence depuis le répertoire courant jusqu'à trouver un .env.
+func loadEnv() {
+	dir, _ := os.Getwd()
+	for {
+		path := filepath.Join(dir, ".env")
+		if err := godotenv.Load(path); err == nil {
+			return
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	log.Println("No .env file found, using environment variables")
+}
+
 func main() {
 	if os.Getenv("ENV") != "production" {
-		if err := godotenv.Load("../.env"); err != nil {
-			log.Println("No .env file found, using environment variables")
-		}
+		loadEnv()
 	}
 
 	cfg := config.Load()
+
+	// ─── Sentry ───────────────────────────────────────────────────
+	if cfg.SentryDSN != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn:              cfg.SentryDSN,
+			Environment:      cfg.Env,
+			TracesSampleRate: 0.2,
+			EnableTracing:    true,
+		}); err != nil {
+			log.Printf("sentry init failed: %v", err)
+		} else {
+			log.Println("Sentry initialized")
+		}
+	}
 
 	db := database.Connect(cfg.DatabaseURL)
 
@@ -41,12 +91,18 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	likeRepo    := repository.NewLikeRepository(db)
 	notifRepo   := repository.NewNotificationRepository(db)
+	pushRepo    := repository.NewPushRepository(db)
 	followRepo  := repository.NewFollowRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
 
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _  := time.ParseDuration(cfg.JWTAccessExpiry)
 	refreshExpiry, _ := time.ParseDuration(cfg.JWTRefreshExpiry)
+
+	uploadService, err := service.NewUploadService(cfg)
+	if err != nil {
+		log.Printf("warning: upload service unavailable: %v", err)
+	}
 
 	authService    := service.NewAuthService(userRepo, cfg.JWTAccessSecret, cfg.JWTRefreshSecret, accessExpiry, refreshExpiry)
 	emailService   := service.NewEmailService(cfg.ResendAPIKey, cfg.ResendFrom, cfg.AppURL)
@@ -58,13 +114,20 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	postService     := service.NewPostService(postRepo, categoryRepo, userRepo)
 	notifService    := service.NewNotificationService(notifRepo)
-	commentService  := service.NewCommentService(commentRepo, postRepo, notifService)
-	likeService     := service.NewLikeService(likeRepo)
-	followService   := service.NewFollowService(followRepo)
+	pushService     := service.NewPushService(pushRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, cfg.VAPIDSubject)
+	notifService.SetPushService(pushService)
+	commentService  := service.NewCommentService(commentRepo, postRepo, notifService, wsHub)
+	likeService     := service.NewLikeService(likeRepo, postRepo, userRepo, notifService, wsHub)
+	followService   := service.NewFollowService(followRepo, userRepo, notifService, wsHub)
 	messageService  := service.NewMessageService(messageRepo, wsHub, notifService, userRepo, followRepo)
 	userService     := service.NewUserService(userRepo, postRepo, followRepo)
 
 	// ─── Handlers ─────────────────────────────────────────────────
+	var uploadHandler *handler.UploadHandler
+	if uploadService != nil {
+		uploadHandler = handler.NewUploadHandler(uploadService)
+	}
+
 	authHandler         := handler.NewAuthHandler(authService, emailService, captchaService)
 	oauthHandler        := handler.NewOAuthHandler(oauthService)
 	categoryHandler     := handler.NewCategoryHandler(categoryService)
@@ -73,10 +136,10 @@ func main() {
 	likeHandler         := handler.NewLikeHandler(likeService)
 	userHandler         := handler.NewUserHandler(userService)
 	adminHandler        := handler.NewAdminHandler(userService, postService)
-	notificationHandler := handler.NewNotificationHandler(notifService)
+	notificationHandler := handler.NewNotificationHandler(notifService, pushService)
 	followHandler       := handler.NewFollowHandler(followService, userRepo)
 	messageHandler      := handler.NewMessageHandler(messageService)
-	wsHandler           := handler.NewWSHandler(wsHub, cfg.JWTAccessSecret)
+	wsHandler           := handler.NewWSHandler(wsHub, cfg.JWTAccessSecret, messageService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
@@ -92,6 +155,7 @@ func main() {
 		Follow:       followHandler,
 		Message:      messageHandler,
 		WS:           wsHandler,
+		Upload:       uploadHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
 

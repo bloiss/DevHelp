@@ -10,8 +10,12 @@ import (
 )
 
 func Connect(dsn string) *gorm.DB {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true, // désactive les prepared statements (évite "cached plan must not change result type")
+	}), &gorm.Config{
+		Logger:                 logger.Default.LogMode(logger.Info),
+		PrepareStmt:            false,
 	})
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
@@ -46,6 +50,8 @@ func Migrate(db *gorm.DB) error {
 		&model.PushSubscription{},
 		&model.Conversation{},
 		&model.Message{},
+		&model.MessageRead{},
+		&model.UserPresence{},
 		&model.ModerationLog{},
 		&model.Report{},
 	)

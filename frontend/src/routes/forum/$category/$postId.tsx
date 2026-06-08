@@ -1,26 +1,87 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  MessageSquare, ArrowUp, ArrowDown, Share2,
+  MessageSquare, ThumbsUp, ThumbsDown, Share2,
   Trash2, EyeOff, Eye, ShieldAlert, MoreHorizontal, CheckCircle, XCircle, Flag,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BackButton }    from '@/components/shared/BackButton'
-import { CommentItem }   from '@/components/forum/CommentItem'
-import { CommentForm }   from '@/components/forum/CommentForm'
-import { Avatar }        from '@/components/shared/Avatar'
-import { Badge }         from '@/components/ui/badge'
+import { BackButton }        from '@/components/shared/BackButton'
+import { CommentThread }     from '@/components/forum/CommentThread'
+import { CommentForm }       from '@/components/forum/CommentForm'
+import { CommentSkeleton }   from '@/components/forum/CommentSkeleton'
+import { Avatar }            from '@/components/shared/Avatar'
+import { Badge }             from '@/components/ui/badge'
+import { Skeleton }          from '@/components/ui/Skeleton'
+import { ConfirmDialog }     from '@/components/shared/ConfirmDialog'
+import { TagList }           from '@/components/shared/TagBadge'
+import { getMockComments }   from '@/data/mockComments'
 import { getCategoryBySlug } from '@/data/categories'
-import { postService }   from '@/services/post.service'
-import { adminService }  from '@/services/admin.service'
-import { useAuthStore }  from '@/stores/authStore'
-import { toast }         from '@/stores/toastStore'
+import { inferTags }         from '@/data/postTags'
+import { postService }       from '@/services/post.service'
+import { adminService }      from '@/services/admin.service'
+import { useAuthStore }      from '@/stores/authStore'
+import { toast }             from '@/stores/toastStore'
 import { formatRelativeDate, cn } from '@/lib/utils'
+import type { Comment } from '@/types/post'
 
 export const Route = createFileRoute('/forum/$category/$postId')({
   component: PostPage,
 })
+
+/** Regroupe une liste plate de commentaires en arbre (parent_id → replies[]) */
+function buildCommentTree(flat: Comment[]): Comment[] {
+  const map = new Map<string, Comment & { replies: Comment[] }>()
+  flat.forEach((c) => map.set(c.id, { ...c, replies: [] }))
+
+  const roots: (Comment & { replies: Comment[] })[] = []
+  flat.forEach((c) => {
+    if (c.parent_id && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.replies.push(map.get(c.id)!)
+    } else {
+      roots.push(map.get(c.id)!)
+    }
+  })
+  return roots
+}
+
+/** Compte récursivement tous les commentaires d'un arbre */
+function countAll(comments: Comment[]): number {
+  return comments.reduce((n, c) => n + 1 + countAll(c.replies ?? []), 0)
+}
+
+function PostDetailSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <Skeleton className="h-5 w-28 mb-6" />
+      <div className="flex gap-3">
+        <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-6 w-3/4" />
+          {[100, 90, 80, 65].map((w, i) => (
+            <Skeleton key={i} className="h-4" style={{ width: `${w}%` }} />
+          ))}
+          <div className="flex gap-2 pt-2">
+            <Skeleton className="h-7 w-14 rounded-full" />
+            <Skeleton className="h-7 w-14 rounded-full" />
+            <Skeleton className="h-7 w-7 rounded-full" />
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-border pt-6 space-y-1">
+        <Skeleton className="h-4 w-32" />
+        <div>
+          <CommentSkeleton />
+          <CommentSkeleton />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function PostPage() {
   const { category: slug, postId } = Route.useParams()
@@ -28,20 +89,28 @@ function PostPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
 
   const isAdminOrMod = user?.role === 'admin' || user?.role === 'moderator'
-  const isAdmin      = user?.role === 'admin'
 
   const { data: post, isLoading, isError } = useQuery({
     queryKey: ['post', postId],
     queryFn: () => postService.get(postId),
   })
 
-  const { data: comments = [], isLoading: commentsLoading } = useQuery({
+  const { data: rawComments = [], isLoading: commentsLoading } = useQuery({
     queryKey: ['comments', postId],
     queryFn: () => postService.getComments(postId),
     enabled: !!post,
+    refetchInterval: 30_000,
   })
+
+  // Utilise les mock data riches si le post n'a pas encore de commentaires réels
+  const sourceComments = rawComments.length > 0 ? rawComments : getMockComments(postId)
+  const commentTree = buildCommentTree(sourceComments)
+  const totalCount = countAll(commentTree)
+  const usingMock = rawComments.length === 0
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.vote(postId, value),
@@ -55,6 +124,24 @@ function PostPage() {
       queryClient.invalidateQueries({ queryKey: ['post', postId] })
     },
   })
+
+  const replyMutation = useMutation({
+    mutationFn: ({ parentId, content }: { parentId: string; content: string }) =>
+      postService.createComment(postId, content, parentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+      queryClient.invalidateQueries({ queryKey: ['post', postId] })
+      toast.success('Réponse publiée !')
+    },
+    onError: () => toast.error('Erreur', { description: 'Impossible de publier la réponse.' }),
+  })
+
+  const handleReply = useCallback(
+    async (parentId: string, _parentAuthor: string, content: string) => {
+      await replyMutation.mutateAsync({ parentId, content })
+    },
+    [replyMutation],
+  )
 
   const deleteMutation = useMutation({
     mutationFn: () => postService.delete(postId),
@@ -76,25 +163,13 @@ function PostPage() {
     onError: () => toast.error('Erreur'),
   })
 
-  if (isLoading) return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-      <div className="h-5 w-28 bg-muted animate-pulse rounded mb-6" />
-      <div className="flex gap-3">
-        <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-40 bg-muted animate-pulse rounded" />
-          <div className="h-6 w-3/4 bg-muted animate-pulse rounded" />
-          {[...Array(4)].map((_, i) => <div key={i} className="h-4 bg-muted animate-pulse rounded" style={{ width: `${90 - i * 8}%` }} />)}
-        </div>
-      </div>
-    </div>
-  )
-
+  if (isLoading) return <PostDetailSkeleton />
   if (isError || !post) throw notFound()
 
   const category = getCategoryBySlug(slug)
   const Icon = category?.icon
   const isOwner = user?.id === post.user_id
+  const tags = post.tags?.length ? post.tags : inferTags(slug, post.title)
 
   const STATUS_COLOR: Record<string, string> = {
     pending_moderation: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
@@ -110,24 +185,30 @@ function PostPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Supprimer ce post ?"
+        description="Cette action est irréversible. Le post et tous ses commentaires seront supprimés."
+        confirmLabel="Supprimer"
+        onConfirm={() => { setConfirmDelete(false); deleteMutation.mutate() }}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
       <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-4" />
 
-      {/* ── Post — layout Twitter ── */}
+      {/* ── Post ── */}
       <article className="border-b border-border pb-4">
         <div className="flex gap-3">
-
-          {/* Avatar gauche */}
           <div className="shrink-0">
-            <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full" />
+            <button onClick={() => navigate({ to: '/profile/$username', params: { username: post.author.username } })}>
+              <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full hover:opacity-80 transition-opacity" />
+            </button>
           </div>
 
-          {/* Contenu droite */}
           <div className="flex-1 min-w-0">
-
-            {/* Header : username · date · badges */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-bold text-sm">{post.author.username}</span>
+                <button onClick={() => navigate({ to: '/profile/$username', params: { username: post.author.username } })} className="font-bold text-sm hover:underline">{post.author.username}</button>
                 {post.author.role !== 'user' && (
                   <Badge className="text-[10px] px-1.5 py-0"
                     style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid var(--gold-border)' }}>
@@ -142,7 +223,6 @@ function PostPage() {
                 )}
               </div>
 
-              {/* Menu modération (admin/modo/owner) */}
               {(isAdminOrMod || isOwner) && (
                 <div className="relative">
                   <button
@@ -160,13 +240,11 @@ function PostPage() {
                         transition={{ duration: 0.12 }}
                         className="absolute right-0 top-8 z-50 w-52 rounded-xl border border-border bg-popover shadow-xl overflow-hidden"
                       >
-                        {/* Status badges */}
                         {post.status !== 'approved' && (
                           <div className={cn('px-3 py-2 text-xs font-medium border-b border-border', STATUS_COLOR[post.status])}>
                             Statut : {STATUS_LABEL[post.status]}
                           </div>
                         )}
-
                         {isAdminOrMod && (
                           <>
                             {post.status !== 'approved' && (
@@ -194,10 +272,9 @@ function PostPage() {
                             </button>
                           </>
                         )}
-
                         {(isOwner || isAdminOrMod) && (
                           <button
-                            onClick={() => { if (confirm('Supprimer ce post ?')) deleteMutation.mutate() }}
+                            onClick={() => { setMenuOpen(false); setConfirmDelete(true) }}
                             className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-destructive/10 transition-colors text-destructive border-t border-border"
                           >
                             <Trash2 className="h-4 w-4" /> Supprimer
@@ -210,43 +287,39 @@ function PostPage() {
               )}
             </div>
 
-            {/* Titre */}
-            <h1 className="text-xl font-bold mt-1 mb-3 leading-snug">{post.title}</h1>
+            <h1 className="text-xl font-bold mt-1 mb-2 leading-snug">{post.title}</h1>
 
-            {/* Contenu HTML */}
+            {/* Tags */}
+            {tags.length > 0 && <TagList tags={tags} max={5} className="mb-3" />}
+
             <div
               className="prose prose-sm dark:prose-invert max-w-none mb-4"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
 
-            {/* Barre d'actions */}
             <div className="flex items-center gap-1 -ml-2 border-t border-border/60 pt-3">
-
-              {/* Commentaires */}
-              <div className="flex items-center gap-1.5 p-2 rounded-full text-muted-foreground text-sm">
-                <MessageSquare className="h-[18px] w-[18px]" />
-                <span>{comments.length}</span>
+              <div className="flex items-center gap-1.5 p-2 rounded-full text-muted-foreground text-sm min-w-[36px]">
+                <MessageSquare className="h-4 w-4 shrink-0" />
+                <span className="tabular-nums">{totalCount}</span>
               </div>
 
-              {/* Vote up */}
               <button
                 onClick={() => user && voteMutation.mutate(1)}
                 disabled={!user}
                 className={cn(
-                  'flex items-center gap-1.5 p-2 rounded-full text-sm transition-colors duration-150',
+                  'flex items-center gap-1.5 p-2 rounded-full text-sm transition-colors duration-150 min-w-[36px]',
                   !user && 'opacity-40 cursor-not-allowed',
                   post.user_vote === 1
                     ? 'text-emerald-500 bg-emerald-500/10'
                     : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
                 )}
               >
-                <ArrowUp className="h-[18px] w-[18px]" />
+                <ThumbsUp className="h-4 w-4 shrink-0" />
                 <span className={cn('tabular-nums', post.user_vote === 1 && 'text-emerald-500')}>
                   {post.vote_count ?? 0}
                 </span>
               </button>
 
-              {/* Vote down */}
               <button
                 onClick={() => user && voteMutation.mutate(-1)}
                 disabled={!user}
@@ -258,10 +331,9 @@ function PostPage() {
                     : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
                 )}
               >
-                <ArrowDown className="h-[18px] w-[18px]" />
+                <ThumbsDown className="h-4 w-4" />
               </button>
 
-              {/* Partager */}
               <button
                 onClick={() => {
                   navigator.clipboard?.writeText(window.location.href)
@@ -269,10 +341,9 @@ function PostPage() {
                 }}
                 className="p-2 rounded-full text-muted-foreground hover:text-sky-500 hover:bg-sky-500/10 transition-colors"
               >
-                <Share2 className="h-[18px] w-[18px]" />
+                <Share2 className="h-4 w-4" />
               </button>
 
-              {/* Badge admin pour statut visible */}
               {isAdminOrMod && post.status !== 'approved' && (
                 <span className={cn('ml-auto text-xs px-2 py-0.5 rounded-full border font-medium', STATUS_COLOR[post.status])}>
                   <ShieldAlert className="inline h-3 w-3 mr-1" />{STATUS_LABEL[post.status]}
@@ -283,42 +354,55 @@ function PostPage() {
         </div>
       </article>
 
-      {/* ── Commentaires ── */}
+      {/* ── En-tête section commentaires ── */}
       <div className="flex items-center gap-3 mt-6 mb-4">
-        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
         <h2 className="font-semibold text-sm">
-          {comments.length} commentaire{comments.length > 1 ? 's' : ''}
+          {totalCount} commentaire{totalCount > 1 ? 's' : ''}
         </h2>
+        {usingMock && (
+          <span className="text-[11px] text-muted-foreground italic">· aperçu</span>
+        )}
         <div className="flex-1 h-px bg-border" />
       </div>
 
+      {/* Formulaire de commentaire principal */}
       {user && (
-        <div className="flex gap-3 mb-6">
-          <Avatar user={user} size="md" className="h-10 w-10 rounded-full shrink-0" />
-          <div className="flex-1">
-            <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
-          </div>
+        <div className="mb-6">
+          <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
         </div>
       )}
 
+      {/* ── Threads ── */}
       {commentsLoading ? (
-        <div className="space-y-4">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex gap-3 py-3">
-              <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
-              <div className="flex-1 space-y-2 pt-1">
-                <div className="h-3 w-32 bg-muted animate-pulse rounded" />
-                <div className="h-4 w-full bg-muted animate-pulse rounded" />
-              </div>
-            </div>
-          ))}
+        <div>
+          <CommentSkeleton />
+          <CommentSkeleton />
+          <CommentSkeleton />
         </div>
-      ) : comments.length > 0 ? (
-        <div className="divide-y divide-border">
-          {comments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} postId={postId} isAdminOrMod={isAdminOrMod} />
-          ))}
-        </div>
+      ) : commentTree.length > 0 ? (
+        <AnimatePresence initial={false}>
+          <div>
+            {commentTree.map((comment, i) => (
+              <motion.div
+                key={comment.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: i * 0.03 }}
+              >
+                <CommentThread
+                  comment={comment}
+                  postId={postId}
+                  isAdminOrMod={isAdminOrMod}
+                  depth={0}
+                  activeReplyId={activeReplyId}
+                  onSetActiveReply={setActiveReplyId}
+                  onReply={handleReply}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </AnimatePresence>
       ) : (
         <p className="text-center text-sm text-muted-foreground py-10">
           Aucun commentaire. Sois le premier à répondre !

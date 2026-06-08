@@ -1,0 +1,2578 @@
+basePath: /api/v1
+definitions:
+  handler.categoryWriteRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 60
+        minLength: 2
+        type: string
+      pillar:
+        type: string
+    required:
+    - name
+    type: object
+  handler.createCommentRequest:
+    properties:
+      content:
+        type: string
+    required:
+    - content
+    type: object
+  handler.forgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  handler.loginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handler.logoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handler.postCreateRequest:
+    properties:
+      category_id:
+        type: string
+      content:
+        type: string
+      title:
+        maxLength: 200
+        minLength: 5
+        type: string
+    required:
+    - category_id
+    - content
+    - title
+    type: object
+  handler.postStatusRequest:
+    properties:
+      is_hidden:
+        type: boolean
+      status:
+        $ref: '#/definitions/model.ContentStatus'
+    required:
+    - status
+    type: object
+  handler.postUpdateRequest:
+    properties:
+      category_id:
+        type: string
+      content:
+        type: string
+      title:
+        maxLength: 200
+        minLength: 5
+        type: string
+    type: object
+  handler.refreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handler.registerRequest:
+    properties:
+      captcha_token:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - captcha_token
+    - email
+    - password
+    - username
+    type: object
+  handler.resetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  handler.setPasswordRequest:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - new_password
+    type: object
+  handler.setRoleRequest:
+    properties:
+      role:
+        $ref: '#/definitions/model.UserRole'
+    required:
+    - role
+    type: object
+  handler.updateMeRequest:
+    properties:
+      avatar_url:
+        type: string
+      banner_url:
+        type: string
+      bio:
+        type: string
+      username:
+        type: string
+    type: object
+  handler.voteRequest:
+    properties:
+      value:
+        type: integer
+    required:
+    - value
+    type: object
+  model.Category:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      pillar:
+        description: '"dev" | "ai"'
+        type: string
+      slug:
+        type: string
+    type: object
+  model.Comment:
+    properties:
+      author:
+        $ref: '#/definitions/model.User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_hidden:
+        type: boolean
+      post_id:
+        type: string
+      status:
+        $ref: '#/definitions/model.ContentStatus'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      user_vote:
+        type: integer
+      vote_count:
+        description: Champs calculés (non stockés en DB)
+        type: integer
+    type: object
+  model.ContentStatus:
+    enum:
+    - pending_moderation
+    - approved
+    - flagged
+    - blocked
+    type: string
+    x-enum-varnames:
+    - StatusPendingModeration
+    - StatusApproved
+    - StatusFlagged
+    - StatusBlocked
+  model.Post:
+    properties:
+      author:
+        allOf:
+        - $ref: '#/definitions/model.User'
+        description: Relations
+      category:
+        $ref: '#/definitions/model.Category'
+      category_id:
+        type: string
+      comment_count:
+        type: integer
+      content:
+        description: TipTap HTML
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/model.PostImage'
+        type: array
+      is_hidden:
+        type: boolean
+      status:
+        $ref: '#/definitions/model.ContentStatus'
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      user_vote:
+        type: integer
+      vote_count:
+        description: Champs calculés (non stockés en DB)
+        type: integer
+    type: object
+  model.PostImage:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      mime_type:
+        type: string
+      post_id:
+        type: string
+      size_bytes:
+        type: integer
+      url:
+        type: string
+    type: object
+  model.User:
+    properties:
+      avatar_url:
+        type: string
+      banner_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      id:
+        type: string
+      role:
+        $ref: '#/definitions/model.UserRole'
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  model.UserRole:
+    enum:
+    - user
+    - moderator
+    - admin
+    type: string
+    x-enum-varnames:
+    - RoleUser
+    - RoleModerator
+    - RoleAdmin
+  service.PostListResult:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  service.PublicProfile:
+    properties:
+      follower_count:
+        type: integer
+      following_count:
+        type: integer
+      is_following:
+        type: boolean
+      post_count:
+        type: integer
+      recent_posts:
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  service.UserListResult:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  service.VoteResult:
+    properties:
+      user_vote:
+        description: +1, -1 ou null
+        type: integer
+      vote_count:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: DevHelp Team
+    url: https://github.com/bloiss/DevHelp
+  description: API REST du forum DevHelp — entraide Dev & IA.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: DevHelp API
+  version: "1.0"
+paths:
+  /api/v1/admin/posts:
+    get:
+      description: Retourne tous les posts toutes statuts confondus, avec filtre optionnel.
+        Accessible aux admins et modérateurs.
+      parameters:
+      - description: Filtrer par statut (published, pending, rejected, hidden)
+        in: query
+        name: status
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Par page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.PostListResult'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Lister tous les posts avec filtre de statut (admin)
+      tags:
+      - admin
+  /api/v1/admin/posts/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Modifie le statut de modération d'un post (published, pending,
+        rejected, hidden). Réservé aux admins et modérateurs.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Nouveau statut
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.postStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Changer le statut d'un post (admin/modo)
+      tags:
+      - admin
+  /api/v1/admin/users:
+    get:
+      description: Retourne la liste paginée de tous les utilisateurs. Accessible
+        aux admins et modérateurs.
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Par page
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.UserListResult'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Lister tous les utilisateurs (admin)
+      tags:
+      - admin
+  /api/v1/admin/users/{id}/role:
+    patch:
+      consumes:
+      - application/json
+      description: Modifie le rôle d'un utilisateur (user, moderator, admin). Réservé
+        aux administrateurs.
+      parameters:
+      - description: UUID utilisateur
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Nouveau rôle
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.setRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Changer le rôle d'un utilisateur (admin)
+      tags:
+      - admin
+  /api/v1/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Envoie un email de réinitialisation si l'adresse existe. Retourne
+        toujours 200 pour ne pas révéler les comptes existants.
+      parameters:
+      - description: Email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.forgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Demande de réinitialisation de mot de passe
+      tags:
+      - auth
+  /api/v1/auth/github:
+    get:
+      description: Génère un state CSRF et redirige l'utilisateur vers la page d'authentification
+        GitHub.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to GitHub
+          schema:
+            type: string
+      summary: Redirection vers GitHub OAuth
+      tags:
+      - auth
+  /api/v1/auth/github/callback:
+    get:
+      description: Reçoit le code d'autorisation GitHub, échange les tokens, crée
+        ou connecte l'utilisateur et redirige vers le frontend avec les tokens JWT.
+      parameters:
+      - description: State CSRF
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Code d'autorisation
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to /auth/login?error=oauth_failed
+          schema:
+            type: string
+      summary: Callback GitHub OAuth
+      tags:
+      - auth
+  /api/v1/auth/google:
+    get:
+      description: Génère un state CSRF et redirige l'utilisateur vers la page d'authentification
+        Google.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to Google
+          schema:
+            type: string
+      summary: Redirection vers Google OAuth
+      tags:
+      - auth
+  /api/v1/auth/google/callback:
+    get:
+      description: Reçoit le code d'autorisation Google, échange les tokens, crée
+        ou connecte l'utilisateur et redirige vers le frontend avec les tokens JWT.
+      parameters:
+      - description: State CSRF
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Code d'autorisation
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to /auth/login?error=oauth_failed
+          schema:
+            type: string
+      summary: Callback Google OAuth
+      tags:
+      - auth
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authentifie un utilisateur et retourne les tokens JWT d'accès et
+        de rafraîchissement.
+      parameters:
+      - description: Identifiants
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Connexion par email/mot de passe
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Révoque le refresh token fourni pour invalider la session courante.
+      parameters:
+      - description: Refresh token à révoquer
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.logoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Déconnexion (révocation du refresh token)
+      tags:
+      - auth
+  /api/v1/auth/me:
+    get:
+      description: Retourne les informations du compte de l'utilisateur authentifié
+        via le token JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Profil de l'utilisateur connecté
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Échange un refresh token valide contre de nouveaux tokens d'accès
+        et de rafraîchissement.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.refreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Renouveler les tokens
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Crée un nouveau compte utilisateur avec email, username et mot
+        de passe. Retourne les tokens d'accès et de rafraîchissement.
+      parameters:
+      - description: Données d'inscription
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Inscription par email/mot de passe
+      tags:
+      - auth
+  /api/v1/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Réinitialise le mot de passe en utilisant le token reçu par email.
+      parameters:
+      - description: Token + nouveau mot de passe
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.resetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Réinitialisation du mot de passe
+      tags:
+      - auth
+  /api/v1/auth/set-password:
+    post:
+      consumes:
+      - application/json
+      description: Permet à un utilisateur inscrit via OAuth de définir un mot de
+        passe pour activer la connexion classique.
+      parameters:
+      - description: Nouveau mot de passe
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.setPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Définir un mot de passe après inscription OAuth
+      tags:
+      - auth
+  /api/v1/categories:
+    get:
+      description: Retourne la liste complète des catégories disponibles.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Category'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Lister toutes les catégories
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: Crée une nouvelle catégorie. Réservé aux administrateurs.
+      parameters:
+      - description: Données
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.categoryWriteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Créer une catégorie (admin)
+      tags:
+      - categories
+  /api/v1/categories/{id}:
+    delete:
+      description: Supprime une catégorie. Réservé aux administrateurs.
+      parameters:
+      - description: UUID catégorie
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Supprimer une catégorie (admin)
+      tags:
+      - categories
+    put:
+      consumes:
+      - application/json
+      description: Met à jour les informations d'une catégorie existante. Réservé
+        aux administrateurs.
+      parameters:
+      - description: UUID catégorie
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Données
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.categoryWriteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Category'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Modifier une catégorie (admin)
+      tags:
+      - categories
+  /api/v1/categories/{slug}:
+    get:
+      description: Retourne les détails d'une catégorie identifiée par son slug.
+      parameters:
+      - description: Slug de la catégorie
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Category'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Récupérer une catégorie par son slug
+      tags:
+      - categories
+  /api/v1/conversations:
+    get:
+      description: Retourne toutes les conversations de l'utilisateur connecté, triées
+        par activité récente.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Lister les conversations
+      tags:
+      - messages
+    post:
+      consumes:
+      - application/json
+      description: Ouvre une conversation existante ou en crée une nouvelle avec un
+        autre utilisateur. Retourne la conversation.
+      parameters:
+      - description: 'user_id: UUID de l''interlocuteur'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ouvrir ou créer une conversation
+      tags:
+      - messages
+  /api/v1/conversations/{id}/accept:
+    post:
+      description: Accepte une demande de conversation en attente, permettant l'échange
+        de messages.
+      parameters:
+      - description: UUID conversation
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Accepter une demande de conversation
+      tags:
+      - messages
+  /api/v1/conversations/{id}/messages:
+    get:
+      description: Retourne les messages d'une conversation avec pagination par curseur
+        (before timestamp). L'utilisateur doit être participant.
+      parameters:
+      - description: UUID conversation
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Curseur de pagination (RFC3339 timestamp)
+        in: query
+        name: before
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Lister les messages d'une conversation
+      tags:
+      - messages
+    post:
+      consumes:
+      - application/json
+      description: Envoie un message dans une conversation. Le message peut contenir
+        du texte, une pièce jointe, ou un post partagé.
+      parameters:
+      - description: UUID conversation
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Contenu du message (content, attachment_url, attachment_type,
+          shared_post_id)
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Envoyer un message
+      tags:
+      - messages
+  /api/v1/conversations/{id}/presence:
+    get:
+      description: Retourne le statut de présence en ligne des autres participants
+        de la conversation.
+      parameters:
+      - description: UUID conversation
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Présence des participants d'une conversation
+      tags:
+      - messages
+  /api/v1/conversations/{id}/read:
+    post:
+      description: Met à jour le curseur de lecture de l'utilisateur dans la conversation
+        pour effacer le badge de messages non lus.
+      parameters:
+      - description: UUID conversation
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Marquer une conversation comme lue
+      tags:
+      - messages
+  /api/v1/conversations/unread-count:
+    get:
+      description: Retourne le nombre total de conversations contenant des messages
+        non lus pour l'utilisateur connecté.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Nombre de conversations avec messages non lus
+      tags:
+      - messages
+  /api/v1/notifications:
+    get:
+      description: Retourne toutes les notifications de l'utilisateur connecté.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Lister toutes les notifications
+      tags:
+      - notifications
+  /api/v1/notifications/{id}:
+    delete:
+      description: Supprime définitivement une notification de l'utilisateur connecté.
+      parameters:
+      - description: UUID notification
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Supprimer une notification
+      tags:
+      - notifications
+  /api/v1/notifications/{id}/archive:
+    patch:
+      consumes:
+      - application/json
+      description: Déplace une notification dans les archives ou la restaure.
+      parameters:
+      - description: UUID notification
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'archived: true/false'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Archiver ou désarchiver une notification
+      tags:
+      - notifications
+  /api/v1/notifications/{id}/read:
+    patch:
+      description: Marque une notification spécifique comme lue.
+      parameters:
+      - description: UUID notification
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Marquer une notification comme lue
+      tags:
+      - notifications
+  /api/v1/notifications/{id}/star:
+    patch:
+      consumes:
+      - application/json
+      description: Marque ou démarque une notification avec une étoile pour la mettre
+        en favori.
+      parameters:
+      - description: UUID notification
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'starred: true/false'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Étoiler ou désétoiler une notification
+      tags:
+      - notifications
+  /api/v1/notifications/{id}/unread:
+    patch:
+      description: Marque une notification spécifique comme non lue.
+      parameters:
+      - description: UUID notification
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Marquer une notification comme non lue
+      tags:
+      - notifications
+  /api/v1/notifications/inbox:
+    get:
+      description: Retourne les notifications non archivées de l'utilisateur connecté
+        (inbox).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Boîte de réception des notifications
+      tags:
+      - notifications
+  /api/v1/notifications/prefs:
+    get:
+      description: Retourne les préférences de notifications push de l'utilisateur
+        connecté.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Récupérer les préférences de notifications
+      tags:
+      - notifications
+    patch:
+      consumes:
+      - application/json
+      description: Met à jour les préférences de notifications push (push activé,
+        commentaires, likes, messages).
+      parameters:
+      - description: Préférences (push_enabled, notify_on_comment, notify_on_like,
+          notify_on_message)
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Mettre à jour les préférences de notifications
+      tags:
+      - notifications
+  /api/v1/notifications/read-all:
+    patch:
+      description: Marque toutes les notifications de l'utilisateur connecté comme
+        lues.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Marquer toutes les notifications comme lues
+      tags:
+      - notifications
+  /api/v1/notifications/unread-count:
+    get:
+      description: Retourne le nombre de notifications non lues de l'utilisateur connecté.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Nombre de notifications non lues
+      tags:
+      - notifications
+  /api/v1/posts:
+    get:
+      description: Retourne la liste paginée des posts publiés, avec filtres optionnels
+        par catégorie et auteur.
+      parameters:
+      - description: UUID catégorie
+        in: query
+        name: category_id
+        type: string
+      - description: UUID auteur
+        in: query
+        name: author_id
+        type: string
+      - description: Username auteur
+        in: query
+        name: author
+        type: string
+      - description: Slug catégorie
+        in: query
+        name: category
+        type: string
+      - description: Page (défaut 1)
+        in: query
+        name: page
+        type: integer
+      - description: Taille page (défaut 20)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.PostListResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Lister les posts (paginés)
+      tags:
+      - posts
+    post:
+      consumes:
+      - application/json
+      description: Crée un nouveau post dans une catégorie. L'auteur est déduit du
+        token JWT.
+      parameters:
+      - description: Données
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.postCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Post'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Créer un post
+      tags:
+      - posts
+  /api/v1/posts/{id}:
+    delete:
+      description: Supprime un post. Seul l'auteur ou un admin peut supprimer.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Supprimer un post (auteur ou admin)
+      tags:
+      - posts
+    get:
+      description: Retourne les détails complets d'un post, incluant le vote de l'utilisateur
+        connecté si disponible.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Récupérer un post par ID
+      tags:
+      - posts
+    put:
+      consumes:
+      - application/json
+      description: Met à jour les champs d'un post existant. Seul l'auteur ou un admin/modérateur
+        peut modifier.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Données
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.postUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Modifier un post (auteur ou admin)
+      tags:
+      - posts
+  /api/v1/posts/{id}/comments:
+    get:
+      description: Retourne tous les commentaires associés à un post, avec le vote
+        de l'utilisateur connecté si disponible.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Comment'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Lister les commentaires d'un post
+      tags:
+      - comments
+    post:
+      consumes:
+      - application/json
+      description: Ajoute un commentaire sur un post. L'auteur est déduit du token
+        JWT.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Contenu
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.createCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Comment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Créer un commentaire
+      tags:
+      - comments
+  /api/v1/posts/{id}/comments/{commentId}:
+    delete:
+      description: Supprime un commentaire. Seul l'auteur du commentaire ou un admin
+        peut supprimer.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID commentaire
+        in: path
+        name: commentId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Supprimer un commentaire
+      tags:
+      - comments
+  /api/v1/posts/{id}/comments/{commentId}/like:
+    post:
+      consumes:
+      - application/json
+      description: Enregistre ou annule un vote upvote (+1) ou downvote (-1) sur un
+        commentaire. Revoter avec la même valeur annule le vote.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: UUID commentaire
+        in: path
+        name: commentId
+        required: true
+        type: string
+      - description: Valeur du vote
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.voteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.VoteResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Voter sur un commentaire (+1 / -1, toggle)
+      tags:
+      - likes
+  /api/v1/posts/{id}/like:
+    post:
+      consumes:
+      - application/json
+      description: Enregistre ou annule un vote upvote (+1) ou downvote (-1) sur un
+        post. Revoter avec la même valeur annule le vote.
+      parameters:
+      - description: UUID post
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Valeur du vote
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.voteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.VoteResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Voter sur un post (+1 / -1, toggle)
+      tags:
+      - likes
+  /api/v1/push/subscriptions:
+    delete:
+      consumes:
+      - application/json
+      description: Supprime un abonnement Web Push enregistré pour ne plus recevoir
+        de notifications sur cet endpoint.
+      parameters:
+      - description: Endpoint de la subscription à supprimer
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Supprimer un abonnement push
+      tags:
+      - notifications
+    post:
+      consumes:
+      - application/json
+      description: Enregistre un abonnement Web Push pour recevoir des notifications
+        en temps réel.
+      parameters:
+      - description: Subscription (endpoint, p256dh, auth)
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enregistrer un abonnement push
+      tags:
+      - notifications
+  /api/v1/push/vapid-key:
+    get:
+      description: Retourne la clé publique VAPID nécessaire pour s'abonner aux notifications
+        push.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Récupérer la clé publique VAPID
+      tags:
+      - notifications
+  /api/v1/users/{username}:
+    get:
+      description: Retourne le profil public d'un utilisateur avec ses statistiques
+        (posts, followers, following).
+      parameters:
+      - description: Nom d'utilisateur
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.PublicProfile'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Profil public d'un utilisateur
+      tags:
+      - users
+  /api/v1/users/{username}/follow:
+    delete:
+      description: Permet à l'utilisateur connecté d'arrêter de suivre un autre utilisateur
+        identifié par son username.
+      parameters:
+      - description: Username de l'utilisateur à ne plus suivre
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ne plus suivre un utilisateur
+      tags:
+      - follow
+    post:
+      description: Permet à l'utilisateur connecté de suivre un autre utilisateur
+        identifié par son username.
+      parameters:
+      - description: Username de l'utilisateur à suivre
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Suivre un utilisateur
+      tags:
+      - follow
+  /api/v1/users/{username}/followers:
+    get:
+      description: Retourne la liste des utilisateurs qui suivent le profil identifié
+        par son username.
+      parameters:
+      - description: Username de l'utilisateur
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Lister les abonnés d'un utilisateur
+      tags:
+      - follow
+  /api/v1/users/{username}/following:
+    get:
+      description: Retourne la liste des utilisateurs que suit le profil identifié
+        par son username.
+      parameters:
+      - description: Username de l'utilisateur
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Lister les abonnements d'un utilisateur
+      tags:
+      - follow
+  /api/v1/users/me:
+    patch:
+      consumes:
+      - application/json
+      description: Met à jour les informations du profil de l'utilisateur connecté
+        (username, avatar, bannière, bio).
+      parameters:
+      - description: Champs à modifier
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.updateMeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Mettre à jour son propre profil
+      tags:
+      - users
+  /api/v1/users/search:
+    get:
+      description: Recherche des utilisateurs dont le username correspond à la requête.
+        Utile pour l'autocomplétion.
+      parameters:
+      - description: Terme de recherche (min 1 caractère)
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Nombre max de résultats (défaut 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Rechercher des utilisateurs par username
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Entrez "Bearer <token>"
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

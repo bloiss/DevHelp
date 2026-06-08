@@ -49,6 +49,10 @@ type Config struct {
 	OllamaModel   string
 
 	SentryDSN string
+
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
+	VAPIDSubject    string
 }
 
 func Load() *Config {
@@ -97,6 +101,10 @@ func Load() *Config {
 		OllamaModel:    getEnv("OLLAMA_MODEL", "llama3.2"),
 
 		SentryDSN: os.Getenv("SENTRY_DSN"),
+
+		VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
+		VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
+		VAPIDSubject:    getEnv("VAPID_SUBJECT", "mailto:admin@devhelp.app"),
 	}
 }
 

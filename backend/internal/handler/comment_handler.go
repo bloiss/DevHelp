@@ -22,11 +22,14 @@ type createCommentRequest struct {
 
 // List godoc
 // @Summary      Lister les commentaires d'un post
+// @Description  Retourne tous les commentaires associés à un post, avec le vote de l'utilisateur connecté si disponible.
 // @Tags         comments
 // @Produce      json
 // @Param        id path string true "UUID post"
 // @Success      200 {array} model.Comment
-// @Router       /posts/{id}/comments [get]
+// @Failure      400 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/posts/{id}/comments [get]
 func (h *CommentHandler) List(c *gin.Context) {
 	postID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -51,6 +54,7 @@ func (h *CommentHandler) List(c *gin.Context) {
 
 // Create godoc
 // @Summary      Créer un commentaire
+// @Description  Ajoute un commentaire sur un post. L'auteur est déduit du token JWT.
 // @Tags         comments
 // @Accept       json
 // @Produce      json
@@ -58,7 +62,10 @@ func (h *CommentHandler) List(c *gin.Context) {
 // @Param        id   path string              true "UUID post"
 // @Param        body body createCommentRequest true "Contenu"
 // @Success      201 {object} model.Comment
-// @Router       /posts/{id}/comments [post]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/posts/{id}/comments [post]
 func (h *CommentHandler) Create(c *gin.Context) {
 	postID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -90,12 +97,18 @@ func (h *CommentHandler) Create(c *gin.Context) {
 
 // Delete godoc
 // @Summary      Supprimer un commentaire
+// @Description  Supprime un commentaire. Seul l'auteur du commentaire ou un admin peut supprimer.
 // @Tags         comments
+// @Produce      json
 // @Security     BearerAuth
 // @Param        id        path string true "UUID post"
 // @Param        commentId path string true "UUID commentaire"
 // @Success      204
-// @Router       /posts/{id}/comments/{commentId} [delete]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      403 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/posts/{id}/comments/{commentId} [delete]
 func (h *CommentHandler) Delete(c *gin.Context) {
 	commentID, err := uuid.Parse(c.Param("commentId"))
 	if err != nil {

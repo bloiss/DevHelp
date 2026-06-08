@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown } from 'lucide-react'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface VoteButtonsProps {
@@ -13,41 +13,41 @@ export function VoteButtons({ score, userVote, onVote, orientation = 'vertical' 
 
   return (
     <div className={cn(
-      'flex items-center gap-1',
+      'flex items-center gap-1.5',
       isVertical ? 'flex-col' : 'flex-row',
     )}>
       <button
         onClick={() => onVote?.(1)}
-        aria-label="Voter pour"
+        aria-label="J'aime"
         className={cn(
-          'p-1.5 rounded-md transition-colors',
+          'flex items-center gap-1 p-1.5 rounded-full transition-colors',
           userVote === 1
-            ? 'text-primary bg-primary/10'
-            : 'text-muted-foreground hover:text-primary hover:bg-primary/10',
+            ? 'text-emerald-500 bg-emerald-500/10'
+            : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
         )}
       >
-        <ArrowUp className={isVertical ? 'h-5 w-5' : 'h-4 w-4'} />
+        <ThumbsUp className={cn(isVertical ? 'h-5 w-5' : 'h-4 w-4', userVote === 1 && 'fill-emerald-500/20')} />
       </button>
 
       <span className={cn(
         'font-semibold tabular-nums select-none',
         isVertical ? 'text-base' : 'text-sm',
-        score > 0 ? 'text-primary' : score < 0 ? 'text-destructive' : 'text-muted-foreground',
+        score > 0 ? 'text-emerald-500' : score < 0 ? 'text-rose-500' : 'text-muted-foreground',
       )}>
         {score}
       </span>
 
       <button
         onClick={() => onVote?.(-1)}
-        aria-label="Voter contre"
+        aria-label="Je n'aime pas"
         className={cn(
-          'p-1.5 rounded-md transition-colors',
+          'flex items-center gap-1 p-1.5 rounded-full transition-colors',
           userVote === -1
-            ? 'text-destructive bg-destructive/10'
-            : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
+            ? 'text-rose-500 bg-rose-500/10'
+            : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
         )}
       >
-        <ArrowDown className={isVertical ? 'h-5 w-5' : 'h-4 w-4'} />
+        <ThumbsDown className={cn(isVertical ? 'h-5 w-5' : 'h-4 w-4', userVote === -1 && 'fill-rose-500/20')} />
       </button>
     </div>
   )

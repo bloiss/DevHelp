@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/bloiss/devhelp/backend/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ConvWithPreview enrichit une conversation avec les infos d'aperçu.
@@ -23,11 +26,9 @@ func NewMessageRepository(db *gorm.DB) *MessageRepository {
 }
 
 // FindOrCreateConversation trouve ou crée une conversation entre deux utilisateurs.
-// Retourne (conv, isNew, error). Si nouvelle : Status="request".
 func (r *MessageRepository) FindOrCreateConversation(userA, userB uuid.UUID) (*model.Conversation, bool, error) {
 	var conv model.Conversation
 
-	// Cherche une conversation existante entre les deux utilisateurs.
 	err := r.db.Raw(`
 		SELECT c.* FROM conversations c
 		JOIN conversation_participants cp1 ON cp1.conversation_id = c.id AND cp1.user_id = ?
@@ -39,14 +40,12 @@ func (r *MessageRepository) FindOrCreateConversation(userA, userB uuid.UUID) (*m
 	}
 
 	if conv.ID != uuid.Nil {
-		// Charger les participants
 		if err := r.db.Preload("Participants").First(&conv, "id = ?", conv.ID).Error; err != nil {
 			return nil, false, err
 		}
 		return &conv, false, nil
 	}
 
-	// Créer une nouvelle conversation
 	conv = model.Conversation{
 		Status:          "request",
 		RequestSenderID: &userA,
@@ -55,7 +54,6 @@ func (r *MessageRepository) FindOrCreateConversation(userA, userB uuid.UUID) (*m
 		return nil, false, err
 	}
 
-	// Ajouter les participants
 	if err := r.db.Exec(
 		`INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)`,
 		conv.ID, userA, conv.ID, userB,
@@ -68,6 +66,16 @@ func (r *MessageRepository) FindOrCreateConversation(userA, userB uuid.UUID) (*m
 	}
 
 	return &conv, true, nil
+}
+
+// FindConversationByID retourne une conversation par son ID.
+func (r *MessageRepository) FindConversationByID(convID uuid.UUID) (*model.Conversation, error) {
+	var conv model.Conversation
+	err := r.db.First(&conv, "id = ?", convID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &conv, nil
 }
 
 // FindConversationsByUser retourne toutes les conversations d'un utilisateur avec aperçu.
@@ -94,7 +102,6 @@ func (r *MessageRepository) FindConversationsByUser(userID uuid.UUID) ([]ConvWit
 	for _, conv := range convs {
 		preview := ConvWithPreview{Conversation: conv}
 
-		// Autre participant
 		for _, p := range conv.Participants {
 			if p.ID != userID {
 				preview.OtherUser = p
@@ -102,18 +109,17 @@ func (r *MessageRepository) FindConversationsByUser(userID uuid.UUID) ([]ConvWit
 			}
 		}
 
-		// Dernier message
 		var lastMsg model.Message
-		if err := r.db.
-			Where("conversation_id = ?", conv.ID).
+		if err := r.db.Preload("Sender").
+			Where("conversation_id = ? AND is_deleted = false", conv.ID).
 			Order("created_at DESC").
 			First(&lastMsg).Error; err == nil {
 			preview.LastMessage = &lastMsg
 		}
 
-		// Nombre de messages non lus
+		// Compte les messages non lus (status != 'read' et envoyés par l'autre)
 		r.db.Model(&model.Message{}).
-			Where("conversation_id = ? AND sender_id != ? AND read = false", conv.ID, userID).
+			Where("conversation_id = ? AND sender_id != ? AND status != 'read' AND is_deleted = false", conv.ID, userID).
 			Count(&preview.UnreadCount)
 
 		result = append(result, preview)
@@ -122,25 +128,46 @@ func (r *MessageRepository) FindConversationsByUser(userID uuid.UUID) ([]ConvWit
 	return result, nil
 }
 
-// FindMessages retourne les messages d'une conversation paginés (plus récents en premier).
-func (r *MessageRepository) FindMessages(convID uuid.UUID, page, perPage int) ([]model.Message, error) {
-	if page < 1 {
-		page = 1
+// FindMessages retourne les messages d'une conversation en ordre chronologique (ASC).
+// Si before != nil, retourne les messages antérieurs à ce timestamp.
+// Retourne (messages, hasMore, error).
+func (r *MessageRepository) FindMessages(convID uuid.UUID, before *time.Time, limit int) ([]model.Message, bool, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
 	}
-	if perPage < 1 || perPage > 100 {
-		perPage = 20
-	}
-	offset := (page - 1) * perPage
 
+	query := r.db.Preload("Sender").
+		Preload("Reads").
+		Preload("SharedPost").
+		Preload("SharedPost.Author").
+		Preload("SharedPost.Category").
+		Where("conversation_id = ? AND is_deleted = false", convID)
+
+	if before != nil {
+		query = query.Where("created_at < ?", before)
+	}
+
+	// Fetch limit+1 pour détecter s'il y a plus de messages
 	var messages []model.Message
-	err := r.db.
-		Preload("Sender").
-		Where("conversation_id = ?", convID).
+	err := query.
 		Order("created_at DESC").
-		Limit(perPage).
-		Offset(offset).
+		Limit(limit + 1).
 		Find(&messages).Error
-	return messages, err
+	if err != nil {
+		return nil, false, err
+	}
+
+	hasMore := len(messages) > limit
+	if hasMore {
+		messages = messages[:limit]
+	}
+
+	// Inverser pour obtenir l'ordre ASC (plus anciens en premier)
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
+	}
+
+	return messages, hasMore, nil
 }
 
 // CreateMessage insère un nouveau message.
@@ -148,11 +175,81 @@ func (r *MessageRepository) CreateMessage(msg *model.Message) error {
 	return r.db.Create(msg).Error
 }
 
-// MarkMessagesRead marque comme lus les messages non envoyés par userID.
-func (r *MessageRepository) MarkMessagesRead(convID, userID uuid.UUID) error {
+// GetMessageByID retourne un message avec toutes ses relations préchargées.
+func (r *MessageRepository) GetMessageByID(msgID uuid.UUID) (*model.Message, error) {
+	var msg model.Message
+	err := r.db.Preload("Sender").
+		Preload("Reads").
+		Preload("SharedPost").
+		Preload("SharedPost.Author").
+		Preload("SharedPost.Category").
+		First(&msg, "id = ?", msgID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
+// UpdateMessageStatus met à jour le statut d'un message.
+func (r *MessageRepository) UpdateMessageStatus(msgID uuid.UUID, status string) error {
 	return r.db.Model(&model.Message{}).
-		Where("conversation_id = ? AND sender_id != ? AND read = false", convID, userID).
-		Update("read", true).Error
+		Where("id = ?", msgID).
+		Update("status", status).Error
+}
+
+// MarkRead crée des entrées MessageRead et met le status à 'read'.
+// Retourne les IDs des messages marqués comme lus.
+func (r *MessageRepository) MarkRead(convID, userID uuid.UUID) ([]uuid.UUID, error) {
+	// Trouver les messages de la conv envoyés par l'autre participant
+	var msgIDs []uuid.UUID
+	if err := r.db.Model(&model.Message{}).
+		Where("conversation_id = ? AND sender_id != ? AND is_deleted = false", convID, userID).
+		Pluck("id", &msgIDs).Error; err != nil {
+		return nil, err
+	}
+	if len(msgIDs) == 0 {
+		return nil, nil
+	}
+
+	// Insérer les records de lecture (ignorer les doublons)
+	now := time.Now().UTC()
+	reads := make([]model.MessageRead, 0, len(msgIDs))
+	for _, id := range msgIDs {
+		reads = append(reads, model.MessageRead{
+			MessageID: id,
+			UserID:    userID,
+			ReadAt:    now,
+		})
+	}
+	if err := r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&reads).Error; err != nil {
+		return nil, err
+	}
+
+	// Mettre à jour le status des messages
+	r.db.Model(&model.Message{}).
+		Where("id IN ? AND status != 'read'", msgIDs).
+		Update("status", "read")
+
+	return msgIDs, nil
+}
+
+// GetParticipants retourne les IDs de tous les participants d'une conversation.
+func (r *MessageRepository) GetParticipants(convID uuid.UUID) []uuid.UUID {
+	var ids []uuid.UUID
+	r.db.Raw(
+		`SELECT user_id FROM conversation_participants WHERE conversation_id = ?`, convID,
+	).Scan(&ids)
+	return ids
+}
+
+// GetSenderIDs retourne les IDs des expéditeurs des messages d'une conv (excluant userID).
+func (r *MessageRepository) GetSenderIDs(convID, excludeUserID uuid.UUID) []uuid.UUID {
+	var ids []uuid.UUID
+	r.db.Raw(`
+		SELECT DISTINCT sender_id FROM messages
+		WHERE conversation_id = ? AND sender_id != ?
+	`, convID, excludeUserID).Scan(&ids)
+	return ids
 }
 
 // AcceptConversation passe le statut de la conversation à "active".
@@ -179,7 +276,32 @@ func (r *MessageRepository) CountUnreadConversations(userID uuid.UUID) int64 {
 		SELECT COUNT(DISTINCT m.conversation_id)
 		FROM messages m
 		JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ?
-		WHERE m.sender_id != ? AND m.read = false
+		WHERE m.sender_id != ? AND m.status != 'read' AND m.is_deleted = false
 	`, userID, userID).Scan(&count)
 	return count
+}
+
+// ─── Présence ─────────────────────────────────────────────────────────────────
+
+// UpsertPresence met à jour la présence d'un utilisateur.
+func (r *MessageRepository) UpsertPresence(userID uuid.UUID, activeConvID *uuid.UUID) error {
+	now := time.Now().UTC()
+	presence := model.UserPresence{
+		UserID:       userID,
+		LastSeen:     now,
+		ActiveConvID: activeConvID,
+	}
+	return r.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"last_seen", "active_conv_id"}),
+	}).Create(&presence).Error
+}
+
+// GetPresence retourne la présence d'un utilisateur.
+func (r *MessageRepository) GetPresence(userID uuid.UUID) *model.UserPresence {
+	var p model.UserPresence
+	if err := r.db.First(&p, "user_id = ?", userID).Error; err != nil {
+		return nil
+	}
+	return &p
 }

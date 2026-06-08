@@ -79,6 +79,14 @@ func (s *UserService) GetProfile(username string, requesterID *uuid.UUID) (*Prof
 	}, nil
 }
 
+// SearchUsers recherche des utilisateurs par username (ilike).
+func (s *UserService) SearchUsers(query string, limit int) ([]model.User, error) {
+	if limit <= 0 || limit > 20 {
+		limit = 10
+	}
+	return s.userRepo.SearchByUsername(query, limit)
+}
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 type UserListResult struct {
@@ -118,6 +126,8 @@ func (s *UserService) SetRole(userID uuid.UUID, role model.UserRole) error {
 type UpdateMeInput struct {
 	Username  *string `json:"username"`
 	AvatarURL *string `json:"avatar_url"`
+	BannerURL *string `json:"banner_url"`
+	Bio       *string `json:"bio"`
 }
 
 func (s *UserService) UpdateMe(userID uuid.UUID, input UpdateMeInput) (*model.User, error) {
@@ -136,7 +146,6 @@ func (s *UserService) UpdateMe(userID uuid.UUID, input UpdateMeInput) (*model.Us
 				return nil, ErrUsernameInvalid
 			}
 		}
-		// Vérifie disponibilité
 		existing, err := s.userRepo.FindByUsername(slug)
 		if err == nil && existing.ID != userID {
 			return nil, ErrUsernameTaken
@@ -146,6 +155,14 @@ func (s *UserService) UpdateMe(userID uuid.UUID, input UpdateMeInput) (*model.Us
 
 	if input.AvatarURL != nil {
 		user.AvatarURL = input.AvatarURL
+	}
+
+	if input.BannerURL != nil {
+		user.BannerURL = input.BannerURL
+	}
+
+	if input.Bio != nil {
+		user.Bio = input.Bio
 	}
 
 	if err := s.userRepo.Update(user); err != nil {

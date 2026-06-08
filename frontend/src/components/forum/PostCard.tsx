@@ -1,10 +1,12 @@
 import { Link } from '@tanstack/react-router'
-import { MessageSquare, ArrowUp, ArrowDown, Share2 } from 'lucide-react'
+import { MessageSquare, ThumbsUp, ThumbsDown, Share2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/shared/Avatar'
+import { TagList } from '@/components/shared/TagBadge'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import { getCategoryBySlug } from '@/data/categories'
+import { inferTags } from '@/data/postTags'
 import type { Post } from '@/types/post'
 
 interface PostCardProps {
@@ -23,6 +25,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
   const comments = post.comment_count ?? 0
   const category = getCategoryBySlug(post.category?.slug ?? categorySlug)
   const Icon     = category?.icon
+  const tags     = post.tags?.length ? post.tags : inferTags(post.category?.slug ?? categorySlug, post.title)
 
   const postLink = {
     to: '/forum/$category/$postId' as const,
@@ -37,7 +40,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
     >
       {/* ── Colonne gauche : avatar ── */}
       <div className="shrink-0 pt-0.5">
-        <Link {...postLink}>
+        <Link to="/profile/$username" params={{ username: post.author.username }} onClick={(e) => e.stopPropagation()}>
           <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full ring-1 ring-border hover:ring-primary/40 transition-all" />
         </Link>
       </div>
@@ -47,7 +50,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
 
         {/* Ligne 1 : username · date · badge catégorie */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-bold text-sm text-foreground">{post.author.username}</span>
+          <Link to="/profile/$username" params={{ username: post.author.username }} onClick={(e) => e.stopPropagation()} className="font-bold text-sm text-foreground hover:underline">{post.author.username}</Link>
           {post.author.role !== 'user' && (
             <Badge
               className="text-[10px] px-1.5 py-0"
@@ -84,6 +87,9 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           </p>
         )}
 
+        {/* Ligne 3b : tags */}
+        {tags.length > 0 && <TagList tags={tags} max={3} className="mt-0.5" />}
+
         {/* Ligne 4 : barre d'actions style Twitter */}
         <div className="flex items-center justify-between mt-1 -ml-2 max-w-xs">
 
@@ -91,29 +97,27 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           <Link
             {...postLink}
             className="group/btn flex items-center gap-1.5 p-2 rounded-full text-muted-foreground
-              hover:text-sky-500 hover:bg-sky-500/10 transition-colors duration-150"
+              hover:text-sky-500 hover:bg-sky-500/10 transition-colors duration-150 min-w-[36px]"
           >
-            <MessageSquare className="h-[18px] w-[18px]" />
-            {comments > 0 && (
-              <span className="text-xs tabular-nums group-hover/btn:text-sky-500">{comments}</span>
-            )}
+            <MessageSquare className="h-[18px] w-[18px] shrink-0" />
+            <span className="text-xs tabular-nums group-hover/btn:text-sky-500 w-4 text-left">
+              {comments > 0 ? comments : ''}
+            </span>
           </Link>
 
           {/* Vote up */}
           <button
             className={cn(
-              'group/up flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150',
+              'group/up flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150 min-w-[36px]',
               post.user_vote === 1
                 ? 'text-emerald-500 bg-emerald-500/10'
                 : 'text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10',
             )}
           >
-            <ArrowUp className="h-[18px] w-[18px]" />
-            {votes > 0 && (
-              <span className={cn('text-xs tabular-nums', post.user_vote === 1 ? 'text-emerald-500' : 'group-hover/up:text-emerald-500')}>
-                {votes}
-              </span>
-            )}
+            <ThumbsUp className="h-[18px] w-[18px] shrink-0" />
+            <span className={cn('text-xs tabular-nums w-4 text-left', post.user_vote === 1 ? 'text-emerald-500' : 'group-hover/up:text-emerald-500')}>
+              {votes > 0 ? votes : ''}
+            </span>
           </button>
 
           {/* Vote down */}
@@ -125,7 +129,7 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
                 : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
             )}
           >
-            <ArrowDown className="h-[18px] w-[18px]" />
+            <ThumbsDown className="h-[18px] w-[18px]" />
           </button>
 
           {/* Partager */}

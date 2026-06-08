@@ -13,15 +13,19 @@ const sizes = {
   lg: 'h-12 w-12 text-base',
 }
 
+const px = { sm: 28, md: 36, lg: 48 }
+
 export function Avatar({ user, size = 'md', className }: AvatarProps) {
-  const initials = user.username.slice(0, 2).toUpperCase()
+  const initials = (user?.username ?? '?').slice(0, 2).toUpperCase()
 
   if (user.avatar_url) {
     return (
       <img
         src={user.avatar_url}
         alt={user.username}
-        className={cn('rounded-full object-cover', sizes[size], className)}
+        width={px[size]}
+        height={px[size]}
+        className={cn('rounded-full object-cover shrink-0', sizes[size], className)}
       />
     )
   }

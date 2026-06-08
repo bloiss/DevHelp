@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { useAuth } from '@/hooks/useAuth'
 import { toast }    from '@/stores/toastStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { FieldWrapper } from './FieldWrapper'
 import { fadeInUp, stagger } from '@/lib/animations'
+
+const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY ?? ''
 
 const schema = z
   .object({
@@ -35,6 +38,9 @@ export function RegisterForm() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaError, setCaptchaError] = useState(false)
+  const captchaRef = useRef<HCaptcha>(null)
 
   const {
     register,
@@ -44,16 +50,30 @@ export function RegisterForm() {
 
   async function onSubmit(data: FormValues) {
     setApiError(null)
+    setCaptchaError(false)
+
+    // En dev sans clé : bypass autorisé
+    const token = captchaToken ?? (HCAPTCHA_SITE_KEY ? null : 'bypass-dev')
+
+    if (!token) {
+      setCaptchaError(true)
+      return
+    }
+
     try {
       const res = await registerUser({
         email: data.email,
         username: data.username,
         password: data.password,
-        captcha_token: 'bypass-dev',
+        captcha_token: token,
       })
       toast.success(`Compte créé ! Bienvenue, @${res.user.username}`)
       navigate({ to: '/forum' })
     } catch (err: unknown) {
+      // Réinitialiser le captcha après échec
+      captchaRef.current?.resetCaptcha()
+      setCaptchaToken(null)
+
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       if (msg?.includes('email')) {
         setApiError('Cet email est déjà utilisé.')
@@ -146,6 +166,22 @@ export function RegisterForm() {
           />
         </FieldWrapper>
       </motion.div>
+
+      {/* hCaptcha — affiché uniquement si la clé est configurée */}
+      {HCAPTCHA_SITE_KEY && (
+        <motion.div variants={fadeInUp} className="flex flex-col items-center gap-1">
+          <HCaptcha
+            ref={captchaRef}
+            sitekey={HCAPTCHA_SITE_KEY}
+            theme="dark"
+            onVerify={(token) => { setCaptchaToken(token); setCaptchaError(false) }}
+            onExpire={() => setCaptchaToken(null)}
+          />
+          {captchaError && (
+            <p className="text-xs text-destructive">Veuillez compléter le captcha.</p>
+          )}
+        </motion.div>
+      )}
 
       <motion.div variants={fadeInUp} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
         <Button type="submit" disabled={isSubmitting} className="w-full mt-2">

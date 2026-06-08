@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 
+	"github.com/bloiss/devhelp/backend/internal/hub"
 	"github.com/bloiss/devhelp/backend/internal/model"
 	"github.com/bloiss/devhelp/backend/internal/repository"
 	"github.com/google/uuid"
@@ -19,14 +20,16 @@ type CommentService struct {
 	repo     *repository.CommentRepository
 	postRepo *repository.PostRepository
 	notifSvc *NotificationService
+	wsHub    *hub.Hub
 }
 
 func NewCommentService(
 	repo *repository.CommentRepository,
 	postRepo *repository.PostRepository,
 	notifSvc *NotificationService,
+	wsHub *hub.Hub,
 ) *CommentService {
-	return &CommentService{repo: repo, postRepo: postRepo, notifSvc: notifSvc}
+	return &CommentService{repo: repo, postRepo: postRepo, notifSvc: notifSvc, wsHub: wsHub}
 }
 
 func (s *CommentService) ListByPost(postID uuid.UUID, requesterID *uuid.UUID) ([]model.Comment, error) {
@@ -61,6 +64,10 @@ func (s *CommentService) Create(postID, userID uuid.UUID, content string) (*mode
 			PostTitle:    post.Title,
 			PostCategory: post.Category.Slug,
 			CommentID:    c.ID.String(),
+		})
+		s.wsHub.Send(post.UserID, hub.Event{
+			Type:    "notification",
+			Payload: []byte(`{}`),
 		})
 	}
 

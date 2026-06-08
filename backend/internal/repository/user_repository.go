@@ -109,3 +109,12 @@ func (r *UserRepository) FindPasswordResetToken(tokenHash string) (*model.Passwo
 func (r *UserRepository) MarkResetTokenUsed(id uuid.UUID) error {
 	return r.db.Model(&model.PasswordResetToken{}).Where("id = ?", id).Update("used", true).Error
 }
+
+func (r *UserRepository) SearchByUsername(query string, limit int) ([]model.User, error) {
+	var users []model.User
+	err := r.db.Where("username ILIKE ?", "%"+query+"%").
+		Order("username ASC").
+		Limit(limit).
+		Find(&users).Error
+	return users, err
+}

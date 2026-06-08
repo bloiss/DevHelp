@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 
+	"github.com/bloiss/devhelp/backend/internal/hub"
 	"github.com/bloiss/devhelp/backend/internal/model"
 	"github.com/bloiss/devhelp/backend/internal/repository"
 	"github.com/google/uuid"
@@ -11,27 +12,53 @@ import (
 var ErrCannotFollowSelf = errors.New("cannot follow yourself")
 
 type FollowService struct {
-	repo *repository.FollowRepository
+	repo     *repository.FollowRepository
+	userRepo *repository.UserRepository
+	notifSvc *NotificationService
+	wsHub    *hub.Hub
 }
 
-func NewFollowService(repo *repository.FollowRepository) *FollowService {
-	return &FollowService{repo: repo}
+func NewFollowService(
+	repo *repository.FollowRepository,
+	userRepo *repository.UserRepository,
+	notifSvc *NotificationService,
+	wsHub *hub.Hub,
+) *FollowService {
+	return &FollowService{
+		repo:     repo,
+		userRepo: userRepo,
+		notifSvc: notifSvc,
+		wsHub:    wsHub,
+	}
 }
 
 func (s *FollowService) Follow(followerID, followingID uuid.UUID) error {
 	if followerID == followingID {
 		return ErrCannotFollowSelf
 	}
-	return s.repo.Follow(followerID, followingID)
+	if err := s.repo.Follow(followerID, followingID); err != nil {
+		return err
+	}
+
+	// Notification persistante + WS
+	follower, _ := s.userRepo.FindByID(followerID)
+	if follower != nil {
+		_ = s.notifSvc.CreateFollowNotif(followingID, NotifPayload{
+			Actor: follower.Username,
+		})
+		s.wsHub.Send(followingID, hub.Event{
+			Type:    "notification",
+			Payload: []byte(`{}`),
+		})
+	}
+
+	return nil
 }
 
 func (s *FollowService) Unfollow(followerID, followingID uuid.UUID) error {
 	return s.repo.Unfollow(followerID, followingID)
 }
 
-// Stats retourne (followers, following, isFollowing).
-// targetUserID est l'utilisateur dont on consulte le profil.
-// requesterID est l'utilisateur connecté (peut être nil si non connecté).
 func (s *FollowService) Stats(targetUserID uuid.UUID, requesterID *uuid.UUID) (followers, following int64, isFollowing bool) {
 	followers = s.repo.CountFollowers(targetUserID)
 	following = s.repo.CountFollowing(targetUserID)

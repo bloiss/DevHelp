@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, ThumbsUp, AtSign, CheckCircle2, PenSquare,
-  BellOff, CheckCheck, ArrowRight,
+  BellOff, CheckCheck, ArrowRight, UserPlus,
 } from 'lucide-react'
 import { useNotificationStore, type Notification, type NotifKind } from '@/stores/notificationStore'
 import { cn } from '@/lib/utils'
@@ -22,6 +22,8 @@ const KIND_CONFIG: Record<NotifKind, {
   mention:  { Icon: AtSign,        iconClass: 'text-violet-500',  bgClass: 'bg-violet-500/10'  },
   resolved: { Icon: CheckCircle2,  iconClass: 'text-emerald-500', bgClass: 'bg-emerald-500/10' },
   new_post: { Icon: PenSquare,     iconClass: 'text-gold-muted',  bgClass: 'bg-gold/8'         },
+  follow:   { Icon: UserPlus,      iconClass: 'text-emerald-500', bgClass: 'bg-emerald-500/10' },
+  message:  { Icon: MessageSquare, iconClass: 'text-violet-500',  bgClass: 'bg-violet-500/10'  },
 }
 
 function relativeTime(iso: string): string {
@@ -39,6 +41,7 @@ function relativeTime(iso: string): string {
 function NotifRow({ notif }: { notif: Notification }) {
   const markRead = useNotificationStore((s) => s.markRead)
   const close    = useNotificationStore((s) => s.close)
+  const navigate = useNavigate()
   const cfg = KIND_CONFIG[notif.kind]
 
   return (
@@ -55,6 +58,12 @@ function NotifRow({ notif }: { notif: Notification }) {
       onClick={() => {
         markRead(notif.id)
         close()
+        if (notif.href) {
+          const url = new URL(notif.href, window.location.origin)
+          const search: Record<string, string> = {}
+          url.searchParams.forEach((v, k) => { search[k] = v })
+          navigate({ to: url.pathname as any, search: Object.keys(search).length ? search : undefined })
+        }
       }}
     >
       {/* Unread indicator */}
@@ -88,8 +97,13 @@ function NotifRow({ notif }: { notif: Notification }) {
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 export function NotificationPanel() {
-  const { notifications, unreadCount, isOpen, close, markAllRead } = useNotificationStore()
+  const { notifications, unreadCount, isOpen, close, markAllRead, fetchNotifications } = useNotificationStore()
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // Re-fetch à chaque ouverture pour avoir les données fraîches
+  useEffect(() => {
+    if (isOpen) fetchNotifications()
+  }, [isOpen, fetchNotifications])
 
   // Close on outside click
   useEffect(() => {

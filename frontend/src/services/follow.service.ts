@@ -9,8 +9,8 @@ export const followService = {
     api.delete(`/users/${username}/follow`),
 
   followers: (username: string) =>
-    api.get<PublicProfile[]>(`/users/${username}/followers`).then((r) => r.data),
+    api.get<{ data: PublicProfile[] }>(`/users/${username}/followers`).then((r) => r.data.data ?? []),
 
   following: (username: string) =>
-    api.get<PublicProfile[]>(`/users/${username}/following`).then((r) => r.data),
+    api.get<{ data: PublicProfile[] }>(`/users/${username}/following`).then((r) => r.data.data ?? []),
 }

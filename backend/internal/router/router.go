@@ -3,9 +3,13 @@ package router
 import (
 	"time"
 
+	_ "github.com/bloiss/devhelp/backend/docs"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/bloiss/devhelp/backend/internal/handler"
 	"github.com/bloiss/devhelp/backend/internal/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Handlers struct {
@@ -21,17 +25,22 @@ type Handlers struct {
 	Follow       *handler.FollowHandler
 	Message      *handler.MessageHandler
 	WS           *handler.WSHandler
+	Upload       *handler.UploadHandler
 	JWTSecret    string
 }
 
 func New(h *Handlers) *gin.Engine {
 	r := gin.Default()
 
+	r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 	r.Use(middleware.CORS())
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// ─── Swagger UI ───────────────────────────────────────────────
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api/v1")
 
@@ -60,6 +69,7 @@ func New(h *Handlers) *gin.Engine {
 	api.GET("/posts", middleware.OptionalAuth(h.JWTSecret), h.Post.List)
 	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
 	api.GET("/posts/:id/comments", middleware.OptionalAuth(h.JWTSecret), h.Comment.List)
+	api.GET("/users/search", h.User.SearchUsers)
 	api.GET("/users/:username", middleware.OptionalAuth(h.JWTSecret), h.User.GetProfile)
 	api.GET("/users/:username/followers", h.Follow.Followers)
 	api.GET("/users/:username/following", h.Follow.Following)
@@ -71,6 +81,11 @@ func New(h *Handlers) *gin.Engine {
 		// Auth
 		protected.GET("/auth/me", h.Auth.Me)
 		protected.POST("/auth/set-password", h.Auth.SetPassword)
+
+		// Upload
+		if h.Upload != nil {
+			protected.POST("/upload", h.Upload.UploadImage)
+		}
 
 		// Posts
 		protected.POST("/posts", h.Post.Create)
@@ -99,12 +114,26 @@ func New(h *Handlers) *gin.Engine {
 		protected.GET("/conversations/:id/messages", h.Message.GetMessages)
 		protected.POST("/conversations/:id/messages", h.Message.Send)
 		protected.POST("/conversations/:id/accept", h.Message.Accept)
+		protected.POST("/conversations/:id/read", h.Message.MarkRead)
+		protected.GET("/conversations/:id/presence", h.Message.GetPresence)
 
 		// Notifications
 		protected.GET("/notifications", h.Notification.List)
+		protected.GET("/notifications/inbox", h.Notification.Inbox)
 		protected.GET("/notifications/unread-count", h.Notification.UnreadCount)
-		protected.PATCH("/notifications/:id/read", h.Notification.MarkRead)
 		protected.PATCH("/notifications/read-all", h.Notification.MarkAllRead)
+		protected.GET("/notifications/prefs", h.Notification.GetPrefs)
+		protected.PATCH("/notifications/prefs", h.Notification.UpdatePrefs)
+		protected.PATCH("/notifications/:id/read", h.Notification.MarkRead)
+		protected.PATCH("/notifications/:id/unread", h.Notification.MarkUnread)
+		protected.PATCH("/notifications/:id/star", h.Notification.Star)
+		protected.PATCH("/notifications/:id/archive", h.Notification.Archive)
+		protected.DELETE("/notifications/:id", h.Notification.Delete)
+
+		// Push subscriptions
+		protected.GET("/push/vapid-key", h.Notification.GetVAPIDKey)
+		protected.POST("/push/subscriptions", h.Notification.SavePushSub)
+		protected.DELETE("/push/subscriptions", h.Notification.DeletePushSub)
 	}
 
 	// ─── Admin + modérateur ───────────────────────

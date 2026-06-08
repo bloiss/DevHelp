@@ -7,6 +7,7 @@ import { CommandPalette } from '@/components/ui/CommandPalette'
 import { Toaster }        from '@/components/ui/Toaster'
 import { useAuthStore }          from '@/stores/authStore'
 import { useNotificationStore }  from '@/stores/notificationStore'
+import { useWebSocket }          from '@/hooks/useWebSocket'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -14,7 +15,10 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   const { isAuthenticated } = useAuthStore()
-  const { fetchNotifications } = useNotificationStore()
+  const { fetchNotifications, fetchUnreadCount } = useNotificationStore()
+
+  // Connexion WebSocket temps réel (notifications + messages)
+  useWebSocket()
 
   // Charger les notifications au montage (si connecté) et quand l'état d'auth change
   useEffect(() => {
@@ -23,8 +27,15 @@ function RootLayout() {
     }
   }, [isAuthenticated, fetchNotifications])
 
+  // Polling de secours : rafraîchit le compteur toutes les 30s
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const id = setInterval(() => fetchUnreadCount(), 30_000)
+    return () => clearInterval(id)
+  }, [isAuthenticated, fetchUnreadCount])
+
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen bg-background flex flex-col relative">
 
       {/* ── Global ambient background ── */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
