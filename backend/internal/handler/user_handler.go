@@ -19,12 +19,14 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 
 // GetProfile godoc
 // @Summary      Profil public d'un utilisateur
+// @Description  Retourne le profil public d'un utilisateur avec ses statistiques (posts, followers, following).
 // @Tags         users
 // @Produce      json
 // @Param        username path string true "Nom d'utilisateur"
 // @Success      200 {object} service.PublicProfile
 // @Failure      404 {object} map[string]string
-// @Router       /users/{username} [get]
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/users/{username} [get]
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	username := c.Param("username")
 
@@ -47,6 +49,17 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, profile)
 }
 
+// SearchUsers godoc
+// @Summary      Rechercher des utilisateurs par username
+// @Description  Recherche des utilisateurs dont le username correspond à la requête. Utile pour l'autocomplétion.
+// @Tags         users
+// @Produce      json
+// @Param        q     query string true  "Terme de recherche (min 1 caractère)"
+// @Param        limit query int    false "Nombre max de résultats (défaut 10)"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/users/search [get]
 func (h *UserHandler) SearchUsers(c *gin.Context) {
 	q := c.Query("q")
 	if len(q) < 1 {
@@ -76,13 +89,18 @@ type updateMeRequest struct {
 
 // UpdateMe godoc
 // @Summary      Mettre à jour son propre profil
+// @Description  Met à jour les informations du profil de l'utilisateur connecté (username, avatar, bannière, bio).
 // @Tags         users
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body body updateMeRequest true "Champs à modifier"
 // @Success      200 {object} model.User
-// @Router       /users/me [patch]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Failure      409 {object} map[string]string
+// @Router       /api/v1/users/me [patch]
 func (h *UserHandler) UpdateMe(c *gin.Context) {
 	var req updateMeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

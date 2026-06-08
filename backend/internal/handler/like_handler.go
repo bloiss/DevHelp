@@ -22,6 +22,7 @@ type voteRequest struct {
 
 // VotePost godoc
 // @Summary      Voter sur un post (+1 / -1, toggle)
+// @Description  Enregistre ou annule un vote upvote (+1) ou downvote (-1) sur un post. Revoter avec la même valeur annule le vote.
 // @Tags         likes
 // @Accept       json
 // @Produce      json
@@ -29,13 +30,17 @@ type voteRequest struct {
 // @Param        id   path string      true "UUID post"
 // @Param        body body voteRequest true "Valeur du vote"
 // @Success      200 {object} service.VoteResult
-// @Router       /posts/{id}/like [post]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/posts/{id}/like [post]
 func (h *LikeHandler) VotePost(c *gin.Context) {
 	h.vote(c, "post")
 }
 
 // VoteComment godoc
 // @Summary      Voter sur un commentaire (+1 / -1, toggle)
+// @Description  Enregistre ou annule un vote upvote (+1) ou downvote (-1) sur un commentaire. Revoter avec la même valeur annule le vote.
 // @Tags         likes
 // @Accept       json
 // @Produce      json
@@ -44,7 +49,10 @@ func (h *LikeHandler) VotePost(c *gin.Context) {
 // @Param        commentId path string      true "UUID commentaire"
 // @Param        body      body voteRequest true "Valeur du vote"
 // @Success      200 {object} service.VoteResult
-// @Router       /posts/{id}/comments/{commentId}/like [post]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/posts/{id}/comments/{commentId}/like [post]
 func (h *LikeHandler) VoteComment(c *gin.Context) {
 	h.vote(c, "comment")
 }

@@ -20,14 +20,19 @@ func NewPostHandler(svc *service.PostService) *PostHandler {
 
 // List godoc
 // @Summary      Lister les posts (paginés)
+// @Description  Retourne la liste paginée des posts publiés, avec filtres optionnels par catégorie et auteur.
 // @Tags         posts
 // @Produce      json
 // @Param        category_id query string false "UUID catégorie"
 // @Param        author_id   query string false "UUID auteur"
+// @Param        author      query string false "Username auteur"
+// @Param        category    query string false "Slug catégorie"
 // @Param        page        query int    false "Page (défaut 1)"
 // @Param        page_size   query int    false "Taille page (défaut 20)"
 // @Success      200 {object} service.PostListResult
-// @Router       /posts [get]
+// @Failure      400 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/posts [get]
 func (h *PostHandler) List(c *gin.Context) {
 	pageSize := queryInt(c, "per_page", 0)
 	if pageSize == 0 {
@@ -78,12 +83,14 @@ func (h *PostHandler) List(c *gin.Context) {
 
 // Get godoc
 // @Summary      Récupérer un post par ID
+// @Description  Retourne les détails complets d'un post, incluant le vote de l'utilisateur connecté si disponible.
 // @Tags         posts
 // @Produce      json
 // @Param        id path string true "UUID post"
 // @Success      200 {object} model.Post
+// @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
-// @Router       /posts/{id} [get]
+// @Router       /api/v1/posts/{id} [get]
 func (h *PostHandler) Get(c *gin.Context) {
 	postID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -117,13 +124,17 @@ type postCreateRequest struct {
 
 // Create godoc
 // @Summary      Créer un post
+// @Description  Crée un nouveau post dans une catégorie. L'auteur est déduit du token JWT.
 // @Tags         posts
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body body postCreateRequest true "Données"
 // @Success      201 {object} model.Post
-// @Router       /posts [post]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/posts [post]
 func (h *PostHandler) Create(c *gin.Context) {
 	var req postCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -159,6 +170,7 @@ type postUpdateRequest struct {
 
 // Update godoc
 // @Summary      Modifier un post (auteur ou admin)
+// @Description  Met à jour les champs d'un post existant. Seul l'auteur ou un admin/modérateur peut modifier.
 // @Tags         posts
 // @Accept       json
 // @Produce      json
@@ -166,7 +178,11 @@ type postUpdateRequest struct {
 // @Param        id   path string          true "UUID post"
 // @Param        body body postUpdateRequest true "Données"
 // @Success      200 {object} model.Post
-// @Router       /posts/{id} [put]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      403 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/posts/{id} [put]
 func (h *PostHandler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -207,11 +223,17 @@ func (h *PostHandler) Update(c *gin.Context) {
 
 // Delete godoc
 // @Summary      Supprimer un post (auteur ou admin)
+// @Description  Supprime un post. Seul l'auteur ou un admin peut supprimer.
 // @Tags         posts
+// @Produce      json
 // @Security     BearerAuth
 // @Param        id path string true "UUID post"
 // @Success      204
-// @Router       /posts/{id} [delete]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      403 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/posts/{id} [delete]
 func (h *PostHandler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -260,14 +282,18 @@ type postStatusRequest struct {
 
 // SetStatus godoc
 // @Summary      Changer le statut d'un post (admin/modo)
-// @Tags         posts
+// @Description  Modifie le statut de modération d'un post (published, pending, rejected, hidden). Réservé aux admins et modérateurs.
+// @Tags         admin
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id   path string          true "UUID post"
 // @Param        body body postStatusRequest true "Nouveau statut"
 // @Success      200 {object} model.Post
-// @Router       /admin/posts/{id}/status [patch]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/admin/posts/{id}/status [patch]
 func (h *PostHandler) SetStatus(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

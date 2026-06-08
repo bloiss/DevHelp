@@ -29,6 +29,7 @@ type registerRequest struct {
 
 // Register godoc
 // @Summary      Inscription par email/mot de passe
+// @Description  Crée un nouveau compte utilisateur avec email, username et mot de passe. Retourne les tokens d'accès et de rafraîchissement.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -36,7 +37,7 @@ type registerRequest struct {
 // @Success      201 {object} map[string]interface{}
 // @Failure      400 {object} map[string]string
 // @Failure      409 {object} map[string]string
-// @Router       /auth/register [post]
+// @Router       /api/v1/auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -80,13 +81,15 @@ type loginRequest struct {
 
 // Login godoc
 // @Summary      Connexion par email/mot de passe
+// @Description  Authentifie un utilisateur et retourne les tokens JWT d'accès et de rafraîchissement.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        body body loginRequest true "Identifiants"
 // @Success      200 {object} map[string]interface{}
+// @Failure      400 {object} map[string]string
 // @Failure      401 {object} map[string]string
-// @Router       /auth/login [post]
+// @Router       /api/v1/auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -115,13 +118,15 @@ type refreshRequest struct {
 
 // Refresh godoc
 // @Summary      Renouveler les tokens
+// @Description  Échange un refresh token valide contre de nouveaux tokens d'accès et de rafraîchissement.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        body body refreshRequest true "Refresh token"
 // @Success      200 {object} map[string]interface{}
+// @Failure      400 {object} map[string]string
 // @Failure      401 {object} map[string]string
-// @Router       /auth/refresh [post]
+// @Router       /api/v1/auth/refresh [post]
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req refreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -150,12 +155,14 @@ type forgotPasswordRequest struct {
 
 // ForgotPassword godoc
 // @Summary      Demande de réinitialisation de mot de passe
+// @Description  Envoie un email de réinitialisation si l'adresse existe. Retourne toujours 200 pour ne pas révéler les comptes existants.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        body body forgotPasswordRequest true "Email"
 // @Success      200 {object} map[string]string
-// @Router       /auth/forgot-password [post]
+// @Failure      400 {object} map[string]string
+// @Router       /api/v1/auth/forgot-password [post]
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req forgotPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -187,13 +194,14 @@ type resetPasswordRequest struct {
 
 // ResetPassword godoc
 // @Summary      Réinitialisation du mot de passe
+// @Description  Réinitialise le mot de passe en utilisant le token reçu par email.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        body body resetPasswordRequest true "Token + nouveau mot de passe"
 // @Success      200 {object} map[string]string
 // @Failure      400 {object} map[string]string
-// @Router       /auth/reset-password [post]
+// @Router       /api/v1/auth/reset-password [post]
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req resetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -217,12 +225,14 @@ type logoutRequest struct {
 
 // Logout godoc
 // @Summary      Déconnexion (révocation du refresh token)
+// @Description  Révoque le refresh token fourni pour invalider la session courante.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Security     BearerAuth
+// @Param        body body logoutRequest true "Refresh token à révoquer"
 // @Success      200 {object} map[string]string
-// @Router       /auth/logout [post]
+// @Failure      400 {object} map[string]string
+// @Router       /api/v1/auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req logoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -242,6 +252,7 @@ type setPasswordRequest struct {
 
 // SetPassword godoc
 // @Summary      Définir un mot de passe après inscription OAuth
+// @Description  Permet à un utilisateur inscrit via OAuth de définir un mot de passe pour activer la connexion classique.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -249,7 +260,8 @@ type setPasswordRequest struct {
 // @Param        body body setPasswordRequest true "Nouveau mot de passe"
 // @Success      200 {object} map[string]string
 // @Failure      400 {object} map[string]string
-// @Router       /auth/set-password [post]
+// @Failure      401 {object} map[string]string
+// @Router       /api/v1/auth/set-password [post]
 func (h *AuthHandler) SetPassword(c *gin.Context) {
 	var req setPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -268,6 +280,16 @@ func (h *AuthHandler) SetPassword(c *gin.Context) {
 
 // ─── Me ───────────────────────────────────────────────────────────
 
+// Me godoc
+// @Summary      Profil de l'utilisateur connecté
+// @Description  Retourne les informations du compte de l'utilisateur authentifié via le token JWT.
+// @Tags         auth
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} map[string]interface{}
+// @Failure      401 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
 	user, err := h.authService.GetUserByID(userID)

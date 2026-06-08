@@ -21,13 +21,17 @@ func NewAdminHandler(userSvc *service.UserService, postSvc *service.PostService)
 
 // ListUsers godoc
 // @Summary      Lister tous les utilisateurs (admin)
+// @Description  Retourne la liste paginée de tous les utilisateurs. Accessible aux admins et modérateurs.
 // @Tags         admin
 // @Produce      json
 // @Security     BearerAuth
 // @Param        page     query int false "Page"
 // @Param        per_page query int false "Par page"
 // @Success      200 {object} service.UserListResult
-// @Router       /admin/users [get]
+// @Failure      401 {object} map[string]string
+// @Failure      403 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/admin/users [get]
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))
@@ -46,6 +50,7 @@ type setRoleRequest struct {
 
 // SetUserRole godoc
 // @Summary      Changer le rôle d'un utilisateur (admin)
+// @Description  Modifie le rôle d'un utilisateur (user, moderator, admin). Réservé aux administrateurs.
 // @Tags         admin
 // @Accept       json
 // @Produce      json
@@ -53,7 +58,10 @@ type setRoleRequest struct {
 // @Param        id   path string       true "UUID utilisateur"
 // @Param        body body setRoleRequest true "Nouveau rôle"
 // @Success      200 {object} map[string]string
-// @Router       /admin/users/{id}/role [patch]
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      403 {object} map[string]string
+// @Router       /api/v1/admin/users/{id}/role [patch]
 func (h *AdminHandler) SetUserRole(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -76,14 +84,18 @@ func (h *AdminHandler) SetUserRole(c *gin.Context) {
 
 // ListPosts godoc
 // @Summary      Lister tous les posts avec filtre de statut (admin)
+// @Description  Retourne tous les posts toutes statuts confondus, avec filtre optionnel. Accessible aux admins et modérateurs.
 // @Tags         admin
 // @Produce      json
 // @Security     BearerAuth
-// @Param        status   query string false "Filtrer par statut"
+// @Param        status   query string false "Filtrer par statut (published, pending, rejected, hidden)"
 // @Param        page     query int    false "Page"
 // @Param        per_page query int    false "Par page"
 // @Success      200 {object} service.PostListResult
-// @Router       /admin/posts [get]
+// @Failure      401 {object} map[string]string
+// @Failure      403 {object} map[string]string
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/admin/posts [get]
 func (h *AdminHandler) ListPosts(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("per_page", "20"))

@@ -56,12 +56,29 @@ func NewOAuthHandler(oauthService *service.OAuthService) *OAuthHandler {
 
 // ─── Google ───────────────────────────────────────────────────────────────────
 
+// GoogleLogin godoc
+// @Summary      Redirection vers Google OAuth
+// @Description  Génère un state CSRF et redirige l'utilisateur vers la page d'authentification Google.
+// @Tags         auth
+// @Produce      json
+// @Success      307 {string} string "Redirect to Google"
+// @Router       /api/v1/auth/google [get]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	state := generateOAuthState()
 	stateStore.add(state)
 	c.Redirect(http.StatusTemporaryRedirect, h.oauthService.GetGoogleAuthURL(state))
 }
 
+// GoogleCallback godoc
+// @Summary      Callback Google OAuth
+// @Description  Reçoit le code d'autorisation Google, échange les tokens, crée ou connecte l'utilisateur et redirige vers le frontend avec les tokens JWT.
+// @Tags         auth
+// @Produce      json
+// @Param        state query string true "State CSRF"
+// @Param        code  query string true "Code d'autorisation"
+// @Success      307 {string} string "Redirect to frontend with tokens"
+// @Failure      307 {string} string "Redirect to /auth/login?error=oauth_failed"
+// @Router       /api/v1/auth/google/callback [get]
 func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	appURL := os.Getenv("APP_URL")
 	if appURL == "" {
@@ -88,12 +105,29 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 // ─── GitHub ───────────────────────────────────────────────────────────────────
 
+// GitHubLogin godoc
+// @Summary      Redirection vers GitHub OAuth
+// @Description  Génère un state CSRF et redirige l'utilisateur vers la page d'authentification GitHub.
+// @Tags         auth
+// @Produce      json
+// @Success      307 {string} string "Redirect to GitHub"
+// @Router       /api/v1/auth/github [get]
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	state := generateOAuthState()
 	stateStore.add(state)
 	c.Redirect(http.StatusTemporaryRedirect, h.oauthService.GetGitHubAuthURL(state))
 }
 
+// GitHubCallback godoc
+// @Summary      Callback GitHub OAuth
+// @Description  Reçoit le code d'autorisation GitHub, échange les tokens, crée ou connecte l'utilisateur et redirige vers le frontend avec les tokens JWT.
+// @Tags         auth
+// @Produce      json
+// @Param        state query string true "State CSRF"
+// @Param        code  query string true "Code d'autorisation"
+// @Success      307 {string} string "Redirect to frontend with tokens"
+// @Failure      307 {string} string "Redirect to /auth/login?error=oauth_failed"
+// @Router       /api/v1/auth/github/callback [get]
 func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	appURL := os.Getenv("APP_URL")
 	if appURL == "" {

@@ -18,10 +18,12 @@ func NewCategoryHandler(svc *service.CategoryService) *CategoryHandler {
 
 // List godoc
 // @Summary      Lister toutes les catégories
+// @Description  Retourne la liste complète des catégories disponibles.
 // @Tags         categories
 // @Produce      json
 // @Success      200 {array} model.Category
-// @Router       /categories [get]
+// @Failure      500 {object} map[string]string
+// @Router       /api/v1/categories [get]
 func (h *CategoryHandler) List(c *gin.Context) {
 	cats, err := h.svc.List()
 	if err != nil {
@@ -33,12 +35,13 @@ func (h *CategoryHandler) List(c *gin.Context) {
 
 // GetBySlug godoc
 // @Summary      Récupérer une catégorie par son slug
+// @Description  Retourne les détails d'une catégorie identifiée par son slug.
 // @Tags         categories
 // @Produce      json
 // @Param        slug path string true "Slug de la catégorie"
 // @Success      200 {object} model.Category
 // @Failure      404 {object} map[string]string
-// @Router       /categories/{slug} [get]
+// @Router       /api/v1/categories/{slug} [get]
 func (h *CategoryHandler) GetBySlug(c *gin.Context) {
 	cat, err := h.svc.GetBySlug(c.Param("slug"))
 	if err != nil {
@@ -56,14 +59,16 @@ type categoryWriteRequest struct {
 
 // Create godoc
 // @Summary      Créer une catégorie (admin)
+// @Description  Crée une nouvelle catégorie. Réservé aux administrateurs.
 // @Tags         categories
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        body body categoryWriteRequest true "Données"
 // @Success      201 {object} model.Category
-// @Failure      400,409 {object} map[string]string
-// @Router       /admin/categories [post]
+// @Failure      400 {object} map[string]string
+// @Failure      409 {object} map[string]string
+// @Router       /api/v1/categories [post]
 func (h *CategoryHandler) Create(c *gin.Context) {
 	var req categoryWriteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -92,6 +97,7 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 
 // Update godoc
 // @Summary      Modifier une catégorie (admin)
+// @Description  Met à jour les informations d'une catégorie existante. Réservé aux administrateurs.
 // @Tags         categories
 // @Accept       json
 // @Produce      json
@@ -99,8 +105,10 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 // @Param        id   path string              true "UUID catégorie"
 // @Param        body body categoryWriteRequest true "Données"
 // @Success      200 {object} model.Category
-// @Failure      400,404,409 {object} map[string]string
-// @Router       /admin/categories/{id} [put]
+// @Failure      400 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Failure      409 {object} map[string]string
+// @Router       /api/v1/categories/{id} [put]
 func (h *CategoryHandler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -137,12 +145,15 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 
 // Delete godoc
 // @Summary      Supprimer une catégorie (admin)
+// @Description  Supprime une catégorie. Réservé aux administrateurs.
 // @Tags         categories
+// @Produce      json
 // @Security     BearerAuth
 // @Param        id path string true "UUID catégorie"
 // @Success      204
+// @Failure      400 {object} map[string]string
 // @Failure      404 {object} map[string]string
-// @Router       /admin/categories/{id} [delete]
+// @Router       /api/v1/categories/{id} [delete]
 func (h *CategoryHandler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

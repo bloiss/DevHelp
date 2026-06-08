@@ -29,7 +29,18 @@ func (h *FollowHandler) resolveUsername(c *gin.Context) (uuid.UUID, bool) {
 	return user.ID, true
 }
 
-// POST /users/:username/follow
+// Follow godoc
+// @Summary      Suivre un utilisateur
+// @Description  Permet à l'utilisateur connecté de suivre un autre utilisateur identifié par son username.
+// @Tags         follow
+// @Produce      json
+// @Security     BearerAuth
+// @Param        username path string true "Username de l'utilisateur à suivre"
+// @Success      200 {object} map[string]string
+// @Failure      400 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/users/{username}/follow [post]
 func (h *FollowHandler) Follow(c *gin.Context) {
 	followerID := c.MustGet("user_id").(uuid.UUID)
 	followingID, ok := h.resolveUsername(c)
@@ -49,7 +60,17 @@ func (h *FollowHandler) Follow(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "followed"})
 }
 
-// DELETE /users/:username/follow
+// Unfollow godoc
+// @Summary      Ne plus suivre un utilisateur
+// @Description  Permet à l'utilisateur connecté d'arrêter de suivre un autre utilisateur identifié par son username.
+// @Tags         follow
+// @Produce      json
+// @Security     BearerAuth
+// @Param        username path string true "Username de l'utilisateur à ne plus suivre"
+// @Success      200 {object} map[string]string
+// @Failure      401 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/users/{username}/follow [delete]
 func (h *FollowHandler) Unfollow(c *gin.Context) {
 	followerID := c.MustGet("user_id").(uuid.UUID)
 	followingID, ok := h.resolveUsername(c)
@@ -64,7 +85,15 @@ func (h *FollowHandler) Unfollow(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "unfollowed"})
 }
 
-// GET /users/:username/followers
+// Followers godoc
+// @Summary      Lister les abonnés d'un utilisateur
+// @Description  Retourne la liste des utilisateurs qui suivent le profil identifié par son username.
+// @Tags         follow
+// @Produce      json
+// @Param        username path string true "Username de l'utilisateur"
+// @Success      200 {object} map[string]interface{}
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/users/{username}/followers [get]
 func (h *FollowHandler) Followers(c *gin.Context) {
 	targetID, ok := h.resolveUsername(c)
 	if !ok {
@@ -79,7 +108,15 @@ func (h *FollowHandler) Followers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": users})
 }
 
-// GET /users/:username/following
+// Following godoc
+// @Summary      Lister les abonnements d'un utilisateur
+// @Description  Retourne la liste des utilisateurs que suit le profil identifié par son username.
+// @Tags         follow
+// @Produce      json
+// @Param        username path string true "Username de l'utilisateur"
+// @Success      200 {object} map[string]interface{}
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/users/{username}/following [get]
 func (h *FollowHandler) Following(c *gin.Context) {
 	targetID, ok := h.resolveUsername(c)
 	if !ok {
