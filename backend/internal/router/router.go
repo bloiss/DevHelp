@@ -3,9 +3,13 @@ package router
 import (
 	"time"
 
+	_ "github.com/bloiss/devhelp/backend/docs"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/bloiss/devhelp/backend/internal/handler"
 	"github.com/bloiss/devhelp/backend/internal/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Handlers struct {
@@ -27,11 +31,15 @@ type Handlers struct {
 func New(h *Handlers) *gin.Engine {
 	r := gin.Default()
 
+	r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 	r.Use(middleware.CORS())
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// ─── Swagger UI ───────────────────────────────────────────────
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api/v1")
 

@@ -15,4 +15,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    sourcemap: true, // Source maps pour Sentry en production
+  },
 })

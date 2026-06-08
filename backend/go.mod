@@ -13,6 +13,8 @@ require (
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
+	github.com/getsentry/sentry-go v0.46.2 // indirect
+	github.com/getsentry/sentry-go/gin v0.46.2 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/gin-gonic/gin v1.12.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -50,6 +52,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.11.0 // indirect
 	github.com/resend/resend-go/v2 v2.28.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
+	github.com/swaggo/files v1.0.1 // indirect
 	github.com/swaggo/gin-swagger v1.6.1 // indirect
 	github.com/swaggo/swag v1.16.6 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect

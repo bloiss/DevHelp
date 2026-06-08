@@ -1,3 +1,22 @@
+// @title           DevHelp API
+// @version         1.0
+// @description     API REST du forum DevHelp — entraide Dev & IA.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   DevHelp Team
+// @contact.url    https://github.com/bloiss/DevHelp
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Entrez "Bearer <token>"
+
 package main
 
 import (
@@ -13,6 +32,7 @@ import (
 	"github.com/bloiss/devhelp/backend/internal/repository"
 	"github.com/bloiss/devhelp/backend/internal/router"
 	"github.com/bloiss/devhelp/backend/internal/service"
+	"github.com/getsentry/sentry-go"
 	"github.com/joho/godotenv"
 )
 
@@ -39,6 +59,20 @@ func main() {
 	}
 
 	cfg := config.Load()
+
+	// ─── Sentry ───────────────────────────────────────────────────
+	if cfg.SentryDSN != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn:              cfg.SentryDSN,
+			Environment:      cfg.Env,
+			TracesSampleRate: 0.2,
+			EnableTracing:    true,
+		}); err != nil {
+			log.Printf("sentry init failed: %v", err)
+		} else {
+			log.Println("Sentry initialized")
+		}
+	}
 
 	db := database.Connect(cfg.DatabaseURL)
 
