@@ -10,11 +10,16 @@ import (
 )
 
 type NotificationService struct {
-	repo *repository.NotificationRepository
+	repo    *repository.NotificationRepository
+	pushSvc *PushService
 }
 
 func NewNotificationService(repo *repository.NotificationRepository) *NotificationService {
 	return &NotificationService{repo: repo}
+}
+
+func (s *NotificationService) SetPushService(pushSvc *PushService) {
+	s.pushSvc = pushSvc
 }
 
 type NotifPayload struct {
@@ -51,13 +56,74 @@ func (s *NotificationService) mapNotif(n model.Notification) NotifResponse {
 }
 
 func (s *NotificationService) create(userID uuid.UUID, notifType string, payload NotifPayload) error {
+	// Vérifier les prefs avant de créer
+	if s.pushSvc != nil {
+		prefs := s.pushSvc.GetPrefs(userID)
+		if notifType == "comment" && !prefs.NotifyOnComment {
+			return nil
+		}
+		if notifType == "like" && !prefs.NotifyOnLike {
+			return nil
+		}
+		if (notifType == "message_request" || notifType == "message_accepted") && !prefs.NotifyOnMessage {
+			return nil
+		}
+	}
+
 	data, _ := json.Marshal(payload)
 	n := &model.Notification{
 		UserID:  userID,
 		Type:    notifType,
 		Payload: string(data),
 	}
-	return s.repo.Create(n)
+	if err := s.repo.Create(n); err != nil {
+		return err
+	}
+
+	// Envoyer push si activé
+	if s.pushSvc != nil {
+		prefs := s.pushSvc.GetPrefs(userID)
+		if prefs.PushEnabled {
+			go s.pushSvc.SendToUser(userID, pushTitle(notifType, payload), pushBody(payload), pushURL(notifType, payload))
+		}
+	}
+	return nil
+}
+
+func pushTitle(notifType string, p NotifPayload) string {
+	switch notifType {
+	case "comment":
+		return p.Actor + " a commenté ton post"
+	case "like":
+		return p.Actor + " a aimé ton post"
+	case "follow":
+		return p.Actor + " te suit maintenant"
+	case "message_request":
+		return p.Actor + " t'a envoyé une demande de message"
+	case "message_accepted":
+		return p.Actor + " a accepté ta demande de message"
+	}
+	return "Nouvelle notification"
+}
+
+func pushBody(p NotifPayload) string {
+	if p.PostTitle != "" {
+		return "\"" + p.PostTitle + "\""
+	}
+	return ""
+}
+
+func pushURL(notifType string, p NotifPayload) string {
+	if p.ConvID != "" {
+		return "/messages?conv=" + p.ConvID
+	}
+	if p.PostCategory != "" && p.PostID != "" {
+		return "/forum/" + p.PostCategory + "/" + p.PostID
+	}
+	if notifType == "follow" && p.Actor != "" {
+		return "/profile/" + p.Actor
+	}
+	return "/"
 }
 
 func (s *NotificationService) CreateCommentNotif(recipientID uuid.UUID, payload NotifPayload) error {

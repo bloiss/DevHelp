@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
-import { Camera, ChevronRight, Loader2, Lock, ImagePlus } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Camera, ChevronRight, Loader2, Lock, ImagePlus, Bell, BellOff } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { useAuthStore } from '@/stores/authStore'
 import { userService } from '@/services/user.service'
+import { notificationService } from '@/services/notification.service'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { toast } from '@/stores/toastStore'
 
 export const Route = createFileRoute('/settings')({
@@ -54,10 +56,22 @@ function SettingsPage() {
   const [avatarFile, setAvatarFile] = useState<string | undefined>()
   const [bannerFile, setBannerFile] = useState<string | undefined>()
 
-  const [notifComment, setNotifComment] = useState(true)
-  const [notifLike, setNotifLike] = useState(true)
-  const [notifMessage, setNotifMessage] = useState(true)
-  const [notifPush, setNotifPush] = useState(false)
+  const push = usePushNotifications()
+
+  const { data: prefs } = useQuery({
+    queryKey: ['notification-prefs'],
+    queryFn: () => notificationService.getPrefs(),
+    enabled: !!user,
+  })
+
+  const prefsMutation = useMutation({
+    mutationFn: (update: Parameters<typeof notificationService.updatePrefs>[0]) =>
+      notificationService.updatePrefs(update),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-prefs'] })
+    },
+    onError: () => toast.error('Erreur', { description: 'Impossible de sauvegarder les préférences.' }),
+  })
 
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
@@ -256,50 +270,107 @@ function SettingsPage() {
           description="Choisis quand tu souhaites être notifié."
         >
           <div className="flex flex-col gap-4">
-            {[
-              {
-                id: 'notif-comment',
-                label: 'Commentaires',
-                description: "Quand quelqu'un commente un de tes posts",
-                value: notifComment,
-                onChange: setNotifComment,
-              },
-              {
-                id: 'notif-like',
-                label: 'Votes',
-                description: 'Quand quelqu\'un vote pour un de tes posts',
-                value: notifLike,
-                onChange: setNotifLike,
-              },
-              {
-                id: 'notif-message',
-                label: 'Messages privés',
-                description: 'Quand tu reçois un nouveau message',
-                value: notifMessage,
-                onChange: setNotifMessage,
-              },
-              {
-                id: 'notif-push',
-                label: 'Notifications push',
-                description: 'Recevoir des notifications dans le navigateur',
-                value: notifPush,
-                onChange: setNotifPush,
-              },
-            ].map(({ id, label, description, value, onChange }) => (
-              <div key={id} className="flex items-center justify-between gap-4">
-                <div>
-                  <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
-                    {label}
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-                </div>
-                <Switch
-                  id={id}
-                  checked={value}
-                  onCheckedChange={onChange}
-                />
+            {/* Commentaires */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="notif-comment" className="text-sm font-medium cursor-pointer">Commentaires</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Quand quelqu'un commente un de tes posts</p>
               </div>
-            ))}
+              <Switch
+                id="notif-comment"
+                checked={prefs?.notify_on_comment ?? true}
+                onCheckedChange={(v) => prefsMutation.mutate({ notify_on_comment: v })}
+                disabled={prefsMutation.isPending}
+              />
+            </div>
+
+            {/* Votes */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="notif-like" className="text-sm font-medium cursor-pointer">Votes</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Quand quelqu'un vote pour un de tes posts</p>
+              </div>
+              <Switch
+                id="notif-like"
+                checked={prefs?.notify_on_like ?? true}
+                onCheckedChange={(v) => prefsMutation.mutate({ notify_on_like: v })}
+                disabled={prefsMutation.isPending}
+              />
+            </div>
+
+            {/* Messages */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="notif-message" className="text-sm font-medium cursor-pointer">Messages privés</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Quand tu reçois un nouveau message</p>
+              </div>
+              <Switch
+                id="notif-message"
+                checked={prefs?.notify_on_message ?? true}
+                onCheckedChange={(v) => prefsMutation.mutate({ notify_on_message: v })}
+                disabled={prefsMutation.isPending}
+              />
+            </div>
+
+            <div className="h-px bg-border" />
+
+            {/* Push notifications */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <Label htmlFor="notif-push" className="text-sm font-medium cursor-pointer">
+                  Notifications push
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {push.permission === 'unsupported'
+                    ? 'Non supporté par ce navigateur'
+                    : push.permission === 'denied'
+                    ? 'Bloquées par le navigateur — autorise-les dans les paramètres du site'
+                    : push.isSubscribed
+                    ? 'Actives — tu recevras des notifications même sans ouvrir l\'app'
+                    : 'Recevoir des notifications dans le navigateur'}
+                </p>
+              </div>
+              {push.isSupported && push.permission !== 'denied' && (
+                <div className="flex items-center gap-2 shrink-0">
+                  {push.isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : push.isSubscribed ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 h-8 text-xs"
+                      onClick={async () => {
+                        const ok = await push.unsubscribe()
+                        if (ok) {
+                          await prefsMutation.mutateAsync({ push_enabled: false })
+                          toast.success('Notifications push désactivées')
+                        }
+                      }}
+                    >
+                      <BellOff className="h-3.5 w-3.5" />
+                      Désactiver
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 h-8 text-xs"
+                      onClick={async () => {
+                        const ok = await push.subscribe()
+                        if (ok) {
+                          await prefsMutation.mutateAsync({ push_enabled: true })
+                          toast.success('Notifications push activées !')
+                        } else {
+                          toast.error('Impossible d\'activer les notifications push')
+                        }
+                      }}
+                    >
+                      <Bell className="h-3.5 w-3.5" />
+                      Activer
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </Section>
 
