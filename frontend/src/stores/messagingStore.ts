@@ -32,12 +32,15 @@ interface MessagingStore {
   presences: Record<string, PresenceInfo>
   /** Dernier accusé de lecture reçu (pour déclencher des re-renders) */
   latestReceipt: ReadReceiptEvent | null
+  /** Conversation actuellement ouverte (permet au WS de savoir quoi marquer comme lu) */
+  activeConvId: string | null
   /** Fonction d'envoi WS (initialisée par useWebSocket) */
   wsSend: ((event: { type: string; payload: unknown }) => void) | null
 
   setTyping: (event: TypingEvent) => void
   setPresence: (info: PresenceInfo) => void
   setLatestReceipt: (event: ReadReceiptEvent) => void
+  setActiveConvId: (id: string | null) => void
   setWsSend: (fn: (event: { type: string; payload: unknown }) => void) => void
 }
 
@@ -45,6 +48,7 @@ export const useMessagingStore = create<MessagingStore>((set) => ({
   typingByConv:  {},
   presences:     {},
   latestReceipt: null,
+  activeConvId:  null,
   wsSend:        null,
 
   setTyping: (event) =>
@@ -66,6 +70,8 @@ export const useMessagingStore = create<MessagingStore>((set) => ({
     })),
 
   setLatestReceipt: (event) => set({ latestReceipt: event }),
+
+  setActiveConvId: (id) => set({ activeConvId: id }),
 
   setWsSend: (fn) => set({ wsSend: fn }),
 }))

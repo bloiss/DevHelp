@@ -386,7 +386,7 @@ function MessagesPage() {
   const queryClient   = useQueryClient()
   const navigate      = useNavigate()
   const { conv }      = useSearch({ from: '/messages' })
-  const { wsSend, typingByConv, presences } = useMessagingStore()
+  const { wsSend, typingByConv, presences, setActiveConvId } = useMessagingStore()
 
   const [selectedId,     setSelectedId]     = useState<string | null>(conv ?? null)
   const [input,          setInput]          = useState('')
@@ -438,9 +438,11 @@ function MessagesPage() {
     ? [...messagesData.pages].reverse().flatMap((p) => p.data)
     : []
 
+  // Déduplication : les messages optimistes avec le même contenu que ceux déjà confirmés
+  const serverIds = new Set(serverMessages.map((m) => m.id))
   const allMessages = [
     ...serverMessages,
-    ...pendingMsgs,
+    ...pendingMsgs.filter((m) => !serverIds.has(m.id)),
   ]
 
   // ── Typing users for current conv ────────────────────────────────
@@ -472,9 +474,24 @@ function MessagesPage() {
       setPendingMsgs((p) => [...p, optimistic])
       return { optimisticId: optimistic.id }
     },
-    onSuccess: (_, __, ctx) => {
+    onSuccess: (serverMsg, _, ctx) => {
+      // Retirer le message optimiste
       setPendingMsgs((p) => p.filter((m) => m.id !== ctx?.optimisticId))
-      queryClient.invalidateQueries({ queryKey: ['messages', selectedId] })
+      // Injecter directement le message confirmé par le serveur — pas de refetch, pas de flash
+      queryClient.setQueryData(['messages', selectedId], (old: any) => {
+        if (!old) return old
+        const alreadyExists = old.pages.some((page: any) =>
+          page.data.some((m: any) => m.id === serverMsg.id),
+        )
+        if (alreadyExists) return old
+        return {
+          ...old,
+          pages: old.pages.map((page: any, i: number) => {
+            if (i !== 0) return page
+            return { ...page, data: [...page.data, serverMsg] }
+          }),
+        }
+      })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
     },
     onError: (_, __, ctx) => {
@@ -532,6 +549,12 @@ function MessagesPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allMessages.length])
+
+  // Synchronise la conv active dans le store global (pour le WS handler)
+  useEffect(() => {
+    setActiveConvId(selectedId)
+    return () => setActiveConvId(null)
+  }, [selectedId, setActiveConvId])
 
   // Reset on conv change
   useEffect(() => {

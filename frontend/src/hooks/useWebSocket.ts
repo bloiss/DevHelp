@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useMessagingStore } from '@/stores/messagingStore'
-import type { ApiMessage } from '@/services/message.service'
+import { messageService, type ApiMessage } from '@/services/message.service'
 
 const WS_BASE = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080'
 const RECONNECT_DELAY_MS  = 3000
@@ -99,8 +99,15 @@ export function useWebSocket() {
       // ─── Nouveau message ────────────────────────────────────────
       case 'new_message': {
         const p = event.payload as { conv_id: string; message: ApiMessage }
+
         queryClient.setQueryData(['messages', p.conv_id], (old: any) => {
           if (!old) return old
+          // Déduplication : ne pas insérer si le message est déjà dans le cache
+          const alreadyExists = old.pages.some((page: any) =>
+            page.data.some((m: any) => m.id === p.message.id),
+          )
+          if (alreadyExists) return old
+          // Ajouter à la fin de la page la plus récente (pages[0])
           return {
             ...old,
             pages: old.pages.map((page: any, i: number) => {
@@ -109,11 +116,19 @@ export function useWebSocket() {
             }),
           }
         })
-        // Si le message contient un post partagé, invalider pour recharger
-        // les données complètes (SharedPost.Author, SharedPost.Category)
+
+        // Si la conversation est actuellement ouverte, marquer comme lu immédiatement
+        const { activeConvId, wsSend } = useMessagingStore.getState()
+        if (activeConvId === p.conv_id && wsSend) {
+          wsSend({ type: 'mark_read', payload: { conv_id: p.conv_id } })
+          messageService.markRead(p.conv_id).catch(() => {})
+        }
+
+        // Si post partagé, forcer un refetch pour charger les relations complètes
         if (p.message.shared_post_id) {
           queryClient.invalidateQueries({ queryKey: ['messages', p.conv_id] })
         }
+
         queryClient.invalidateQueries({ queryKey: ['conversations'] })
         break
       }
