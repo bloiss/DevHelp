@@ -99,6 +99,11 @@ func main() {
 	accessExpiry, _  := time.ParseDuration(cfg.JWTAccessExpiry)
 	refreshExpiry, _ := time.ParseDuration(cfg.JWTRefreshExpiry)
 
+	uploadService, err := service.NewUploadService(cfg)
+	if err != nil {
+		log.Printf("warning: upload service unavailable: %v", err)
+	}
+
 	authService    := service.NewAuthService(userRepo, cfg.JWTAccessSecret, cfg.JWTRefreshSecret, accessExpiry, refreshExpiry)
 	emailService   := service.NewEmailService(cfg.ResendAPIKey, cfg.ResendFrom, cfg.AppURL)
 	captchaService := service.NewCaptchaService(cfg.HCaptchaSecret)
@@ -118,6 +123,11 @@ func main() {
 	userService     := service.NewUserService(userRepo, postRepo, followRepo)
 
 	// ─── Handlers ─────────────────────────────────────────────────
+	var uploadHandler *handler.UploadHandler
+	if uploadService != nil {
+		uploadHandler = handler.NewUploadHandler(uploadService)
+	}
+
 	authHandler         := handler.NewAuthHandler(authService, emailService, captchaService)
 	oauthHandler        := handler.NewOAuthHandler(oauthService)
 	categoryHandler     := handler.NewCategoryHandler(categoryService)
@@ -145,6 +155,7 @@ func main() {
 		Follow:       followHandler,
 		Message:      messageHandler,
 		WS:           wsHandler,
+		Upload:       uploadHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
 

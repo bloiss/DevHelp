@@ -42,7 +42,7 @@ export function AuthCard({ title, description, children, oauth, className }: Aut
       >
         <motion.div variants={fadeInUp} className="text-center">
           <h1 className="text-xl font-semibold">{title}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="text-sm text-muted-foreground mt-1">P{description}</p>
         </motion.div>
 
         {children}

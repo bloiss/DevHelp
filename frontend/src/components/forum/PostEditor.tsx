@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Image from '@tiptap/extension-image'
 import {
-  Bold, Italic, Strikethrough, Code, List, ListOrdered, Heading2, Terminal, Minus,
+  Bold, Italic, Strikethrough, Code, List, ListOrdered, Heading2, Terminal, Minus, ImageIcon, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { uploadImage, validateImageFile } from '@/services/upload.service'
+import { toast } from '@/stores/toastStore'
 
 interface PostEditorProps {
   onChange: (html: string) => void
@@ -16,10 +19,11 @@ interface ToolbarButtonProps {
   onClick: () => void
   active?: boolean
   title: string
+  disabled?: boolean
   children: React.ReactNode
 }
 
-function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, active, title, disabled, children }: ToolbarButtonProps) {
   return (
     <button
       type="button"
@@ -28,8 +32,9 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
         onClick()
       }}
       title={title}
+      disabled={disabled}
       className={cn(
-        'p-1.5 rounded-md transition-all duration-100 text-sm',
+        'p-1.5 rounded-md transition-all duration-100 text-sm disabled:opacity-40 disabled:cursor-not-allowed',
         active
           ? 'bg-primary/15 text-primary shadow-inner'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -46,12 +51,19 @@ function Divider() {
 
 export function PostEditor({ onChange, error }: PostEditorProps) {
   const [wordCount, setWordCount] = useState(0)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
         placeholder: 'Décris ton problème ou partage ta découverte…',
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'rounded-lg max-w-full my-2',
+        },
       }),
     ],
     editorProps: {
@@ -67,16 +79,55 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
     },
   })
 
+  const handleImageFile = async (file: File) => {
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
+
+    setUploading(true)
+    try {
+      const result = await uploadImage(file)
+      editor?.chain().focus().setImage({ src: result.url, alt: file.name }).run()
+    } catch {
+      toast.error('Erreur lors de l\'upload de l\'image.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleImageButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleImageFile(file)
+    e.target.value = ''
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const file = e.dataTransfer.files?.[0]
+    if (file?.type.startsWith('image/')) {
+      e.preventDefault()
+      handleImageFile(file)
+    }
+  }
+
   if (!editor) return null
 
   return (
-    <div className={cn(
-      'rounded-xl border bg-card overflow-hidden transition-all duration-150',
-      error
-        ? 'border-destructive'
-        : 'border-input focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20',
-    )}>
-
+    <div
+      className={cn(
+        'rounded-xl border bg-card overflow-hidden transition-all duration-150',
+        error
+          ? 'border-destructive'
+          : 'border-input focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20',
+      )}
+      onDrop={handleDrop}
+      onDragOver={(e) => e.preventDefault()}
+    >
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 bg-muted/50 border-b border-border flex-wrap">
 
@@ -160,13 +211,38 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
         >
           <Minus className="h-4 w-4" />
         </ToolbarButton>
+
+        <Divider />
+
+        {/* Image upload */}
+        <ToolbarButton
+          onClick={handleImageButtonClick}
+          title="Insérer une image (PNG, JPEG, GIF — max 20 MB)"
+          disabled={uploading}
+        >
+          {uploading
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <ImageIcon className="h-4 w-4" />
+          }
+        </ToolbarButton>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/gif"
+          className="hidden"
+          onChange={handleFileChange}
+        />
       </div>
 
       {/* Zone de saisie */}
       <EditorContent editor={editor} />
 
-      {/* Pied de l'éditeur — compte de mots */}
-      <div className="flex items-center justify-end px-3 py-1.5 bg-muted/30 border-t border-border">
+      {/* Pied de l'éditeur */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-t border-border">
+        <span className="text-[11px] text-muted-foreground">
+          Glisse une image ou clique <ImageIcon className="inline h-3 w-3" /> pour uploader
+        </span>
         <span className="text-[11px] text-muted-foreground tabular-nums">
           {wordCount} mot{wordCount > 1 ? 's' : ''}
         </span>
