@@ -21,6 +21,7 @@ type Handlers struct {
 	Follow       *handler.FollowHandler
 	Message      *handler.MessageHandler
 	WS           *handler.WSHandler
+	Upload       *handler.UploadHandler
 	JWTSecret    string
 }
 
@@ -72,6 +73,11 @@ func New(h *Handlers) *gin.Engine {
 		// Auth
 		protected.GET("/auth/me", h.Auth.Me)
 		protected.POST("/auth/set-password", h.Auth.SetPassword)
+
+		// Upload
+		if h.Upload != nil {
+			protected.POST("/upload", h.Upload.UploadImage)
+		}
 
 		// Posts
 		protected.POST("/posts", h.Post.Create)
