@@ -26,6 +26,7 @@ type Handlers struct {
 	Message      *handler.MessageHandler
 	WS           *handler.WSHandler
 	Upload       *handler.UploadHandler
+	Report       *handler.ReportHandler
 	JWTSecret    string
 }
 
@@ -96,6 +97,10 @@ func New(h *Handlers) *gin.Engine {
 		protected.POST("/posts/:id/comments", h.Comment.Create)
 		protected.DELETE("/posts/:id/comments/:commentId", h.Comment.Delete)
 
+		// Reports
+		protected.POST("/posts/:id/report", h.Report.ReportPost)
+		protected.POST("/posts/:id/comments/:commentId/report", h.Report.ReportComment)
+
 		// Likes
 		protected.POST("/posts/:id/like", h.Like.VotePost)
 		protected.POST("/posts/:id/comments/:commentId/like", h.Like.VoteComment)
@@ -142,6 +147,8 @@ func New(h *Handlers) *gin.Engine {
 	{
 		admin.GET("/users", h.Admin.ListUsers)
 		admin.GET("/posts", h.Admin.ListPosts)
+		admin.GET("/reports", h.Report.AdminListReports)
+		admin.PATCH("/reports/:id", h.Report.AdminUpdateReport)
 	}
 
 	// ─── Admin seul ───────────────────────────────

@@ -94,6 +94,7 @@ func main() {
 	pushRepo    := repository.NewPushRepository(db)
 	followRepo  := repository.NewFollowRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
+	reportRepo  := repository.NewReportRepository(db)
 
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _  := time.ParseDuration(cfg.JWTAccessExpiry)
@@ -121,8 +122,11 @@ func main() {
 	followService   := service.NewFollowService(followRepo, userRepo, notifService, wsHub)
 	messageService  := service.NewMessageService(messageRepo, wsHub, notifService, userRepo, followRepo)
 	userService     := service.NewUserService(userRepo, postRepo, followRepo)
+	reportService   := service.NewReportService(reportRepo)
 
 	// ─── Handlers ─────────────────────────────────────────────────
+	reportHandler       := handler.NewReportHandler(reportService)
+
 	var uploadHandler *handler.UploadHandler
 	if uploadService != nil {
 		uploadHandler = handler.NewUploadHandler(uploadService)
@@ -156,6 +160,7 @@ func main() {
 		Message:      messageHandler,
 		WS:           wsHandler,
 		Upload:       uploadHandler,
+		Report:       reportHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
 

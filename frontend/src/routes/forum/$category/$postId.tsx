@@ -22,6 +22,7 @@ import { postService }       from '@/services/post.service'
 import { adminService }      from '@/services/admin.service'
 import { useAuthStore }      from '@/stores/authStore'
 import { toast }             from '@/stores/toastStore'
+import { ReportDialog }      from '@/components/shared/ReportDialog'
 import { formatRelativeDate, cn } from '@/lib/utils'
 import type { Comment } from '@/types/post'
 
@@ -88,9 +89,10 @@ function PostPage() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
+  const [menuOpen,       setMenuOpen]       = useState(false)
+  const [confirmDelete,  setConfirmDelete]  = useState(false)
+  const [showReport,     setShowReport]     = useState(false)
+  const [activeReplyId,  setActiveReplyId]  = useState<string | null>(null)
 
   const isAdminOrMod = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -193,6 +195,12 @@ function PostPage() {
         onConfirm={() => { setConfirmDelete(false); deleteMutation.mutate() }}
         onCancel={() => setConfirmDelete(false)}
       />
+      {showReport && (
+        <ReportDialog
+          postId={postId}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
       <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-4" />
 
@@ -271,6 +279,14 @@ function PostPage() {
                               {post.is_hidden ? 'Rendre visible' : 'Masquer'}
                             </button>
                           </>
+                        )}
+                        {user && !isOwner && !isAdminOrMod && (
+                          <button
+                            onClick={() => { setMenuOpen(false); setShowReport(true) }}
+                            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-orange-500/10 transition-colors text-orange-500 border-t border-border"
+                          >
+                            <Flag className="h-4 w-4" /> Signaler
+                          </button>
                         )}
                         {(isOwner || isAdminOrMod) && (
                           <button
