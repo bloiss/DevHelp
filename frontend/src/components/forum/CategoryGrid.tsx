@@ -102,7 +102,7 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
                     Voir les posts
                   </Button>
                 </Link>
-                <Link to="/forum/new">
+                <Link to="/forum/new" search={{}}>
                   <Button
                     variant="outline"
                     size="sm"

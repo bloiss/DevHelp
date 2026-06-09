@@ -62,7 +62,7 @@ function NotifRow({ notif }: { notif: Notification }) {
           const url = new URL(notif.href, window.location.origin)
           const search: Record<string, string> = {}
           url.searchParams.forEach((v, k) => { search[k] = v })
-          navigate({ to: url.pathname as any, search: Object.keys(search).length ? search : undefined })
+          navigate({ to: url.pathname as any, search: Object.keys(search).length ? (search as any) : undefined })
         }
       }}
     >

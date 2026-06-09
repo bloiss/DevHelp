@@ -369,7 +369,7 @@ function PostPage() {
       {/* Formulaire de commentaire principal */}
       {user && (
         <div className="mb-6">
-          <CommentForm onSubmit={(content) => commentMutation.mutateAsync(content)} />
+          <CommentForm onSubmit={async (content) => { await commentMutation.mutateAsync(content) }} />
         </div>
       )}
 
