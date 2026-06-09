@@ -337,7 +337,7 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
                                   Voir les posts
                                 </Button>
                               </Link>
-                              <Link to="/forum/new" search={{}}>
+                              <Link to="/forum/new" search={{ category: undefined }}>
                                 <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
                                   <PenSquare className="h-3.5 w-3.5" />
                                   <span className="hidden sm:inline">Nouveau</span>
