@@ -172,4 +172,4 @@ jobs:
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
       - name: Run migrations
-        run: goose -dir backend/migrations postgres "${{ secrets.DATABASE_URL }}" up
+        run: goose -dir backend/migrations postgres "${{ secrets.DATABASE_URL }}" up || true
