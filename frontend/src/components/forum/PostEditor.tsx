@@ -4,11 +4,12 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
 import {
-  Bold, Italic, Strikethrough, Code, List, ListOrdered, Heading2, Terminal, Minus, ImageIcon, Loader2,
+  Bold, Italic, Strikethrough, Code, List, ListOrdered, Heading2, Terminal, Minus, ImageIcon, Loader2, Wand2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { uploadImage, validateImageFile } from '@/services/upload.service'
 import { toast } from '@/stores/toastStore'
+import { api } from '@/lib/api'
 
 interface PostEditorProps {
   onChange: (html: string) => void
@@ -52,7 +53,21 @@ function Divider() {
 export function PostEditor({ onChange, error }: PostEditorProps) {
   const [wordCount, setWordCount] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [isImproving, setIsImproving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+    const handleImprove = async () => {
+    const text = editor?.getText().trim()
+    if (!text) return
+    setIsImproving(true)
+    try {
+      const res = await api.post('/ai/assist', { text })
+      editor?.commands.setContent(res.data.result)
+    } finally {
+      setIsImproving(false)
+    }
+  }
+
 
   const editor = useEditor({
     extensions: [
@@ -226,15 +241,25 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
           }
         </ToolbarButton>
 
-        <input
+        <input 
           ref={fileInputRef}
           type="file"
           accept="image/png,image/jpeg,image/gif"
           className="hidden"
           onChange={handleFileChange}
         />
+        <button
+         type="button"
+       onClick={handleImprove}
+       disabled={isImproving}
+       title="Améliorer avec l'IA"
+         className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-violet-500 hover:bg-violet-500/10 disabled:opacity-50"
+>
+      <Wand2 className="h-3.5 w-3.5" />
+       {isImproving ? 'Amélioration…' : 'IA'}
+    </button>
       </div>
-
+          
       {/* Zone de saisie */}
       <EditorContent editor={editor} />
 
