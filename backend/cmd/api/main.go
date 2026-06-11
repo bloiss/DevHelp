@@ -162,6 +162,8 @@ func main() {
 		Message:      messageHandler,
 		WS:           wsHandler,
 		Upload:       uploadHandler,
+		AI:           aiHandler,
+		Report:       reportHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
 
