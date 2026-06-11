@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { categoryService } from '@/services/category.service'
-import { getCategoryBySlug, CATEGORIES } from '@/data/categories'
+import { getCategoryBySlug } from '@/data/categories'
 import type { Category } from '@/types/post'
 
 interface CategorySelectProps {

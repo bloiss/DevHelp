@@ -144,6 +144,7 @@ export function Navbar() {
             {isAuthenticated && (
               <Link
                 to="/forum/new"
+                search={{ category: undefined }}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-medium"
                 style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid var(--gold-border)' }}
               >

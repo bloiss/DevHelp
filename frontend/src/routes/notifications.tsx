@@ -13,7 +13,6 @@ import {
   Link2,
   Check,
   CheckCheck,
-  Inbox,
   RotateCcw,
   Search,
   SortAsc,
@@ -22,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
-import { notificationService, type ApiNotification, type NotifPayload } from '@/services/notification.service'
+import { notificationService, type ApiNotification } from '@/services/notification.service'
 import { AuthWall } from '@/components/shared/AuthWall'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

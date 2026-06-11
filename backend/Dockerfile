@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/api ./cmd/api
+RUN mkdir -p migrations && CGO_ENABLED=0 GOOS=linux go build -o bin/api ./cmd/api
 
 # ─── Image finale (minimale) ─────────────
 FROM alpine:3.20

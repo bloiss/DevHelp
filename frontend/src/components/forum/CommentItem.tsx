@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Trash2, MoreHorizontal, CornerDownRight, Reply } from 'lucide-react'
+import { Trash2, MoreHorizontal, CornerDownRight, Reply, Flag } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar } from '@/components/shared/Avatar'
 import { Badge } from '@/components/ui/badge'
 import { VoteButtons } from './VoteButtons'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { ReportDialog } from '@/components/shared/ReportDialog'
 import { formatRelativeDate, cn } from '@/lib/utils'
 import { postService } from '@/services/post.service'
 import { useAuthStore } from '@/stores/authStore'
@@ -36,10 +37,12 @@ export function CommentItem({
 }: CommentItemProps) {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen,    setMenuOpen]    = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [showReport,  setShowReport]  = useState(false)
   const isOwner = user?.id === comment.user_id
   const canModerate = isAdminOrMod || isOwner
+  const canReport = !!user && !isOwner && !isAdminOrMod
   const isReply = depth > 0
 
   const voteMutation = useMutation({
@@ -66,6 +69,13 @@ export function CommentItem({
         onConfirm={() => { setConfirmOpen(false); deleteMutation.mutate() }}
         onCancel={() => setConfirmOpen(false)}
       />
+      {showReport && (
+        <ReportDialog
+          postId={postId}
+          commentId={comment.id}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
       <div className="flex gap-2.5">
 
@@ -111,8 +121,8 @@ export function CommentItem({
               </span>
             </div>
 
-            {/* Menu modération */}
-            {canModerate && (
+            {/* Menu actions */}
+            {(canModerate || canReport) && (
               <div className="relative shrink-0">
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
@@ -129,12 +139,22 @@ export function CommentItem({
                       transition={{ duration: 0.1 }}
                       className="absolute right-0 top-7 z-50 w-44 rounded-xl border border-border bg-popover shadow-xl overflow-hidden"
                     >
-                      <button
-                        onClick={() => { setMenuOpen(false); setConfirmOpen(true) }}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" /> Supprimer
-                      </button>
+                      {canReport && (
+                        <button
+                          onClick={() => { setMenuOpen(false); setShowReport(true) }}
+                          className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-orange-500 hover:bg-orange-500/10 transition-colors"
+                        >
+                          <Flag className="h-4 w-4" /> Signaler
+                        </button>
+                      )}
+                      {canModerate && (
+                        <button
+                          onClick={() => { setMenuOpen(false); setConfirmOpen(true) }}
+                          className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" /> Supprimer
+                        </button>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

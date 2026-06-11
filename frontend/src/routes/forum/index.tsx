@@ -67,7 +67,7 @@ function ForumHub() {
           </p>
         </div>
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-          <Link to="/forum/new">
+          <Link to="/forum/new" search={{ category: undefined }}>
             <Button className="shrink-0 gap-2">
               <PenSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Nouveau post</span>
