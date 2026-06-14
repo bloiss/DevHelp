@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, SearchX, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,9 @@ import { MOCK_POSTS } from '@/data/mockPosts'
 import { CATEGORIES } from '@/data/categories'
 import { cn } from '@/lib/utils'
 import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
+import { api } from '@/lib/api'
 import type { User } from '@/types/user'
+
 
 export const Route = createFileRoute('/search')({
   component: SearchPage,
@@ -45,16 +47,18 @@ function getMockUsers(): User[] {
 function SearchPage() {
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('posts')
+  const [postResults, setPostResults] = useState<any[]>([])
+  useEffect(() => {
+  if (!query.trim()) {
+    setPostResults([])
+    return
+  }
+  api.get('/posts', { params: { q: query } }).then((res) => {
+    setPostResults(res.data.posts ?? [])
+  })
+}, [query])
 
   const q = query.toLowerCase().trim()
-
-  const postResults = q
-    ? MOCK_POSTS.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.content.toLowerCase().includes(q),
-      )
-    : []
 
   const userResults = q
     ? getMockUsers().filter((u) => u.username.toLowerCase().includes(q))
