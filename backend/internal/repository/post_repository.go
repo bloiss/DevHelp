@@ -97,6 +97,10 @@ func (r *PostRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Post{}, "id = ?", id).Error
 }
 
+func (r *PostRepository) UpdateStatus(id uuid.UUID, status model.ContentStatus) error {
+	return r.db.Table("posts").Where("id = ?", id).Update("status", status).Error
+}
+
 // enrichPosts remplit VoteCount, CommentCount et UserVote en 3 requêtes batch.
 func (r *PostRepository) enrichPosts(posts []model.Post, requesterID *uuid.UUID) {
 	if len(posts) == 0 {

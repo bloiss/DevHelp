@@ -45,6 +45,28 @@ func (r *CommentRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Comment{}, "id = ?", id).Error
 }
 
+func (r *CommentRepository) FindByStatus(status model.ContentStatus, page, pageSize int) ([]model.Comment, error) {
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+	var comments []model.Comment
+	err := r.db.
+		Preload("Author").
+		Where("status = ?", status).
+		Order("created_at DESC").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&comments).Error
+	return comments, err
+}
+
+func (r *CommentRepository) UpdateStatus(id uuid.UUID, status model.ContentStatus) error {
+	return r.db.Table("comments").Where("id = ?", id).Update("status", status).Error
+}
+
 func (r *CommentRepository) enrichComments(comments []model.Comment, requesterID *uuid.UUID) {
 	if len(comments) == 0 {
 		return

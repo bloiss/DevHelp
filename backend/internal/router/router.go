@@ -27,6 +27,7 @@ type Handlers struct {
 	WS           *handler.WSHandler
 	Upload       *handler.UploadHandler
 	Report       *handler.ReportHandler
+	Moderation   *handler.ModerationHandler
 	AI           *handler.AIHandler
 	JWTSecret    string
 }
@@ -153,6 +154,9 @@ func New(h *Handlers) *gin.Engine {
 		admin.GET("/posts", h.Admin.ListPosts)
 		admin.GET("/reports", h.Report.AdminListReports)
 		admin.PATCH("/reports/:id", h.Report.AdminUpdateReport)
+		admin.GET("/moderation/queue", h.Moderation.ListQueue)
+		admin.PATCH("/moderation/posts/:id", h.Moderation.UpdatePostStatus)
+		admin.PATCH("/moderation/comments/:id", h.Moderation.UpdateCommentStatus)
 	}
 
 	// ─── Admin seul ───────────────────────────────
