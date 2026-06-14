@@ -137,6 +137,7 @@ func main() {
 	// ─── Handlers ─────────────────────────────────────────────────
 	reportHandler       := handler.NewReportHandler(reportService)
 	moderationHandler   := handler.NewModerationHandler(moderationService)
+	statsHandler        := handler.NewStatsHandler(db)
 
 	var uploadHandler *handler.UploadHandler
 	if uploadService != nil {
@@ -175,6 +176,7 @@ func main() {
 		AI:           aiHandler,
 		Report:       reportHandler,
 		Moderation:   moderationHandler,
+		Stats:        statsHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
 

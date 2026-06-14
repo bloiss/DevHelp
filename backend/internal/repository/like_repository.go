@@ -35,11 +35,26 @@ func (r *LikeRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Like{}, "id = ?", id).Error
 }
 
-func (r *LikeRepository) CountByTarget(targetID uuid.UUID, targetType string) (int64, error) {
-	var count int64
-	err := r.db.Model(&model.Like{}).
-		Select("COALESCE(SUM(value), 0)").
+func (r *LikeRepository) CountSeparate(targetID uuid.UUID, targetType string) (likes int64, dislikes int64, err error) {
+	type row struct {
+		Value int
+		Count int64
+	}
+	var rows []row
+	err = r.db.Model(&model.Like{}).
+		Select("value, COUNT(*) as count").
 		Where("target_id = ? AND target_type = ?", targetID, targetType).
-		Scan(&count).Error
-	return count, err
+		Group("value").
+		Scan(&rows).Error
+	if err != nil {
+		return
+	}
+	for _, r := range rows {
+		if r.Value == 1 {
+			likes = r.Count
+		} else if r.Value == -1 {
+			dislikes = r.Count
+		}
+	}
+	return
 }

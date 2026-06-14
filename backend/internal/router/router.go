@@ -29,6 +29,7 @@ type Handlers struct {
 	Report       *handler.ReportHandler
 	Moderation   *handler.ModerationHandler
 	AI           *handler.AIHandler
+	Stats        *handler.StatsHandler
 	JWTSecret    string
 }
 
@@ -72,6 +73,7 @@ func New(h *Handlers) *gin.Engine {
 	api.GET("/posts", middleware.OptionalAuth(h.JWTSecret), h.Post.List)
 	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
 	api.GET("/posts/:id/comments", middleware.OptionalAuth(h.JWTSecret), h.Comment.List)
+	api.GET("/stats", h.Stats.Get)
 	api.GET("/users/search", h.User.SearchUsers)
 	api.GET("/users/:username", middleware.OptionalAuth(h.JWTSecret), h.User.GetProfile)
 	api.GET("/users/:username/followers", h.Follow.Followers)
@@ -138,6 +140,7 @@ func New(h *Handlers) *gin.Engine {
 		protected.PATCH("/notifications/:id/unread", h.Notification.MarkUnread)
 		protected.PATCH("/notifications/:id/star", h.Notification.Star)
 		protected.PATCH("/notifications/:id/archive", h.Notification.Archive)
+		protected.DELETE("/notifications", h.Notification.DeleteAll)
 		protected.DELETE("/notifications/:id", h.Notification.Delete)
 
 		// Push subscriptions

@@ -55,6 +55,9 @@ export const notificationService = {
   delete: (id: string) =>
     api.delete(`/notifications/${id}`),
 
+  deleteAll: () =>
+    api.delete('/notifications'),
+
   // ─── Préférences ────────────────────────────────────────────────
   getPrefs: () =>
     api.get<NotificationPrefs>('/notifications/prefs').then((r) => r.data),

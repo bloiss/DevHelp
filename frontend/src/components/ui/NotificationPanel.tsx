@@ -3,7 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, ThumbsUp, AtSign, CheckCircle2, PenSquare,
-  BellOff, CheckCheck, ArrowRight, UserPlus,
+  BellOff, CheckCheck, ArrowRight, UserPlus, Trash2,
 } from 'lucide-react'
 import { useNotificationStore, type Notification, type NotifKind } from '@/stores/notificationStore'
 import { cn } from '@/lib/utils'
@@ -97,7 +97,7 @@ function NotifRow({ notif }: { notif: Notification }) {
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 export function NotificationPanel() {
-  const { notifications, unreadCount, isOpen, close, markAllRead, fetchNotifications } = useNotificationStore()
+  const { notifications, unreadCount, isOpen, close, markAllRead, deleteAll, fetchNotifications } = useNotificationStore()
   const panelRef = useRef<HTMLDivElement>(null)
 
   // Re-fetch à chaque ouverture pour avoir les données fraîches
@@ -153,15 +153,26 @@ export function NotificationPanel() {
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Tout lire
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Tout lire
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={deleteAll}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors duration-150"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Tout supprimer
+                </button>
+              )}
+            </div>
           </div>
 
           {/* List */}

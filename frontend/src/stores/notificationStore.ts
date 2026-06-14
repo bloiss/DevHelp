@@ -115,6 +115,7 @@ interface NotificationState {
   fetchUnreadCount:   () => Promise<void>
   markAllRead: () => Promise<void>
   markRead:    (id: string) => Promise<void>
+  deleteAll:   () => Promise<void>
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
@@ -167,6 +168,13 @@ export const useNotificationStore = create<NotificationState>((set) => ({
           state.unreadCount - (state.notifications.find((n) => n.id === id && !n.read) ? 1 : 0),
         ),
       }))
+    } catch { /* ignore */ }
+  },
+
+  deleteAll: async () => {
+    try {
+      await notificationService.deleteAll()
+      set({ notifications: [], unreadCount: 0 })
     } catch { /* ignore */ }
   },
 }))

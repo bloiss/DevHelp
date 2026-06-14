@@ -33,7 +33,8 @@ export interface Post {
   author: User
   category: Category
   images?: PostImage[]
-  vote_count?: number
+  like_count?: number
+  dislike_count?: number
   comment_count?: number
   user_vote?: 1 | -1 | null
   tags?: string[]
@@ -50,7 +51,8 @@ export interface Comment {
   created_at: string
   updated_at: string
   author: User
-  vote_count?: number
+  like_count?: number
+  dislike_count?: number
   user_vote?: 1 | -1 | null
   replies?: Comment[]
 }

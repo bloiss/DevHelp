@@ -3,13 +3,13 @@ import { useNavigate } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, X, Hash, PenSquare, Bell, MessageSquare,
-  Settings, User, FileText, ArrowRight, CornerDownLeft,
+  Settings, User, ArrowRight, CornerDownLeft,
   SlidersHorizontal,
 } from 'lucide-react'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore }    from '@/stores/authStore'
 import { CATEGORIES }      from '@/data/categories'
-import { MOCK_POSTS }      from '@/data/mockPosts'
+
 import { cn } from '@/lib/utils'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -172,23 +172,6 @@ export function CommandPalette() {
         }
       })
 
-    const postItems: CommandItem[] = MOCK_POSTS
-      .filter(p =>
-        q &&
-        (p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q)),
-      )
-      .slice(0, 5)
-      .map(p => ({
-        id: `post-${p.id}`,
-        label: p.title,
-        sublabel: `${p.category.name} · @${p.author.username}`,
-        icon: <IconWrap><FileText className="h-3.5 w-3.5" /></IconWrap>,
-        action: () => go('/forum/$category/$postId', {
-          category: p.category.slug,
-          postId: p.id,
-        }),
-      }))
-
     if (!q) {
       return [
         { id: 'nav',  label: 'Naviguer',              items: navItems  },
@@ -215,9 +198,8 @@ export function CommandPalette() {
     )
 
     return [
-      ...(filtered.length  ? [{ id: 'nav',   label: 'Pages',    items: filtered  }] : []),
-      ...(catItems.length   ? [{ id: 'cats',  label: 'Rubriques', items: catItems  }] : []),
-      ...(postItems.length  ? [{ id: 'posts', label: 'Posts',     items: postItems }] : []),
+      ...(filtered.length ? [{ id: 'nav',  label: 'Pages',    items: filtered }] : []),
+      ...(catItems.length  ? [{ id: 'cats', label: 'Rubriques', items: catItems }] : []),
     ]
   }, [q, isAuthenticated, user]) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -56,7 +56,8 @@ type Post struct {
 	Comments []Comment   `gorm:"foreignKey:PostID"     json:"-"`
 
 	// Champs calculés (non stockés en DB)
-	VoteCount    int64 `gorm:"-" json:"vote_count"`
+	LikeCount    int64 `gorm:"-" json:"like_count"`
+	DislikeCount int64 `gorm:"-" json:"dislike_count"`
 	CommentCount int64 `gorm:"-" json:"comment_count"`
 	UserVote     *int  `gorm:"-" json:"user_vote"`
 }
@@ -92,8 +93,9 @@ type Comment struct {
 	Author User `gorm:"foreignKey:UserID" json:"author,omitempty"`
 
 	// Champs calculés (non stockés en DB)
-	VoteCount int64 `gorm:"-" json:"vote_count"`
-	UserVote  *int  `gorm:"-" json:"user_vote"`
+	LikeCount    int64 `gorm:"-" json:"like_count"`
+	DislikeCount int64 `gorm:"-" json:"dislike_count"`
+	UserVote     *int  `gorm:"-" json:"user_vote"`
 }
 
 func (c *Comment) BeforeCreate(tx *gorm.DB) error {

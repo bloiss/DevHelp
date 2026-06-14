@@ -21,7 +21,8 @@ function stripHtml(html: string): string {
 export function PostCard({ post, categorySlug }: PostCardProps) {
   const plain    = stripHtml(post.content)
   const excerpt  = plain.length > 200 ? plain.slice(0, 200).trimEnd() + '…' : plain
-  const votes    = post.vote_count ?? 0
+  const likes    = post.like_count ?? 0
+  const dislikes = post.dislike_count ?? 0
   const comments = post.comment_count ?? 0
   const category = getCategoryBySlug(post.category?.slug ?? categorySlug)
   const Icon     = category?.icon
@@ -116,20 +117,23 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           >
             <ThumbsUp className="h-[18px] w-[18px] shrink-0" />
             <span className={cn('text-xs tabular-nums w-4 text-left', post.user_vote === 1 ? 'text-emerald-500' : 'group-hover/up:text-emerald-500')}>
-              {votes > 0 ? votes : ''}
+              {likes > 0 ? likes : ''}
             </span>
           </button>
 
           {/* Vote down */}
           <button
             className={cn(
-              'p-2 rounded-full transition-colors duration-150',
+              'flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150',
               post.user_vote === -1
                 ? 'text-rose-500 bg-rose-500/10'
                 : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
             )}
           >
             <ThumbsDown className="h-[18px] w-[18px]" />
+            <span className="text-xs tabular-nums w-4 text-left">
+              {dislikes > 0 ? dislikes : ''}
+            </span>
           </button>
 
           {/* Partager */}

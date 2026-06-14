@@ -15,7 +15,6 @@ import { Badge }             from '@/components/ui/badge'
 import { Skeleton }          from '@/components/ui/Skeleton'
 import { ConfirmDialog }     from '@/components/shared/ConfirmDialog'
 import { TagList }           from '@/components/shared/TagBadge'
-import { getMockComments }   from '@/data/mockComments'
 import { getCategoryBySlug } from '@/data/categories'
 import { inferTags }         from '@/data/postTags'
 import { postService }       from '@/services/post.service'
@@ -108,15 +107,17 @@ function PostPage() {
     refetchInterval: 30_000,
   })
 
-  // Utilise les mock data riches si le post n'a pas encore de commentaires réels
-  const sourceComments = rawComments.length > 0 ? rawComments : getMockComments(postId)
-  const commentTree = buildCommentTree(sourceComments)
+  const commentTree = buildCommentTree(rawComments)
   const totalCount = countAll(commentTree)
-  const usingMock = rawComments.length === 0
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.vote(postId, value),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['post', postId] }),
+    onSuccess: (response) => {
+      queryClient.setQueryData(['post', postId], (old: any) =>
+        old ? { ...old, like_count: response.data.like_count, dislike_count: response.data.dislike_count, user_vote: response.data.user_vote } : old
+      )
+    },
+    onError: () => toast.error('Erreur', { description: 'Impossible de voter.' }),
   })
 
   const commentMutation = useMutation({
@@ -332,7 +333,7 @@ function PostPage() {
               >
                 <ThumbsUp className="h-4 w-4 shrink-0" />
                 <span className={cn('tabular-nums', post.user_vote === 1 && 'text-emerald-500')}>
-                  {post.vote_count ?? 0}
+                  {post.like_count ?? 0}
                 </span>
               </button>
 
@@ -340,14 +341,17 @@ function PostPage() {
                 onClick={() => user && voteMutation.mutate(-1)}
                 disabled={!user}
                 className={cn(
-                  'p-2 rounded-full text-sm transition-colors duration-150',
+                  'flex items-center gap-1.5 p-2 rounded-full text-sm transition-colors duration-150 min-w-[36px]',
                   !user && 'opacity-40 cursor-not-allowed',
                   post.user_vote === -1
                     ? 'text-rose-500 bg-rose-500/10'
                     : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
                 )}
               >
-                <ThumbsDown className="h-4 w-4" />
+                <ThumbsDown className="h-4 w-4 shrink-0" />
+                <span className={cn('tabular-nums', post.user_vote === -1 && 'text-rose-500')}>
+                  {post.dislike_count ?? 0}
+                </span>
               </button>
 
               <button
@@ -376,9 +380,7 @@ function PostPage() {
         <h2 className="font-semibold text-sm">
           {totalCount} commentaire{totalCount > 1 ? 's' : ''}
         </h2>
-        {usingMock && (
-          <span className="text-[11px] text-muted-foreground italic">· aperçu</span>
-        )}
+
         <div className="flex-1 h-px bg-border" />
       </div>
 

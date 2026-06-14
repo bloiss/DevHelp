@@ -56,13 +56,25 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
   const [isImproving, setIsImproving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-    const handleImprove = async () => {
-    const text = editor?.getText().trim()
-    if (!text) return
+  const handleImprove = async () => {
+    if (!editor) return
+    const text = editor.getText().trim()
+    if (!text) {
+      toast.error('Contenu vide', { description: 'Écris quelque chose avant d\'utiliser l\'IA.' })
+      return
+    }
     setIsImproving(true)
     try {
       const res = await api.post('/ai/assist', { text })
-      editor?.commands.setContent(res.data.result)
+      const improved: string = res.data.result ?? ''
+      const html = improved
+        .split('\n\n')
+        .filter((p) => p.trim())
+        .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+        .join('') || `<p>${improved}</p>`
+      editor.commands.setContent(html, true)
+    } catch {
+      toast.error('Erreur IA', { description: 'Impossible de contacter le service IA.' })
     } finally {
       setIsImproving(false)
     }

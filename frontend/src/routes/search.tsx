@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { PostCard } from '@/components/forum/PostCard'
 import { Avatar } from '@/components/shared/Avatar'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { MOCK_POSTS } from '@/data/mockPosts'
 import { CATEGORIES } from '@/data/categories'
 import { cn } from '@/lib/utils'
 import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
@@ -33,36 +32,27 @@ const ROLE_LABEL: Record<string, string | null> = {
   user: null,
 }
 
-function getMockUsers(): User[] {
-  const seen = new Set<string>()
-  return MOCK_POSTS.reduce<User[]>((acc, post) => {
-    if (!seen.has(post.author.id)) {
-      seen.add(post.author.id)
-      acc.push(post.author)
-    }
-    return acc
-  }, [])
-}
-
 function SearchPage() {
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('posts')
   const [postResults, setPostResults] = useState<any[]>([])
+  const [userResults, setUserResults] = useState<User[]>([])
+
   useEffect(() => {
-  if (!query.trim()) {
-    setPostResults([])
-    return
-  }
-  api.get('/posts', { params: { q: query } }).then((res) => {
-    setPostResults(res.data.posts ?? [])
-  })
-}, [query])
+    if (!query.trim()) {
+      setPostResults([])
+      setUserResults([])
+      return
+    }
+    api.get('/posts', { params: { q: query } }).then((res) => {
+      setPostResults(res.data.posts ?? [])
+    })
+    api.get('/users/search', { params: { q: query, limit: 20 } }).then((res) => {
+      setUserResults(res.data ?? [])
+    })
+  }, [query])
 
   const q = query.toLowerCase().trim()
-
-  const userResults = q
-    ? getMockUsers().filter((u) => u.username.toLowerCase().includes(q))
-    : []
 
   const categoryResults = q
     ? CATEGORIES.filter(
@@ -194,7 +184,7 @@ function SearchPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {MOCK_POSTS.filter((p) => p.author.id === user.id).length} post(s)
+                        Membre
                       </p>
                     </div>
                   </Link>

@@ -47,7 +47,16 @@ export function CommentItem({
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.voteComment(postId, comment.id, value),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+    onSuccess: (response) => {
+      queryClient.setQueryData(['comments', postId], (old: any[]) =>
+        (old ?? []).map((c: any) =>
+          c.id === comment.id
+            ? { ...c, like_count: response.data.like_count, dislike_count: response.data.dislike_count, user_vote: response.data.user_vote }
+            : c
+        )
+      )
+    },
+    onError: () => toast.error('Erreur', { description: 'Impossible de voter.' }),
   })
 
   const deleteMutation = useMutation({
@@ -170,7 +179,8 @@ export function CommentItem({
           {/* Actions : votes + répondre */}
           <div className="flex items-center gap-3 mt-2 -ml-1.5">
             <VoteButtons
-              score={comment.vote_count ?? 0}
+              likeCount={comment.like_count ?? 0}
+              dislikeCount={comment.dislike_count ?? 0}
               userVote={comment.user_vote ?? null}
               onVote={user ? (value) => voteMutation.mutate(value) : undefined}
               orientation="horizontal"

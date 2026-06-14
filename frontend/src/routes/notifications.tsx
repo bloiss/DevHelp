@@ -18,6 +18,9 @@ import {
   SortAsc,
   SortDesc,
   ChevronDown,
+  Inbox,
+  Circle,
+  Mail,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -262,18 +265,18 @@ interface SidebarProps {
 }
 
 function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, counts }: SidebarProps) {
-  const tabItems: { key: Tab; label: string; emoji: string; count: number }[] = [
-    { key: 'all',      label: 'Boîte de réception', emoji: '📬', count: counts.all      },
-    { key: 'unread',   label: 'Non lus',             emoji: '🔵', count: counts.unread   },
-    { key: 'starred',  label: 'Favoris',             emoji: '⭐', count: counts.starred  },
-    { key: 'archived', label: 'Archivés',            emoji: '🗄',  count: counts.archived },
+  const tabItems: { key: Tab; label: string; Icon: React.ComponentType<{ className?: string }>; count: number }[] = [
+    { key: 'all',      label: 'Boîte de réception', Icon: Inbox,   count: counts.all      },
+    { key: 'unread',   label: 'Non lus',             Icon: Circle,  count: counts.unread   },
+    { key: 'starred',  label: 'Favoris',             Icon: Star,    count: counts.starred  },
+    { key: 'archived', label: 'Archivés',            Icon: Archive, count: counts.archived },
   ]
 
-  const typeItems: { key: TypeFilter; label: string; emoji: string }[] = [
-    { key: 'comment', label: 'Commentaires', emoji: '💬' },
-    { key: 'like',    label: 'Likes',        emoji: '👍' },
-    { key: 'follow',  label: 'Abonnements',  emoji: '👤' },
-    { key: 'message', label: 'Messages',     emoji: '✉️'  },
+  const typeItems: { key: TypeFilter; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { key: 'comment', label: 'Commentaires', Icon: MessageSquare },
+    { key: 'like',    label: 'Likes',        Icon: ThumbsUp      },
+    { key: 'follow',  label: 'Abonnements',  Icon: UserPlus      },
+    { key: 'message', label: 'Messages',     Icon: Mail          },
   ]
 
   return (
@@ -291,7 +294,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
       </div>
 
       <nav className="p-2 flex flex-col gap-0.5">
-        {tabItems.map(({ key, label, emoji, count }) => (
+        {tabItems.map(({ key, label, Icon, count }) => (
           <button
             key={key}
             onClick={() => { setTab(key); setTypeFilter(null) }}
@@ -303,7 +306,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
             )}
           >
             <span className="flex items-center gap-2">
-              <span>{emoji}</span>
+              <Icon className="h-4 w-4 shrink-0" />
               <span>{label}</span>
             </span>
             {count > 0 && (
@@ -322,7 +325,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Par type</p>
         <div className="h-px bg-border mb-2" />
         <div className="flex flex-col gap-0.5">
-          {typeItems.map(({ key, label, emoji }) => (
+          {typeItems.map(({ key, label, Icon }) => (
             <button
               key={key ?? 'null'}
               onClick={() => setTypeFilter(typeFilter === key ? null : key)}
@@ -333,7 +336,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
-              <span>{emoji}</span>
+              <Icon className="h-4 w-4 shrink-0" />
               <span>{label}</span>
             </button>
           ))}

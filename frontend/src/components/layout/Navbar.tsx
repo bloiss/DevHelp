@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Code2, Bell, MessageSquare, User, LogOut, Sun, Moon, Search, PenSquare } from 'lucide-react'
+import { Code2, Bell, MessageSquare, User, LogOut, Sun, Moon, Search, PenSquare, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -120,6 +120,16 @@ export function Navbar() {
           >
             Forum
           </Link>
+          {(user?.role === 'admin' || user?.role === 'moderator') && (
+            <Link
+              to="/admin"
+              className="relative flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+              activeProps={{ className: 'bg-accent text-accent-foreground' }}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Admin
+            </Link>
+          )}
         </div>
 
         {/* ── Search (desktop) ── */}

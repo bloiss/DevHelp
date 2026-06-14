@@ -193,3 +193,7 @@ func (s *NotificationService) SetArchive(id, userID uuid.UUID, archived bool) er
 func (s *NotificationService) Delete(id, userID uuid.UUID) error {
 	return s.repo.SoftDelete(id, userID)
 }
+
+func (s *NotificationService) DeleteAll(userID uuid.UUID) error {
+	return s.repo.SoftDeleteAll(userID)
+}

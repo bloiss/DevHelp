@@ -3,8 +3,10 @@ import { ArrowRight, Code2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { fadeInUp, stagger } from '@/lib/animations'
+import { useAuthStore } from '@/stores/authStore'
 
 export function Hero() {
+  const { isAuthenticated, user } = useAuthStore()
   return (
     <section className="relative overflow-hidden flex-1 flex flex-col justify-center py-16 px-4">
 
@@ -87,11 +89,19 @@ export function Hero() {
           </motion.div>
 
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-            <Link to="/auth/register">
-              <Button size="lg" variant="outline" className="text-base px-8 hover:border-primary/40 transition-colors duration-300">
-                Créer un compte
-              </Button>
-            </Link>
+            {isAuthenticated && user ? (
+              <Link to="/profile/$username" params={{ username: user.username }}>
+                <Button size="lg" variant="outline" className="text-base px-8 hover:border-primary/40 transition-colors duration-300">
+                  Voir le profil
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/auth/register">
+                <Button size="lg" variant="outline" className="text-base px-8 hover:border-primary/40 transition-colors duration-300">
+                  Créer un compte
+                </Button>
+              </Link>
+            )}
           </motion.div>
         </motion.div>
       </motion.div>
