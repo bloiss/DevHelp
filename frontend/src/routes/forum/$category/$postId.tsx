@@ -112,12 +112,35 @@ function PostPage() {
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.vote(postId, value),
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey: ['post', postId] })
+      const prev = queryClient.getQueryData<any>(['post', postId])
+      if (prev) {
+        const cur = prev.user_vote
+        const toggling = cur === value
+        const newVote = toggling ? null : value
+        let likes = prev.like_count ?? 0
+        let dislikes = prev.dislike_count ?? 0
+        if (value === 1) {
+          likes = toggling ? Math.max(0, likes - 1) : likes + 1
+          if (!toggling && cur === -1) dislikes = Math.max(0, dislikes - 1)
+        } else {
+          dislikes = toggling ? Math.max(0, dislikes - 1) : dislikes + 1
+          if (!toggling && cur === 1) likes = Math.max(0, likes - 1)
+        }
+        queryClient.setQueryData(['post', postId], { ...prev, like_count: likes, dislike_count: dislikes, user_vote: newVote })
+      }
+      return { prev }
+    },
     onSuccess: (response) => {
       queryClient.setQueryData(['post', postId], (old: any) =>
         old ? { ...old, like_count: response.data.like_count, dislike_count: response.data.dislike_count, user_vote: response.data.user_vote } : old
       )
     },
-    onError: () => toast.error('Erreur', { description: 'Impossible de voter.' }),
+    onError: (_err, _val, context: any) => {
+      if (context?.prev) queryClient.setQueryData(['post', postId], context.prev)
+      toast.error('Erreur', { description: 'Impossible de voter.' })
+    },
   })
 
   const commentMutation = useMutation({
