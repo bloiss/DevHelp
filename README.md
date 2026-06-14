@@ -49,11 +49,31 @@ cd backend && go run cmd/api/main.go migrate
 # 4. Démarrer le backend
 cd backend && go run cmd/api/main.go
 
-# 5. Démarrer le worker
-cd worker && go run cmd/main.go
+# 5. Démarrer le worker de modération (RabbitMQ requis)
+cd backend && go run ./cmd/worker/
 
 # 6. Démarrer le frontend
 cd frontend && npm install && npm run dev
+```
+
+## IA locale (Ollama)
+
+L'assistant d'écriture utilise Ollama en local. Pour l'activer :
+
+```bash
+# 1. Installer Ollama : https://ollama.com/download
+
+# 2. Télécharger le modèle
+ollama pull llama3.2
+
+# 3. Lancer le serveur Ollama (doit tourner en arrière-plan)
+ollama serve
+```
+
+Variables `.env` correspondantes :
+```
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
 ```
 
 ## Workflow Git

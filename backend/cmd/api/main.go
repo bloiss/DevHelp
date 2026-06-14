@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
+	"github.com/bloiss/devhelp/backend/internal/queue"
 	"github.com/bloiss/devhelp/backend/internal/config"
 	"github.com/bloiss/devhelp/backend/internal/database"
 	"github.com/bloiss/devhelp/backend/internal/handler"
@@ -112,8 +112,15 @@ func main() {
 		cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.GoogleRedirectURL,
 		cfg.GitHubClientID, cfg.GitHubClientSecret, cfg.GitHubRedirectURL,
 	)
+	mq, err := queue.New(os.Getenv("RABBITMQ_URL"))
+	if err != nil {
+		log.Printf("warning: RabbitMQ unavailable: %v", err)
+	} else {
+		defer mq.Close()
+	}
+
 	categoryService := service.NewCategoryService(categoryRepo)
-	postService     := service.NewPostService(postRepo, categoryRepo, userRepo)
+	postService     := service.NewPostService(postRepo, categoryRepo, userRepo, mq)
 	notifService    := service.NewNotificationService(notifRepo)
 	pushService     := service.NewPushService(pushRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, cfg.VAPIDSubject)
 	notifService.SetPushService(pushService)

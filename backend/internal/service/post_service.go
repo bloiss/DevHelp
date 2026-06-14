@@ -2,10 +2,11 @@ package service
 
 import (
 	"errors"
-
+	"github.com/bloiss/devhelp/backend/internal/queue"
 	"github.com/bloiss/devhelp/backend/internal/model"
 	"github.com/bloiss/devhelp/backend/internal/repository"
 	"github.com/google/uuid"
+	"encoding/json"
 )
 
 var (
@@ -17,11 +18,13 @@ type PostService struct {
 	repo         *repository.PostRepository
 	categoryRepo *repository.CategoryRepository
 	userRepo     *repository.UserRepository
+	mq           *queue.RabbitMQ
 }
 
-func NewPostService(repo *repository.PostRepository, categoryRepo *repository.CategoryRepository, userRepo *repository.UserRepository) *PostService {
-	return &PostService{repo: repo, categoryRepo: categoryRepo, userRepo: userRepo}
+func NewPostService(repo *repository.PostRepository, categoryRepo *repository.CategoryRepository, userRepo *repository.UserRepository, mq *queue.RabbitMQ) *PostService {
+    return &PostService{repo: repo, categoryRepo: categoryRepo, userRepo: userRepo, mq: mq}
 }
+
 
 type PostListInput struct {
 	CategoryID     *uuid.UUID
@@ -121,6 +124,10 @@ func (s *PostService) Create(input PostCreateInput) (*model.Post, error) {
 	if err := s.repo.Create(post); err != nil {
 		return nil, err
 	}
+	if s.mq != nil {
+    body, _ := json.Marshal(map[string]string{"post_id": post.ID.String()})
+    s.mq.Publish("post.moderation", body)
+}	
 	// Reload avec les relations
 	return s.repo.FindByID(post.ID, &input.UserID)
 }
