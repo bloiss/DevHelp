@@ -74,7 +74,7 @@ func (c *Consumer) handle(msg amqp.Delivery) {
 	result, err := c.modSvc.Classify(event.ContentType, event.Title, event.Body)
 	if err != nil {
 		log.Printf("moderation failed for %s %s: %v", event.ContentType, event.ContentID, err)
-		_ = c.repo.CreateLog(event.ContentID, event.ContentType, "error", err.Error(), nil)
+		_ = c.repo.CreateLog(event.ContentID, event.ContentType, "error", err.Error(), nil, "", "")
 		msg.Ack(false)
 		return
 	}
@@ -93,7 +93,8 @@ func (c *Consumer) handle(msg amqp.Delivery) {
 	}
 
 	reason := strings.Join(result.Reasons, "; ")
-	_ = c.repo.CreateLog(event.ContentID, event.ContentType, result.Status, reason, &result.Score)
+	categories := strings.Join(result.Categories, ",")
+	_ = c.repo.CreateLog(event.ContentID, event.ContentType, result.Status, reason, &result.Score, categories, result.Provider)
 	log.Printf("moderated %s %s → %s (score: %.2f)", event.ContentType, event.ContentID, result.Status, result.Score)
 	msg.Ack(false)
 }

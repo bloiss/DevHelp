@@ -45,22 +45,30 @@ func (r *CommentRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Comment{}, "id = ?", id).Error
 }
 
-func (r *CommentRepository) FindByStatus(status model.ContentStatus, page, pageSize int) ([]model.Comment, error) {
+func (r *CommentRepository) FindFiltered(status *model.ContentStatus, page, pageSize int) ([]model.Comment, int64, error) {
 	if pageSize <= 0 {
 		pageSize = 20
 	}
 	if page <= 0 {
 		page = 1
 	}
+	base := r.db.Model(&model.Comment{})
+	if status != nil {
+		base = base.Where("status = ?", *status)
+	}
+	var total int64
+	base.Count(&total)
+
 	var comments []model.Comment
-	err := r.db.
-		Preload("Author").
-		Where("status = ?", status).
-		Order("created_at DESC").
+	q := r.db.Preload("Author")
+	if status != nil {
+		q = q.Where("status = ?", *status)
+	}
+	err := q.Order("created_at DESC").
 		Limit(pageSize).
 		Offset((page - 1) * pageSize).
 		Find(&comments).Error
-	return comments, err
+	return comments, total, err
 }
 
 func (r *CommentRepository) UpdateStatus(id uuid.UUID, status model.ContentStatus) error {

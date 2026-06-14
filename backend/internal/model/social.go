@@ -89,10 +89,12 @@ type UserPresence struct {
 type ModerationLog struct {
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	TargetID     uuid.UUID  `gorm:"type:uuid;not null;index"                       json:"target_id"`
-	TargetType   string     `gorm:"type:varchar(10);not null"                      json:"target_type"` // "post" | "comment"
+	TargetType   string     `gorm:"type:varchar(10);not null"                      json:"target_type"`
 	AIVerdict    string     `gorm:"type:varchar(30);not null"                      json:"ai_verdict"`
 	AIReason     string     `gorm:"not null"                                       json:"ai_reason"`
 	AIConfidence *float64   `                                                      json:"ai_confidence,omitempty"`
+	AICategories string     `gorm:"type:text"                                      json:"ai_categories,omitempty"`
+	AIProvider   string     `gorm:"type:varchar(50)"                               json:"ai_provider,omitempty"`
 	ReviewedBy   *uuid.UUID `gorm:"type:uuid"                                      json:"reviewed_by,omitempty"`
 	FinalStatus  *string    `gorm:"type:varchar(30)"                               json:"final_status,omitempty"`
 	CreatedAt    time.Time  `                                                      json:"created_at"`

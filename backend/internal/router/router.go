@@ -155,8 +155,9 @@ func New(h *Handlers) *gin.Engine {
 		admin.GET("/reports", h.Report.AdminListReports)
 		admin.PATCH("/reports/:id", h.Report.AdminUpdateReport)
 		admin.GET("/moderation/queue", h.Moderation.ListQueue)
-		admin.PATCH("/moderation/posts/:id", h.Moderation.UpdatePostStatus)
-		admin.PATCH("/moderation/comments/:id", h.Moderation.UpdateCommentStatus)
+		admin.GET("/moderation/stats", h.Moderation.GetStats)
+		admin.PATCH("/moderation/posts/:id", h.Moderation.ReviewPost)
+		admin.PATCH("/moderation/comments/:id", h.Moderation.ReviewComment)
 	}
 
 	// ─── Admin seul ───────────────────────────────

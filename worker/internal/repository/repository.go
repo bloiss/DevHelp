@@ -28,10 +28,10 @@ func (r *ModerationRepository) UpdateCommentStatus(id, status string) error {
 		Error
 }
 
-func (r *ModerationRepository) CreateLog(targetID, targetType, verdict, reason string, confidence *float64) error {
+func (r *ModerationRepository) CreateLog(targetID, targetType, verdict, reason string, confidence *float64, categories, provider string) error {
 	return r.db.Exec(
-		`INSERT INTO moderation_logs (id, target_id, target_type, ai_verdict, ai_reason, ai_confidence, created_at)
-		 VALUES (gen_random_uuid(), ?::uuid, ?, ?, ?, ?, NOW())`,
-		targetID, targetType, verdict, reason, confidence,
+		`INSERT INTO moderation_logs (id, target_id, target_type, ai_verdict, ai_reason, ai_confidence, ai_categories, ai_provider, created_at)
+		 VALUES (gen_random_uuid(), ?::uuid, ?, ?, ?, ?, ?, ?, NOW())`,
+		targetID, targetType, verdict, reason, confidence, categories, provider,
 	).Error
 }
