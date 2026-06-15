@@ -39,17 +39,14 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
       transition={{ duration: 0.15 }}
       className="flex gap-3 px-4 py-3 border-b border-border cursor-pointer"
     >
-      {/* ── Colonne gauche : avatar ── */}
       <div className="shrink-0 pt-0.5">
         <Link to="/profile/$username" params={{ username: post.author.username }} onClick={(e) => e.stopPropagation()}>
           <Avatar user={post.author} size="md" className="h-10 w-10 rounded-full ring-1 ring-border hover:ring-primary/40 transition-all" />
         </Link>
       </div>
 
-      {/* ── Colonne droite : tout le contenu ── */}
       <div className="flex flex-col gap-1 flex-1 min-w-0">
 
-        {/* Ligne 1 : username · date · badge catégorie */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <Link to="/profile/$username" params={{ username: post.author.username }} onClick={(e) => e.stopPropagation()} className="font-bold text-sm text-foreground hover:underline">{post.author.username}</Link>
           {post.author.role !== 'user' && (
@@ -73,7 +70,6 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           )}
         </div>
 
-        {/* Ligne 2 : titre */}
         <Link
           {...postLink}
           className="font-bold text-[15px] leading-snug hover:text-primary transition-colors duration-150 line-clamp-2"
@@ -81,20 +77,16 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
           {post.title}
         </Link>
 
-        {/* Ligne 3 : extrait */}
         {excerpt && (
           <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
             {excerpt}
           </p>
         )}
 
-        {/* Ligne 3b : tags */}
         {tags.length > 0 && <TagList tags={tags} max={3} className="mt-0.5" />}
 
-        {/* Ligne 4 : barre d'actions style Twitter */}
         <div className="flex items-center justify-between mt-1 -ml-2 max-w-xs">
 
-          {/* Commentaires */}
           <Link
             {...postLink}
             className="group/btn flex items-center gap-1.5 p-2 rounded-full text-muted-foreground
@@ -106,7 +98,6 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
             </span>
           </Link>
 
-          {/* Vote up */}
           <button
             className={cn(
               'group/up flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150 min-w-[36px]',
@@ -121,7 +112,6 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
             </span>
           </button>
 
-          {/* Vote down */}
           <button
             className={cn(
               'flex items-center gap-1.5 p-2 rounded-full transition-colors duration-150',
@@ -136,7 +126,6 @@ export function PostCard({ post, categorySlug }: PostCardProps) {
             </span>
           </button>
 
-          {/* Partager */}
           <button
             onClick={(e) => {
               e.preventDefault()

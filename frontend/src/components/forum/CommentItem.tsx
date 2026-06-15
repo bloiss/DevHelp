@@ -113,7 +113,6 @@ export function CommentItem({
 
       <div className="flex gap-2.5">
 
-        {/* Avatar */}
         <div className="shrink-0 pt-0.5">
           <Link to="/profile/$username" params={{ username: comment.author.username }}>
             <Avatar
@@ -127,10 +126,8 @@ export function CommentItem({
           </Link>
         </div>
 
-        {/* Contenu */}
         <div className="flex-1 min-w-0">
 
-          {/* Contexte "En réponse à" (sous-réponse à une réponse) */}
           {replyingToUsername && (
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1">
               <CornerDownRight className="h-3 w-3 shrink-0" />
@@ -141,7 +138,6 @@ export function CommentItem({
             </div>
           )}
 
-          {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Link to="/profile/$username" params={{ username: comment.author.username }} className="font-bold text-sm hover:underline">{comment.author.username}</Link>
@@ -155,7 +151,6 @@ export function CommentItem({
               </span>
             </div>
 
-            {/* Menu actions */}
             {(canModerate || canReport) && (
               <div className="relative shrink-0">
                 <button
@@ -196,12 +191,10 @@ export function CommentItem({
             )}
           </div>
 
-          {/* Contenu */}
           <p className="text-sm leading-relaxed text-foreground mt-1 whitespace-pre-wrap break-words">
             {comment.content}
           </p>
 
-          {/* Actions : votes + répondre */}
           <div className="flex items-center gap-3 mt-2 -ml-1.5">
             <VoteButtons
               likeCount={comment.like_count ?? 0}

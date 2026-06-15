@@ -21,8 +21,6 @@ export const Route = createFileRoute('/admin/moderation')({
   component: ModerationPage,
 })
 
-// ─── Config statuts ───────────────────────────────────────────────
-
 const CONTENT_STATUS: Record<string, { label: string; class: string; icon: React.ReactNode }> = {
   pending_moderation: { label: 'En attente',  class: 'bg-amber-500/10 text-amber-600',  icon: <Clock className="h-3 w-3" /> },
   approved:           { label: 'Approuvé',    class: 'bg-green-500/10 text-green-600',  icon: <CheckCircle className="h-3 w-3" /> },
@@ -36,8 +34,6 @@ const AI_VERDICT: Record<string, { label: string; class: string }> = {
   rejected: { label: 'Rejeté',    class: 'bg-red-500/10 text-red-600 border-red-500/20' },
   error:    { label: 'Erreur',    class: 'bg-muted text-muted-foreground border-border' },
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────
 
 function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100)
@@ -77,8 +73,6 @@ function CategoryChip({ label }: { label: string }) {
     </span>
   )
 }
-
-// ─── Bloc décision IA ────────────────────────────────────────────
 
 function AIDecisionBlock({ log }: { log?: ModerationLog }) {
   if (!log) {
@@ -153,8 +147,6 @@ function AIDecisionBlock({ log }: { log?: ModerationLog }) {
     </div>
   )
 }
-
-// ─── Modale de détail ─────────────────────────────────────────────
 
 function DetailModal({
   item,
@@ -261,8 +253,6 @@ function DetailModal({
   )
 }
 
-// ─── Carte contenu ────────────────────────────────────────────────
-
 function ItemCard({
   item,
   onReview,
@@ -361,8 +351,6 @@ function ItemCard({
   )
 }
 
-// ─── Onglet modération IA ─────────────────────────────────────────
-
 const STATUS_FILTERS = [
   { value: '',                  label: 'Tous' },
   { value: 'pending_moderation', label: 'En attente' },
@@ -426,7 +414,6 @@ function AITab() {
 
   return (
     <div className="space-y-5">
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {STAT_CARDS.map((card) => (
           <button
@@ -443,7 +430,6 @@ function AITab() {
         ))}
       </div>
 
-      {/* Filtres */}
       <div className="flex flex-wrap gap-3">
         <div className="flex gap-1 p-1 bg-muted rounded-lg">
           {STATUS_FILTERS.map((f) => (
@@ -484,7 +470,6 @@ function AITab() {
         </p>
       </div>
 
-      {/* Liste */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
@@ -516,7 +501,6 @@ function AITab() {
         </div>
       )}
 
-      {/* Modale détail */}
       <AnimatePresence>
         {selectedItem && (
           <DetailModal
@@ -529,8 +513,6 @@ function AITab() {
     </div>
   )
 }
-
-// ─── Onglet signalements ──────────────────────────────────────────
 
 const REPORT_STATUS_BADGE: Record<string, { label: string; class: string }> = {
   pending:   { label: 'En attente',  class: 'bg-amber-500/10 text-amber-600' },
@@ -671,8 +653,6 @@ function ReportsTab() {
     </div>
   )
 }
-
-// ─── Page principale ──────────────────────────────────────────────
 
 type Tab = 'ai' | 'reports'
 

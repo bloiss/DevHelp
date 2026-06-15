@@ -58,7 +58,6 @@ export function useWebSocket() {
     ws.onopen = () => {
       setStatus('connected')
       reconnectAttempts.current = 0
-      // Exposer la fonction d'envoi dans le store global
       setWsSend((event) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify(event))
@@ -70,7 +69,7 @@ export function useWebSocket() {
       try {
         const data: WSEvent = JSON.parse(event.data)
         handleEvent(data)
-      } catch { /* ignore */ }
+      } catch {}
     }
 
     ws.onclose = (event) => {
@@ -89,25 +88,20 @@ export function useWebSocket() {
 
   function handleEvent(event: WSEvent) {
     switch (event.type) {
-
-      // ─── Notifications ──────────────────────────────────────────
       case 'notification':
         fetchNotifications()
         fetchUnreadCount()
         break
 
-      // ─── Nouveau message ────────────────────────────────────────
       case 'new_message': {
         const p = event.payload as { conv_id: string; message: ApiMessage }
 
         queryClient.setQueryData(['messages', p.conv_id], (old: any) => {
           if (!old) return old
-          // Déduplication : ne pas insérer si le message est déjà dans le cache
           const alreadyExists = old.pages.some((page: any) =>
             page.data.some((m: any) => m.id === p.message.id),
           )
           if (alreadyExists) return old
-          // Ajouter à la fin de la page la plus récente (pages[0])
           return {
             ...old,
             pages: old.pages.map((page: any, i: number) => {
@@ -117,14 +111,12 @@ export function useWebSocket() {
           }
         })
 
-        // Si la conversation est actuellement ouverte, marquer comme lu immédiatement
         const { activeConvId, wsSend } = useMessagingStore.getState()
         if (activeConvId === p.conv_id && wsSend) {
           wsSend({ type: 'mark_read', payload: { conv_id: p.conv_id } })
           messageService.markRead(p.conv_id).catch(() => {})
         }
 
-        // Si post partagé, forcer un refetch pour charger les relations complètes
         if (p.message.shared_post_id) {
           queryClient.invalidateQueries({ queryKey: ['messages', p.conv_id] })
         }
@@ -133,21 +125,18 @@ export function useWebSocket() {
         break
       }
 
-      // ─── Demande de conversation ────────────────────────────────
       case 'new_conversation_request':
         queryClient.invalidateQueries({ queryKey: ['conversations'] })
         fetchNotifications()
         fetchUnreadCount()
         break
 
-      // ─── Indicateur de frappe ───────────────────────────────────
       case 'typing': {
         const p = event.payload as { conv_id: string; user_id: string; username: string; is_typing: boolean }
         setTyping({ convId: p.conv_id, userId: p.user_id, username: p.username, isTyping: p.is_typing, at: Date.now() })
         break
       }
 
-      // ─── Accusé de lecture ──────────────────────────────────────
       case 'read_receipt': {
         const p = event.payload as { conv_id: string; reader_id: string; message_ids: string[]; read_at: string }
         setLatestReceipt({ convId: p.conv_id, readerId: p.reader_id, messageIds: p.message_ids, readAt: p.read_at })
@@ -176,7 +165,6 @@ export function useWebSocket() {
         break
       }
 
-      // ─── Présence ───────────────────────────────────────────────
       case 'presence': {
         const p = event.payload as { user_id: string; is_online: boolean; last_seen?: string }
         setPresence({ userId: p.user_id, isOnline: p.is_online, lastSeen: p.last_seen })

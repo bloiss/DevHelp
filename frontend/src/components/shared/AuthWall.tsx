@@ -19,7 +19,6 @@ export function AuthWall({ icon, title, description }: AuthWallProps) {
     >
       <div className="max-w-sm w-full text-center flex flex-col items-center gap-6">
 
-        {/* Icon glow */}
         <motion.div
           variants={fadeInUp}
           className="relative flex items-center justify-center"
@@ -40,13 +39,11 @@ export function AuthWall({ icon, title, description }: AuthWallProps) {
           </div>
         </motion.div>
 
-        {/* Text */}
         <motion.div variants={fadeInUp} className="flex flex-col gap-2">
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
         </motion.div>
 
-        {/* Actions */}
         <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-3 w-full">
           <Link to="/auth/login" className="flex-1">
             <Button className="w-full">Se connecter</Button>
@@ -56,7 +53,6 @@ export function AuthWall({ icon, title, description }: AuthWallProps) {
           </Link>
         </motion.div>
 
-        {/* Continue browsing */}
         <motion.p variants={fadeInUp} className="text-xs text-muted-foreground">
           Tu peux aussi{' '}
           <Link to="/forum" className="underline underline-offset-4 hover:text-foreground transition-colors">

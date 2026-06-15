@@ -35,7 +35,6 @@ export function BottomNav() {
               className="flex-1 flex flex-col items-center justify-center gap-0.5 relative group"
               aria-label={label}
             >
-              {/* Active dot */}
               {active && (
                 <motion.span
                   layoutId="bottom-nav-dot"
@@ -45,7 +44,6 @@ export function BottomNav() {
                 />
               )}
 
-              {/* Icon + badge */}
               <div className="relative">
                 <Icon
                   className={cn(
@@ -70,7 +68,6 @@ export function BottomNav() {
                 )}
               </div>
 
-              {/* Label */}
               <span
                 className={cn(
                   'text-[9px] font-medium tracking-wide transition-colors duration-150',

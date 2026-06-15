@@ -29,7 +29,6 @@ export const Route = createFileRoute('/forum/$category/$postId')({
   component: PostPage,
 })
 
-/** Regroupe une liste plate de commentaires en arbre (parent_id → replies[]) */
 function buildCommentTree(flat: Comment[]): Comment[] {
   const map = new Map<string, Comment & { replies: Comment[] }>()
   flat.forEach((c) => map.set(c.id, { ...c, replies: [] }))
@@ -45,7 +44,6 @@ function buildCommentTree(flat: Comment[]): Comment[] {
   return roots
 }
 
-/** Compte récursivement tous les commentaires d'un arbre */
 function countAll(comments: Comment[]): number {
   return comments.reduce((n, c) => n + 1 + countAll(c.replies ?? []), 0)
 }
@@ -228,7 +226,6 @@ function PostPage() {
 
       <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-4" />
 
-      {/* ── Post ── */}
       <article className="border-b border-border pb-4">
         <div className="flex gap-3">
           <div className="shrink-0">
@@ -329,7 +326,6 @@ function PostPage() {
 
             <h1 className="text-xl font-bold mt-1 mb-2 leading-snug">{post.title}</h1>
 
-            {/* Tags */}
             {tags.length > 0 && <TagList tags={tags} max={5} className="mb-3" />}
 
             <div
@@ -397,7 +393,6 @@ function PostPage() {
         </div>
       </article>
 
-      {/* ── En-tête section commentaires ── */}
       <div className="flex items-center gap-3 mt-6 mb-4">
         <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
         <h2 className="font-semibold text-sm">
@@ -407,14 +402,12 @@ function PostPage() {
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      {/* Formulaire de commentaire principal */}
       {user && (
         <div className="mb-6">
           <CommentForm onSubmit={async (content) => { await commentMutation.mutateAsync(content) }} />
         </div>
       )}
 
-      {/* ── Threads ── */}
       {commentsLoading ? (
         <div>
           <CommentSkeleton />

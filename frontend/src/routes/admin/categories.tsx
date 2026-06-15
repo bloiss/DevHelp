@@ -168,7 +168,6 @@ function CategoriesPage() {
         <h1 className="text-xl font-bold tracking-tight">Catégories</h1>
       </div>
 
-      {/* Formulaire de création */}
       {!showCreate && !editingId && (
         <Button size="sm" className="mb-6" onClick={() => setShowCreate(true)}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />
@@ -182,7 +181,6 @@ function CategoriesPage() {
         </div>
       )}
 
-      {/* Liste */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (

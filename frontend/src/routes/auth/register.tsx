@@ -4,7 +4,6 @@ import { RegisterForm } from '@/components/auth/RegisterForm'
 import { useAuthStore } from '@/stores/authStore'
 
 export const Route = createFileRoute('/auth/register')({
-  // Si déjà connecté → redirige vers le forum
   beforeLoad: () => {
     if (useAuthStore.getState().isAuthenticated) {
       throw redirect({ to: '/forum' })

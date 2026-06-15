@@ -53,12 +53,10 @@ function ForumHub() {
       initial="hidden"
       animate="visible"
     >
-      {/* Back */}
       <motion.div variants={fadeInUp} className="mb-2">
         <BackButton />
       </motion.div>
 
-      {/* Header */}
       <motion.div variants={fadeInUp} className="flex items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Forum</h1>
@@ -76,9 +74,7 @@ function ForumHub() {
         </motion.div>
       </motion.div>
 
-      {/* Filters + view toggle */}
       <motion.div variants={fadeInUp} className="flex flex-wrap items-center gap-3 mb-8">
-        {/* Pillar filter */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg">
           {PILLARS.map(({ key, label }) => (
             <button
@@ -96,7 +92,6 @@ function ForumHub() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative flex-1 min-w-[160px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -107,7 +102,6 @@ function ForumHub() {
           />
         </div>
 
-        {/* View toggle */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg ml-auto shrink-0">
           <button
             onClick={() => updateViewMode('showcase')}
@@ -138,7 +132,6 @@ function ForumHub() {
         </div>
       </motion.div>
 
-      {/* Content */}
       <AnimatePresence mode="wait">
         {filtered.length > 0 ? (
           viewMode === 'showcase' ? (

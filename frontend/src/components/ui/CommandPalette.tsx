@@ -12,8 +12,6 @@ import { CATEGORIES }      from '@/data/categories'
 
 import { cn } from '@/lib/utils'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface CommandItem {
   id:        string
   label:     string
@@ -28,8 +26,6 @@ interface CommandGroup {
   label: string
   items: CommandItem[]
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function IconWrap({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -49,8 +45,6 @@ function Kbd({ children }: { children: React.ReactNode }) {
     </kbd>
   )
 }
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export function CommandPalette() {
   const { isOpen, close, toggle } = useCommandStore()
@@ -92,14 +86,11 @@ export function CommandPalette() {
   // Reset selection when query changes
   useEffect(() => { setSelected(0) }, [q])
 
-  // ── Navigation helper ──────────────────────────────────────────────────
   function go(to: string, params?: Record<string, string>) {
     close()
-    // Small delay so the close animation plays before navigation
     setTimeout(() => navigate({ to, params } as Parameters<typeof navigate>[0]), 80)
   }
 
-  // ── Build groups ──────────────────────────────────────────────────────
   const groups = useMemo<CommandGroup[]>(() => {
     const navItems: CommandItem[] = [
       {
@@ -242,7 +233,6 @@ export function CommandPalette() {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* ── Backdrop ──────────────────────────────────────────────── */}
           <motion.div
             key="backdrop"
             className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm"
@@ -253,7 +243,6 @@ export function CommandPalette() {
             onClick={close}
           />
 
-          {/* ── Panel ─────────────────────────────────────────────────── */}
           <motion.div
             key="panel"
             className="fixed inset-x-0 top-[12vh] z-50 flex justify-center px-4 pointer-events-none"
@@ -264,7 +253,6 @@ export function CommandPalette() {
           >
             <div className="w-full max-w-xl pointer-events-auto rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-[0_24px_80px_hsl(0_0%_0%/0.18)] dark:shadow-[0_24px_80px_hsl(0_0%_0%/0.55)] overflow-hidden">
 
-              {/* Search input */}
               <div className="flex items-center gap-3 px-4 border-b border-border">
                 <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                 <input
@@ -289,7 +277,6 @@ export function CommandPalette() {
                 )}
               </div>
 
-              {/* Results */}
               <div ref={listRef} className="max-h-[380px] overflow-y-auto overscroll-contain py-2">
                 {total === 0 ? (
                   <div className="flex flex-col items-center justify-center py-14 text-center gap-2">
@@ -342,7 +329,6 @@ export function CommandPalette() {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border bg-muted/30">
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Kbd>↑</Kbd><Kbd>↓</Kbd>

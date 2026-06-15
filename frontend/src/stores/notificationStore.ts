@@ -132,18 +132,14 @@ export const useNotificationStore = create<NotificationState>((set) => ({
       const data = await notificationService.list()
       const notifications = data.map(mapApiNotif)
       set({ notifications, unreadCount: notifications.filter((n) => !n.read).length })
-    } catch {
-      // not authenticated yet — silently ignore
-    }
+    } catch {}
   },
 
   fetchUnreadCount: async () => {
     try {
       const count = await notificationService.unreadCount()
       set({ unreadCount: count })
-    } catch {
-      // not authenticated yet — silently ignore
-    }
+    } catch {}
   },
 
   markAllRead: async () => {
@@ -153,7 +149,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         notifications: state.notifications.map((n) => ({ ...n, read: true })),
         unreadCount: 0,
       }))
-    } catch { /* ignore */ }
+    } catch {}
   },
 
   markRead: async (id: string) => {
@@ -168,13 +164,13 @@ export const useNotificationStore = create<NotificationState>((set) => ({
           state.unreadCount - (state.notifications.find((n) => n.id === id && !n.read) ? 1 : 0),
         ),
       }))
-    } catch { /* ignore */ }
+    } catch {}
   },
 
   deleteAll: async () => {
     try {
       await notificationService.deleteAll()
       set({ notifications: [], unreadCount: 0 })
-    } catch { /* ignore */ }
+    } catch {}
   },
 }))

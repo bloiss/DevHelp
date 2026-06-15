@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 export const Route = createFileRoute('/profile/')({
   beforeLoad: () => {
-    // If logged in, redirect to own profile page
     const { user } = useAuthStore.getState()
     if (user) {
       throw redirect({ to: '/profile/$username', params: { username: user.username } })

@@ -8,7 +8,6 @@ export const categoryService = {
   get: (slug: string) =>
     api.get<Category>(`/categories/${slug}`).then((r) => r.data),
 
-  // ─── Admin ────────────────────────────────────────────────────
   create: (data: { name: string; description?: string; pillar?: string }) =>
     api.post<Category>('/admin/categories', data).then((r) => r.data),
 

@@ -58,14 +58,12 @@ export const notificationService = {
   deleteAll: () =>
     api.delete('/notifications'),
 
-  // ─── Préférences ────────────────────────────────────────────────
   getPrefs: () =>
     api.get<NotificationPrefs>('/notifications/prefs').then((r) => r.data),
 
   updatePrefs: (prefs: Partial<Omit<NotificationPrefs, 'user_id'>>) =>
     api.patch<NotificationPrefs>('/notifications/prefs', prefs).then((r) => r.data),
 
-  // ─── Push subscriptions ─────────────────────────────────────────
   getVapidKey: () =>
     api.get<{ public_key: string }>('/push/vapid-key').then((r) => r.data.public_key),
 

@@ -10,7 +10,6 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden flex-1 flex flex-col justify-center py-16 px-4">
 
-      {/* Fond : orbes animés */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
 
@@ -26,14 +25,12 @@ export function Hero() {
         />
       </div>
 
-      {/* Contenu */}
       <motion.div
         className="max-w-4xl mx-auto text-center flex flex-col items-center gap-6"
         variants={stagger}
         initial="hidden"
         animate="visible"
       >
-        {/* Badge */}
         <motion.div
           variants={fadeInUp}
           className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-muted/80 text-sm text-muted-foreground backdrop-blur-sm hover:border-gold/40 transition-colors duration-300"
@@ -42,7 +39,6 @@ export function Hero() {
           <span>La communauté des développeurs</span>
         </motion.div>
 
-        {/* Titre */}
         <motion.h1
           variants={fadeInUp}
           className="text-4xl sm:text-6xl font-bold tracking-tight leading-tight"
@@ -63,7 +59,6 @@ export function Hero() {
           </motion.span>
         </motion.h1>
 
-        {/* Sous-titre */}
         <motion.p
           variants={fadeInUp}
           className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed"
@@ -72,7 +67,6 @@ export function Hero() {
           partage tes découvertes et aide la communauté à grandir.
         </motion.p>
 
-        {/* CTAs */}
         <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-3 mt-2">
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Link to="/forum">

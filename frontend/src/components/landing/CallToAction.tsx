@@ -8,7 +8,6 @@ export function CallToAction() {
   return (
     <section className="relative py-24 px-4 overflow-hidden">
 
-      {/* Orbe de fond centré */}
       <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
         <motion.div
           className="h-[400px] w-[600px] rounded-full bg-primary/5 blur-3xl"

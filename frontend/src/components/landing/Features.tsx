@@ -34,7 +34,6 @@ export function Features() {
     <section className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
 
-        {/* En-tête */}
         <motion.div
           className="flex flex-col items-center text-center mb-14"
           variants={stagger}
@@ -51,7 +50,6 @@ export function Features() {
           </motion.p>
         </motion.div>
 
-        {/* Grille */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 gap-6"
           variants={stagger}

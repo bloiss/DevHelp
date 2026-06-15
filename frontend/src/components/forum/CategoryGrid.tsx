@@ -62,10 +62,8 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
                 'dark:hover:shadow-[0_16px_48px_hsl(0_0%_0%/0.4),0_0_0_1px_hsl(var(--primary)/0.2)]',
               )}
             >
-              {/* Top color accent */}
               <div className={cn('h-[3px] w-full shrink-0', cat.color)} />
 
-              {/* Main content */}
               <div className="flex-1 p-6">
                 <div className="flex items-start justify-between mb-5">
                   <motion.div
@@ -90,7 +88,6 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
                 </p>
               </div>
 
-              {/* Footer */}
               <div className="px-6 pb-5 pt-3 border-t border-border/50 flex gap-2">
                 <Link to="/forum/$category" params={{ category: cat.slug }} className="flex-1">
                   <Button
@@ -114,7 +111,6 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
                 </Link>
               </div>
 
-              {/* Subtle inner glow on hover */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"

@@ -46,7 +46,6 @@ export function CommentThread({
   return (
     <div className={cn('py-3', depth === 0 && 'border-b border-border last:border-b-0')}>
 
-      {/* Commentaire courant */}
       <CommentItem
         comment={comment}
         postId={postId}
@@ -58,7 +57,6 @@ export function CommentThread({
         onReplyClick={handleReplyClick}
       />
 
-      {/* Formulaire de réponse inline */}
       <AnimatePresence>
         {isReplying && (
           <div className={cn(depth === 0 ? 'ml-11' : 'ml-9')}>
@@ -71,11 +69,9 @@ export function CommentThread({
         )}
       </AnimatePresence>
 
-      {/* Section des réponses */}
       {replies.length > 0 && (
         <div className={cn(depth === 0 ? 'ml-11 mt-1' : 'ml-9 mt-1')}>
 
-          {/* Bouton toggle "Voir / Masquer les réponses" */}
           <button
             onClick={() => setShowReplies((v) => !v)}
             className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors py-1 group"
@@ -97,7 +93,6 @@ export function CommentThread({
             )}
           </button>
 
-          {/* Liste des réponses avec ligne verticale */}
           <AnimatePresence initial={false}>
             {showReplies && (
               <motion.div

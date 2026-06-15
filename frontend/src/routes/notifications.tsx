@@ -35,8 +35,6 @@ export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
 })
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
@@ -94,8 +92,6 @@ function copyLink(href: string | undefined) {
   toast.success('Lien copié !', { description: url })
 }
 
-// ─── Kind config ────────────────────────────────────────────────────────────
-
 const KIND_CONFIG: Record<string, {
   Icon: React.ComponentType<{ className?: string }>
   label: string
@@ -113,13 +109,9 @@ function getKindConfig(type: string) {
   return KIND_CONFIG[type] ?? { Icon: Bell, label: type, iconCls: 'text-muted-foreground', bgCls: 'bg-muted' }
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type Tab = 'all' | 'unread' | 'starred' | 'archived'
 type TypeFilter = 'comment' | 'like' | 'follow' | 'message' | null
 type SortMode = 'newest' | 'oldest' | 'unread-first'
-
-// ─── NotifRow ────────────────────────────────────────────────────────────────
 
 interface NotifRowProps {
   notif: ApiNotification
@@ -245,8 +237,6 @@ function ActionBtn({
   )
 }
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
-
 interface SidebarCounts {
   all: number
   unread: number
@@ -346,8 +336,6 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
   )
 }
 
-// ─── MobileTabs ──────────────────────────────────────────────────────────────
-
 interface MobileTabsProps {
   tab: Tab
   setTab: (t: Tab) => void
@@ -388,8 +376,6 @@ function MobileTabs({ tab, setTab, counts }: MobileTabsProps) {
     </div>
   )
 }
-
-// ─── SortDropdown ────────────────────────────────────────────────────────────
 
 function SortDropdown({ sort, setSort }: { sort: SortMode; setSort: (s: SortMode) => void }) {
   const [open, setOpen] = useState(false)
@@ -436,8 +422,6 @@ function SortDropdown({ sort, setSort }: { sort: SortMode; setSort: (s: SortMode
   )
 }
 
-// ─── Tab labels ──────────────────────────────────────────────────────────────
-
 const TAB_LABELS: Record<Tab, string> = {
   all:      'Boîte de réception',
   unread:   'Non lus',
@@ -451,8 +435,6 @@ const EMPTY_MESSAGES: Record<Tab, { title: string; description: string }> = {
   starred:  { title: 'Aucun favori',          description: 'Mets des notifications en favori pour les retrouver facilement.' },
   archived: { title: 'Aucune archive',        description: "Les notifications archivées apparaîtront ici." },
 }
-
-// ─── Main page ───────────────────────────────────────────────────────────────
 
 function NotificationsPage() {
   const { isAuthenticated } = useAuthStore()
@@ -566,7 +548,6 @@ function NotificationsPage() {
       className="w-full flex overflow-hidden"
       style={{ height: 'calc(100vh - 56px)' }}
     >
-      {/* Sidebar desktop */}
       <div className="hidden md:flex shrink-0">
         <Sidebar
           tab={tab}
@@ -579,9 +560,7 @@ function NotificationsPage() {
         />
       </div>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile tabs */}
         <div className="md:hidden">
           <div className="p-3 border-b border-border">
             <div className="relative">
@@ -597,7 +576,6 @@ function NotificationsPage() {
           <MobileTabs tab={tab} setTab={setTab} counts={counts} />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2 shrink-0">
             <h1 className="font-semibold text-base min-w-48">{tabLabel}</h1>
@@ -622,7 +600,6 @@ function NotificationsPage() {
           </div>
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col">

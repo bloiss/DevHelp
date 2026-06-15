@@ -76,7 +76,6 @@ function SearchPage() {
       animate="visible"
     >
 
-      {/* Barre de recherche */}
       <motion.div variants={fadeInUp} className="mb-8">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold tracking-tight">Recherche</h1>
@@ -97,7 +96,6 @@ function SearchPage() {
         </div>
       </motion.div>
 
-      {/* État initial */}
       {!q && (
         <motion.div variants={fadeInUp}>
           <EmptyState
@@ -108,14 +106,12 @@ function SearchPage() {
         </motion.div>
       )}
 
-      {/* Résultats */}
       {q && (
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
         >
-          {/* Onglets */}
           <motion.div variants={fadeInUp} className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
             {TABS.map(({ key, label }) => (
               <button
@@ -143,7 +139,6 @@ function SearchPage() {
             ))}
           </motion.div>
 
-          {/* Posts */}
           {activeTab === 'posts' && (
             postResults.length > 0 ? (
               <motion.div className="flex flex-col gap-3" variants={staggerFast} initial="hidden" animate="visible">
@@ -162,7 +157,6 @@ function SearchPage() {
             )
           )}
 
-          {/* Utilisateurs */}
           {activeTab === 'users' && (
             userResults.length > 0 ? (
               <motion.div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden" variants={staggerFast} initial="hidden" animate="visible">
@@ -200,7 +194,6 @@ function SearchPage() {
             )
           )}
 
-          {/* Catégories */}
           {activeTab === 'categories' && (
             categoryResults.length > 0 ? (
               <motion.div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden" variants={staggerFast} initial="hidden" animate="visible">

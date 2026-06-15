@@ -23,15 +23,12 @@ export const TAG_DEFINITIONS: Record<string, TagDef> = {
   performance: { label: 'Perf',        className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
 }
 
-/** Retourne 1 ou 2 tags dérivés du slug de catégorie + du contenu du titre */
 export function inferTags(categorySlug: string, title: string): string[] {
   const tags: string[] = []
   const t = title.toLowerCase()
 
-  // Tag technologique depuis la catégorie
   if (TAG_DEFINITIONS[categorySlug]) tags.push(categorySlug)
 
-  // Tags sémantiques depuis le titre
   if (/\bbug\b|erreur|error|crash|ne\s+fonctionne\s+pas|bloqué/.test(t)) tags.push('bug')
   else if (/urgent|asap/.test(t)) tags.push('urgent')
   else if (/résolu|solved|solution|fixed/.test(t)) tags.push('resolu')

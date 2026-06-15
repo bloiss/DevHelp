@@ -56,12 +56,10 @@ function CategoryPage() {
       initial="hidden"
       animate="visible"
     >
-      {/* Back */}
       <motion.div variants={fadeInUp} className="mb-4">
         <BackButton label="Forum" />
       </motion.div>
 
-      {/* En-tête catégorie */}
       <motion.div variants={fadeInUp} className="flex items-start justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <div className={cn('p-3 rounded-xl shrink-0', category.color)}>
@@ -83,7 +81,6 @@ function CategoryPage() {
         )}
       </motion.div>
 
-      {/* Barre de tri */}
       <motion.div variants={fadeInUp} className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
         {SORT_OPTIONS.map(({ key, label, icon: SortIcon }) => (
           <button
@@ -102,7 +99,6 @@ function CategoryPage() {
         ))}
       </motion.div>
 
-      {/* Liste des posts */}
       {isLoading ? (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
