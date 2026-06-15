@@ -27,6 +27,7 @@ type Handlers struct {
 	WS           *handler.WSHandler
 	Upload       *handler.UploadHandler
 	Report       *handler.ReportHandler
+	AI           *handler.AIHandler
 	JWTSecret    string
 }
 
@@ -87,6 +88,9 @@ func New(h *Handlers) *gin.Engine {
 		if h.Upload != nil {
 			protected.POST("/upload", h.Upload.UploadImage)
 		}
+
+		// AI
+		protected.POST("/ai/assist", middleware.RateLimit(10, time.Minute), h.AI.Assist)
 
 		// Posts
 		protected.POST("/posts", h.Post.Create)

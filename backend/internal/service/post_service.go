@@ -33,6 +33,7 @@ type PostListInput struct {
 	RequesterID    *uuid.UUID // pour user_vote
 	Page           int
 	PageSize       int
+	Search 		   string 
 }
 
 type PostListResult struct {
@@ -69,6 +70,8 @@ func (s *PostService) List(input PostListInput) (*PostListResult, error) {
 		RequesterID: input.RequesterID,
 		Page:        input.Page,
 		PageSize:    input.PageSize,
+		Search: 	 input.Search,
+
 	})
 	if err != nil {
 		return nil, err

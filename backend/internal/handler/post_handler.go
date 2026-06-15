@@ -65,6 +65,10 @@ func (h *PostHandler) List(c *gin.Context) {
 	if v := c.Query("author"); v != "" {
 		input.AuthorUsername = &v
 	}
+	if v := c.Query("q"); v != "" {
+    input.Search = v
+}
+
 
 	// Enrichir avec user_vote si connecté (OptionalAuth)
 	if raw, exists := c.Get("user_id"); exists {

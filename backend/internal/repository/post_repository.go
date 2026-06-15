@@ -22,6 +22,7 @@ type PostFilters struct {
 	RequesterID *uuid.UUID // pour populer user_vote
 	Page        int
 	PageSize    int
+	Search      string
 }
 
 func (r *PostRepository) FindAll(f PostFilters) ([]model.Post, int64, error) {
@@ -41,6 +42,11 @@ func (r *PostRepository) FindAll(f PostFilters) ([]model.Post, int64, error) {
 	} else if !f.AllStatuses {
 		q = q.Where("status = ? AND is_hidden = false", model.StatusApproved)
 	}
+	if f.Search != "" {
+    q = q.Where("title ILIKE ? OR content ILIKE ?",
+        "%"+f.Search+"%", "%"+f.Search+"%")
+}
+
 
 	var total int64
 	if err := q.Count(&total).Error; err != nil {

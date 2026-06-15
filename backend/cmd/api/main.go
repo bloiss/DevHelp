@@ -123,6 +123,7 @@ func main() {
 	messageService  := service.NewMessageService(messageRepo, wsHub, notifService, userRepo, followRepo)
 	userService     := service.NewUserService(userRepo, postRepo, followRepo)
 	reportService   := service.NewReportService(reportRepo)
+	aiService       := service.NewAIService(os.Getenv("OLLAMA_BASE_URL"), os.Getenv("OLLAMA_MODEL"))
 
 	// ─── Handlers ─────────────────────────────────────────────────
 	reportHandler       := handler.NewReportHandler(reportService)
@@ -144,6 +145,7 @@ func main() {
 	followHandler       := handler.NewFollowHandler(followService, userRepo)
 	messageHandler      := handler.NewMessageHandler(messageService)
 	wsHandler           := handler.NewWSHandler(wsHub, cfg.JWTAccessSecret, messageService)
+	aiHandler           := handler.NewAIHandler(aiService)
 
 	// ─── Router ───────────────────────────────────────────────────
 	r := router.New(&router.Handlers{
@@ -160,6 +162,7 @@ func main() {
 		Message:      messageHandler,
 		WS:           wsHandler,
 		Upload:       uploadHandler,
+		AI:           aiHandler,
 		Report:       reportHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
