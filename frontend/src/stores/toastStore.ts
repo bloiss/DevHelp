@@ -19,7 +19,6 @@ interface ToastState {
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
   add: (t) => set((s) => {
-    // Déduplique : si un toast avec le même titre existe déjà, on ignore
     if (s.toasts.some((existing) => existing.title === t.title && existing.type === t.type)) {
       return s
     }
@@ -33,7 +32,6 @@ export const useToastStore = create<ToastState>((set) => ({
   remove: (id) => set((s) => ({ toasts: s.toasts.filter(t => t.id !== id) })),
 }))
 
-// ── Imperative helper — callable outside React components ────────────────────
 const add = (type: ToastType, title: string, opts?: { description?: string; duration?: number }) =>
   useToastStore.getState().add({ type, title, duration: opts?.duration ?? 4000, ...opts })
 

@@ -86,7 +86,6 @@ function ProfilePage() {
   return (
     <div className="w-full">
 
-      {/* ── Banner — pleine largeur ── */}
       <div className="h-52 relative overflow-hidden bg-linear-to-br from-primary/20 via-primary/10 to-muted">
         {profile.banner_url ? (
           <img src={profile.banner_url} alt="Bannière" className="absolute inset-0 w-full h-full object-cover" />
@@ -95,13 +94,10 @@ function ProfilePage() {
         )}
       </div>
 
-      {/* ── Grille desktop : contenu principal + sidebar ── */}
       <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-0 lg:px-6 w-full">
 
-        {/* ── Colonne principale ── */}
         <div className="flex-1 min-w-0 border-r border-border lg:border-r lg:pr-0">
 
-          {/* Header profil */}
           <div className="px-4 pb-0">
             <div className="flex items-end justify-between -mt-12 mb-3">
               <Avatar
@@ -161,7 +157,6 @@ function ProfilePage() {
               </div>
             </div>
 
-            {/* Nom + badge */}
             <div className="mb-1 flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold">{profile.username}</h1>
               {roleLabel && (
@@ -173,12 +168,10 @@ function ProfilePage() {
             </div>
             <p className="text-muted-foreground text-sm mb-3">@{profile.username}</p>
 
-            {/* Bio — visible sur mobile uniquement (sur desktop elle est dans la sidebar) */}
             {profile.bio && (
               <p className="text-sm leading-relaxed mb-3 lg:hidden">{profile.bio}</p>
             )}
 
-            {/* Stats — mobile */}
             <div className="flex items-center gap-5 text-sm mb-1 lg:hidden">
               <button onClick={() => setTab('following')} className="hover:underline">
                 <span className="font-bold text-foreground">{profile.following_count ?? 0}</span>
@@ -195,7 +188,6 @@ function ProfilePage() {
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="flex border-b border-border mt-4">
             {(['posts', 'followers', 'following'] as const).map((t) => (
               <button
@@ -216,7 +208,6 @@ function ProfilePage() {
             ))}
           </div>
 
-          {/* Contenu tab */}
           {tab === 'posts' && (
             postsLoading ? (
               <div className="divide-y divide-border">
@@ -264,10 +255,8 @@ function ProfilePage() {
           )}
         </div>
 
-        {/* ── Sidebar desktop (cachée sur mobile) ── */}
         <aside className="hidden lg:block w-80 shrink-0 pt-4 space-y-4">
 
-          {/* Carte infos */}
           <div className="rounded-2xl border border-border bg-card/50 p-5 space-y-4">
             <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">À propos</h2>
 

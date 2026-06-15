@@ -1,7 +1,6 @@
 import { api } from '@/lib/api'
 import type { User, PublicProfile } from '@/types/user'
 
-// Shape exacte retournée par GET /users/:username
 interface ProfileAPIResponse {
   user: User & { bio?: string }
   post_count: number

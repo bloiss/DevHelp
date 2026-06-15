@@ -94,7 +94,15 @@ func main() {
 	pushRepo    := repository.NewPushRepository(db)
 	followRepo  := repository.NewFollowRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
-	reportRepo  := repository.NewReportRepository(db)
+	reportRepo        := repository.NewReportRepository(db)
+	moderationLogRepo := repository.NewModerationLogRepository(db)
+
+	moderationPub, err := service.NewModerationPublisher(cfg.RabbitMQURL, cfg.RabbitMQModerationQueue)
+	if err != nil {
+		log.Printf("warning: moderation publisher unavailable (RabbitMQ not connected): %v", err)
+	} else {
+		defer moderationPub.Close()
+	}
 
 	// ─── Services ─────────────────────────────────────────────────
 	accessExpiry, _  := time.ParseDuration(cfg.JWTAccessExpiry)
@@ -113,20 +121,23 @@ func main() {
 		cfg.GitHubClientID, cfg.GitHubClientSecret, cfg.GitHubRedirectURL,
 	)
 	categoryService := service.NewCategoryService(categoryRepo)
-	postService     := service.NewPostService(postRepo, categoryRepo, userRepo)
+	postService     := service.NewPostService(postRepo, categoryRepo, userRepo, moderationPub)
 	notifService    := service.NewNotificationService(notifRepo)
 	pushService     := service.NewPushService(pushRepo, cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, cfg.VAPIDSubject)
 	notifService.SetPushService(pushService)
-	commentService  := service.NewCommentService(commentRepo, postRepo, notifService, wsHub)
+	commentService  := service.NewCommentService(commentRepo, postRepo, notifService, wsHub, moderationPub)
 	likeService     := service.NewLikeService(likeRepo, postRepo, userRepo, notifService, wsHub)
 	followService   := service.NewFollowService(followRepo, userRepo, notifService, wsHub)
 	messageService  := service.NewMessageService(messageRepo, wsHub, notifService, userRepo, followRepo)
 	userService     := service.NewUserService(userRepo, postRepo, followRepo)
-	reportService   := service.NewReportService(reportRepo)
-	aiService       := service.NewAIService(os.Getenv("OLLAMA_BASE_URL"), os.Getenv("OLLAMA_MODEL"))
+	reportService      := service.NewReportService(reportRepo)
+	moderationService  := service.NewModerationService(postRepo, commentRepo, moderationLogRepo)
+	aiService          := service.NewAIService(os.Getenv("OLLAMA_BASE_URL"), os.Getenv("OLLAMA_MODEL"))
 
 	// ─── Handlers ─────────────────────────────────────────────────
 	reportHandler       := handler.NewReportHandler(reportService)
+	moderationHandler   := handler.NewModerationHandler(moderationService)
+	statsHandler        := handler.NewStatsHandler(db)
 
 	var uploadHandler *handler.UploadHandler
 	if uploadService != nil {
@@ -164,6 +175,8 @@ func main() {
 		Upload:       uploadHandler,
 		AI:           aiHandler,
 		Report:       reportHandler,
+		Moderation:   moderationHandler,
+		Stats:        statsHandler,
 		JWTSecret:    cfg.JWTAccessSecret,
 	})
 

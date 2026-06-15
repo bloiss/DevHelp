@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/auth/reset-password')({
-  // Récupère le token depuis les query params : /auth/reset-password?token=xxx
   validateSearch: z.object({
     token: z.string().optional(),
   }),
@@ -21,7 +20,6 @@ export const Route = createFileRoute('/auth/reset-password')({
 function ResetPasswordPage() {
   const { token } = Route.useSearch()
 
-  // Token absent ou manquant dans l'URL
   if (!token) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)] px-4 py-12">

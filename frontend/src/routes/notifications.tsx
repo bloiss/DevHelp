@@ -18,6 +18,9 @@ import {
   SortAsc,
   SortDesc,
   ChevronDown,
+  Inbox,
+  Circle,
+  Mail,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -31,8 +34,6 @@ import { toast } from '@/stores/toastStore'
 export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
 })
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -91,8 +92,6 @@ function copyLink(href: string | undefined) {
   toast.success('Lien copié !', { description: url })
 }
 
-// ─── Kind config ────────────────────────────────────────────────────────────
-
 const KIND_CONFIG: Record<string, {
   Icon: React.ComponentType<{ className?: string }>
   label: string
@@ -110,13 +109,9 @@ function getKindConfig(type: string) {
   return KIND_CONFIG[type] ?? { Icon: Bell, label: type, iconCls: 'text-muted-foreground', bgCls: 'bg-muted' }
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type Tab = 'all' | 'unread' | 'starred' | 'archived'
 type TypeFilter = 'comment' | 'like' | 'follow' | 'message' | null
 type SortMode = 'newest' | 'oldest' | 'unread-first'
-
-// ─── NotifRow ────────────────────────────────────────────────────────────────
 
 interface NotifRowProps {
   notif: ApiNotification
@@ -242,8 +237,6 @@ function ActionBtn({
   )
 }
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
-
 interface SidebarCounts {
   all: number
   unread: number
@@ -262,18 +255,18 @@ interface SidebarProps {
 }
 
 function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, counts }: SidebarProps) {
-  const tabItems: { key: Tab; label: string; emoji: string; count: number }[] = [
-    { key: 'all',      label: 'Boîte de réception', emoji: '📬', count: counts.all      },
-    { key: 'unread',   label: 'Non lus',             emoji: '🔵', count: counts.unread   },
-    { key: 'starred',  label: 'Favoris',             emoji: '⭐', count: counts.starred  },
-    { key: 'archived', label: 'Archivés',            emoji: '🗄',  count: counts.archived },
+  const tabItems: { key: Tab; label: string; Icon: React.ComponentType<{ className?: string }>; count: number }[] = [
+    { key: 'all',      label: 'Boîte de réception', Icon: Inbox,   count: counts.all      },
+    { key: 'unread',   label: 'Non lus',             Icon: Circle,  count: counts.unread   },
+    { key: 'starred',  label: 'Favoris',             Icon: Star,    count: counts.starred  },
+    { key: 'archived', label: 'Archivés',            Icon: Archive, count: counts.archived },
   ]
 
-  const typeItems: { key: TypeFilter; label: string; emoji: string }[] = [
-    { key: 'comment', label: 'Commentaires', emoji: '💬' },
-    { key: 'like',    label: 'Likes',        emoji: '👍' },
-    { key: 'follow',  label: 'Abonnements',  emoji: '👤' },
-    { key: 'message', label: 'Messages',     emoji: '✉️'  },
+  const typeItems: { key: TypeFilter; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { key: 'comment', label: 'Commentaires', Icon: MessageSquare },
+    { key: 'like',    label: 'Likes',        Icon: ThumbsUp      },
+    { key: 'follow',  label: 'Abonnements',  Icon: UserPlus      },
+    { key: 'message', label: 'Messages',     Icon: Mail          },
   ]
 
   return (
@@ -291,7 +284,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
       </div>
 
       <nav className="p-2 flex flex-col gap-0.5">
-        {tabItems.map(({ key, label, emoji, count }) => (
+        {tabItems.map(({ key, label, Icon, count }) => (
           <button
             key={key}
             onClick={() => { setTab(key); setTypeFilter(null) }}
@@ -303,7 +296,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
             )}
           >
             <span className="flex items-center gap-2">
-              <span>{emoji}</span>
+              <Icon className="h-4 w-4 shrink-0" />
               <span>{label}</span>
             </span>
             {count > 0 && (
@@ -322,7 +315,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Par type</p>
         <div className="h-px bg-border mb-2" />
         <div className="flex flex-col gap-0.5">
-          {typeItems.map(({ key, label, emoji }) => (
+          {typeItems.map(({ key, label, Icon }) => (
             <button
               key={key ?? 'null'}
               onClick={() => setTypeFilter(typeFilter === key ? null : key)}
@@ -333,7 +326,7 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
-              <span>{emoji}</span>
+              <Icon className="h-4 w-4 shrink-0" />
               <span>{label}</span>
             </button>
           ))}
@@ -342,8 +335,6 @@ function Sidebar({ tab, setTab, typeFilter, setTypeFilter, search, setSearch, co
     </aside>
   )
 }
-
-// ─── MobileTabs ──────────────────────────────────────────────────────────────
 
 interface MobileTabsProps {
   tab: Tab
@@ -385,8 +376,6 @@ function MobileTabs({ tab, setTab, counts }: MobileTabsProps) {
     </div>
   )
 }
-
-// ─── SortDropdown ────────────────────────────────────────────────────────────
 
 function SortDropdown({ sort, setSort }: { sort: SortMode; setSort: (s: SortMode) => void }) {
   const [open, setOpen] = useState(false)
@@ -433,8 +422,6 @@ function SortDropdown({ sort, setSort }: { sort: SortMode; setSort: (s: SortMode
   )
 }
 
-// ─── Tab labels ──────────────────────────────────────────────────────────────
-
 const TAB_LABELS: Record<Tab, string> = {
   all:      'Boîte de réception',
   unread:   'Non lus',
@@ -448,8 +435,6 @@ const EMPTY_MESSAGES: Record<Tab, { title: string; description: string }> = {
   starred:  { title: 'Aucun favori',          description: 'Mets des notifications en favori pour les retrouver facilement.' },
   archived: { title: 'Aucune archive',        description: "Les notifications archivées apparaîtront ici." },
 }
-
-// ─── Main page ───────────────────────────────────────────────────────────────
 
 function NotificationsPage() {
   const { isAuthenticated } = useAuthStore()
@@ -563,7 +548,6 @@ function NotificationsPage() {
       className="w-full flex overflow-hidden"
       style={{ height: 'calc(100vh - 56px)' }}
     >
-      {/* Sidebar desktop */}
       <div className="hidden md:flex shrink-0">
         <Sidebar
           tab={tab}
@@ -576,9 +560,7 @@ function NotificationsPage() {
         />
       </div>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile tabs */}
         <div className="md:hidden">
           <div className="p-3 border-b border-border">
             <div className="relative">
@@ -594,7 +576,6 @@ function NotificationsPage() {
           <MobileTabs tab={tab} setTab={setTab} counts={counts} />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2 shrink-0">
             <h1 className="font-semibold text-base min-w-48">{tabLabel}</h1>
@@ -619,7 +600,6 @@ function NotificationsPage() {
           </div>
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col">

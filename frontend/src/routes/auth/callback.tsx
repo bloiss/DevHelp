@@ -26,10 +26,8 @@ function OAuthCallbackPage() {
       return
     }
 
-    // Stocke les tokens pour que l'intercepteur Axios puisse les utiliser
     setTokens(accessToken, refreshToken)
 
-    // Récupère le profil complet depuis l'API
     api.get<User>('/auth/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
     })

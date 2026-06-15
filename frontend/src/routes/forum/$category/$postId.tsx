@@ -15,7 +15,6 @@ import { Badge }             from '@/components/ui/badge'
 import { Skeleton }          from '@/components/ui/Skeleton'
 import { ConfirmDialog }     from '@/components/shared/ConfirmDialog'
 import { TagList }           from '@/components/shared/TagBadge'
-import { getMockComments }   from '@/data/mockComments'
 import { getCategoryBySlug } from '@/data/categories'
 import { inferTags }         from '@/data/postTags'
 import { postService }       from '@/services/post.service'
@@ -30,7 +29,6 @@ export const Route = createFileRoute('/forum/$category/$postId')({
   component: PostPage,
 })
 
-/** Regroupe une liste plate de commentaires en arbre (parent_id → replies[]) */
 function buildCommentTree(flat: Comment[]): Comment[] {
   const map = new Map<string, Comment & { replies: Comment[] }>()
   flat.forEach((c) => map.set(c.id, { ...c, replies: [] }))
@@ -46,7 +44,6 @@ function buildCommentTree(flat: Comment[]): Comment[] {
   return roots
 }
 
-/** Compte récursivement tous les commentaires d'un arbre */
 function countAll(comments: Comment[]): number {
   return comments.reduce((n, c) => n + 1 + countAll(c.replies ?? []), 0)
 }
@@ -108,15 +105,40 @@ function PostPage() {
     refetchInterval: 30_000,
   })
 
-  // Utilise les mock data riches si le post n'a pas encore de commentaires réels
-  const sourceComments = rawComments.length > 0 ? rawComments : getMockComments(postId)
-  const commentTree = buildCommentTree(sourceComments)
+  const commentTree = buildCommentTree(rawComments)
   const totalCount = countAll(commentTree)
-  const usingMock = rawComments.length === 0
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.vote(postId, value),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['post', postId] }),
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey: ['post', postId] })
+      const prev = queryClient.getQueryData<any>(['post', postId])
+      if (prev) {
+        const cur = prev.user_vote
+        const toggling = cur === value
+        const newVote = toggling ? null : value
+        let likes = prev.like_count ?? 0
+        let dislikes = prev.dislike_count ?? 0
+        if (value === 1) {
+          likes = toggling ? Math.max(0, likes - 1) : likes + 1
+          if (!toggling && cur === -1) dislikes = Math.max(0, dislikes - 1)
+        } else {
+          dislikes = toggling ? Math.max(0, dislikes - 1) : dislikes + 1
+          if (!toggling && cur === 1) likes = Math.max(0, likes - 1)
+        }
+        queryClient.setQueryData(['post', postId], { ...prev, like_count: likes, dislike_count: dislikes, user_vote: newVote })
+      }
+      return { prev }
+    },
+    onSuccess: (response) => {
+      queryClient.setQueryData(['post', postId], (old: any) =>
+        old ? { ...old, like_count: response.data.like_count, dislike_count: response.data.dislike_count, user_vote: response.data.user_vote } : old
+      )
+    },
+    onError: (_err, _val, context: any) => {
+      if (context?.prev) queryClient.setQueryData(['post', postId], context.prev)
+      toast.error('Erreur', { description: 'Impossible de voter.' })
+    },
   })
 
   const commentMutation = useMutation({
@@ -204,7 +226,6 @@ function PostPage() {
 
       <BackButton label={category ? `Retour à ${category.name}` : 'Retour'} className="mb-4" />
 
-      {/* ── Post ── */}
       <article className="border-b border-border pb-4">
         <div className="flex gap-3">
           <div className="shrink-0">
@@ -305,7 +326,6 @@ function PostPage() {
 
             <h1 className="text-xl font-bold mt-1 mb-2 leading-snug">{post.title}</h1>
 
-            {/* Tags */}
             {tags.length > 0 && <TagList tags={tags} max={5} className="mb-3" />}
 
             <div
@@ -332,7 +352,7 @@ function PostPage() {
               >
                 <ThumbsUp className="h-4 w-4 shrink-0" />
                 <span className={cn('tabular-nums', post.user_vote === 1 && 'text-emerald-500')}>
-                  {post.vote_count ?? 0}
+                  {post.like_count ?? 0}
                 </span>
               </button>
 
@@ -340,14 +360,17 @@ function PostPage() {
                 onClick={() => user && voteMutation.mutate(-1)}
                 disabled={!user}
                 className={cn(
-                  'p-2 rounded-full text-sm transition-colors duration-150',
+                  'flex items-center gap-1.5 p-2 rounded-full text-sm transition-colors duration-150 min-w-[36px]',
                   !user && 'opacity-40 cursor-not-allowed',
                   post.user_vote === -1
                     ? 'text-rose-500 bg-rose-500/10'
                     : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10',
                 )}
               >
-                <ThumbsDown className="h-4 w-4" />
+                <ThumbsDown className="h-4 w-4 shrink-0" />
+                <span className={cn('tabular-nums', post.user_vote === -1 && 'text-rose-500')}>
+                  {post.dislike_count ?? 0}
+                </span>
               </button>
 
               <button
@@ -370,26 +393,21 @@ function PostPage() {
         </div>
       </article>
 
-      {/* ── En-tête section commentaires ── */}
       <div className="flex items-center gap-3 mt-6 mb-4">
         <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
         <h2 className="font-semibold text-sm">
           {totalCount} commentaire{totalCount > 1 ? 's' : ''}
         </h2>
-        {usingMock && (
-          <span className="text-[11px] text-muted-foreground italic">· aperçu</span>
-        )}
+
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      {/* Formulaire de commentaire principal */}
       {user && (
         <div className="mb-6">
           <CommentForm onSubmit={async (content) => { await commentMutation.mutateAsync(content) }} />
         </div>
       )}
 
-      {/* ── Threads ── */}
       {commentsLoading ? (
         <div>
           <CommentSkeleton />

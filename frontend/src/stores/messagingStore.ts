@@ -1,7 +1,5 @@
 import { create } from 'zustand'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface TypingEvent {
   convId:   string
   userId:   string
@@ -23,18 +21,11 @@ export interface ReadReceiptEvent {
   readAt:     string
 }
 
-// ─── Store ────────────────────────────────────────────────────────────────────
-
 interface MessagingStore {
-  /** Qui est en train de taper, par conversation */
   typingByConv: Record<string, TypingEvent[]>
-  /** Statut de présence par userId */
   presences: Record<string, PresenceInfo>
-  /** Dernier accusé de lecture reçu (pour déclencher des re-renders) */
   latestReceipt: ReadReceiptEvent | null
-  /** Conversation actuellement ouverte (permet au WS de savoir quoi marquer comme lu) */
   activeConvId: string | null
-  /** Fonction d'envoi WS (initialisée par useWebSocket) */
   wsSend: ((event: { type: string; payload: unknown }) => void) | null
 
   setTyping: (event: TypingEvent) => void

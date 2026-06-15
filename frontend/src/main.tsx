@@ -8,7 +8,6 @@ import { routeTree } from './routeTree.gen'
 import { queryClient } from './lib/queryClient'
 import './index.css'
 
-// ─── Sentry ───────────────────────────────────────────────────────────────
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,

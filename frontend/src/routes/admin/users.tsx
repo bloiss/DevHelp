@@ -99,7 +99,6 @@ function UsersPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">{u.email} · {formatDate(u.created_at)}</p>
                   </div>
 
-                  {/* Changement de rôle — désactivé pour soi-même */}
                   {!isMe && (
                     <select
                       className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

@@ -29,8 +29,6 @@ export const Route = createFileRoute('/messages')({
   component: MessagesPage,
 })
 
-// ─── Utilitaires ─────────────────────────────────────────────────────────────
-
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
@@ -70,8 +68,6 @@ function useTypingDebounce(convId: string | null, enabled: boolean) {
 
   return { onKeyPress, stopTyping }
 }
-
-// ─── ConvItem ─────────────────────────────────────────────────────────────────
 
 function ConvItem({ conv, selected, onClick }: {
   conv: ApiConversation; selected: boolean; onClick: () => void
@@ -136,8 +132,6 @@ function ConvSkeleton() {
   )
 }
 
-// ─── DateSeparator ────────────────────────────────────────────────────────────
-
 function DateSeparator({ date }: { date: string }) {
   const d = new Date(date)
   const today = new Date()
@@ -155,8 +149,6 @@ function DateSeparator({ date }: { date: string }) {
   )
 }
 
-// ─── ReadReceipt ──────────────────────────────────────────────────────────────
-
 function ReadReceipt({ msg, isMe }: { msg: ApiMessage; isMe: boolean }) {
   if (!isMe) return null
   const readEntry = msg.reads?.[0]
@@ -173,8 +165,6 @@ function ReadReceipt({ msg, isMe }: { msg: ApiMessage; isMe: boolean }) {
   }
   return <Check className="h-3 w-3 text-muted-foreground/40" />
 }
-
-// ─── SharedPostCard ────────────────────────────────────────────────────────────
 
 function SharedPostCard({ post }: { post: NonNullable<ApiMessage['shared_post']> }) {
   const slug = post.category?.slug
@@ -206,8 +196,6 @@ function SharedPostCard({ post }: { post: NonNullable<ApiMessage['shared_post']>
   )
 }
 
-// ─── MessageBubble ────────────────────────────────────────────────────────────
-
 function MessageBubble({
   msg, isMe, isFirst, isLast, isPending, isError,
 }: {
@@ -233,7 +221,6 @@ function MessageBubble({
       </div>
 
       <div className={cn('flex flex-col max-w-[72%] sm:max-w-[60%]', isMe ? 'items-end' : 'items-start')}>
-        {/* Image attachment */}
         {msg.attachment_url && msg.attachment_type === 'image' && !isDeleted && (
           <img
             src={msg.attachment_url}
@@ -242,7 +229,6 @@ function MessageBubble({
           />
         )}
 
-        {/* Texte */}
         {(msg.content || isDeleted) && (
           <div
             className={cn(
@@ -259,10 +245,8 @@ function MessageBubble({
           </div>
         )}
 
-        {/* Post partagé */}
         {msg.shared_post && !isDeleted && <SharedPostCard post={msg.shared_post} />}
 
-        {/* Timestamp + statut */}
         {isLast && (
           <div className={cn('flex items-center gap-1 mt-1 px-1', isMe ? 'flex-row-reverse' : 'flex-row')}>
             <span className="text-[10px] text-muted-foreground/60">
@@ -275,8 +259,6 @@ function MessageBubble({
     </motion.div>
   )
 }
-
-// ─── TypingBubble ─────────────────────────────────────────────────────────────
 
 function TypingBubble() {
   return (
@@ -295,8 +277,6 @@ function TypingBubble() {
     </div>
   )
 }
-
-// ─── PostShareDialog ──────────────────────────────────────────────────────────
 
 function PostShareDialog({
   onSelect,
@@ -336,7 +316,6 @@ function PostShareDialog({
           className="relative z-10 w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
             <Share2 className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
@@ -352,7 +331,6 @@ function PostShareDialog({
             </button>
           </div>
 
-          {/* Liste */}
           <div className="max-h-72 overflow-y-auto divide-y divide-border/50">
             {filtered.length === 0 && !isLoading ? (
               <p className="text-sm text-muted-foreground text-center py-8">
@@ -379,8 +357,6 @@ function PostShareDialog({
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 function MessagesPage() {
   const { isAuthenticated, user } = useAuthStore()
   const queryClient   = useQueryClient()
@@ -401,10 +377,8 @@ function MessagesPage() {
   const prevScrollHeight = useRef(0)
   const isFirstLoad     = useRef(true)
 
-  // ── Typing debounce ──────────────────────────────────────────────
   const { onKeyPress: onTypingKeyPress, stopTyping } = useTypingDebounce(selectedId, isAuthenticated)
 
-  // ── Conversations ────────────────────────────────────────────────
   const { data: convs = [], isLoading: convsLoading } = useInfiniteQuery({
     queryKey: ['conversations'],
     queryFn: () => messageService.listConversations(),
@@ -414,7 +388,6 @@ function MessagesPage() {
     enabled: isAuthenticated,
   }) as { data: ApiConversation[]; isLoading: boolean }
 
-  // ── Messages (pagination cursor) ─────────────────────────────────
   const {
     data:                 messagesData,
     fetchNextPage:        loadOlderMessages,
@@ -433,29 +406,23 @@ function MessagesPage() {
     enabled: !!selectedId && isAuthenticated,
   })
 
-  // ── Flatten messages: oldest at top, newest at bottom ────────────
   const serverMessages: ApiMessage[] = messagesData
     ? [...messagesData.pages].reverse().flatMap((p) => p.data)
     : []
 
-  // Déduplication : les messages optimistes avec le même contenu que ceux déjà confirmés
   const serverIds = new Set(serverMessages.map((m) => m.id))
   const allMessages = [
     ...serverMessages,
     ...pendingMsgs.filter((m) => !serverIds.has(m.id)),
   ]
 
-  // ── Typing users for current conv ────────────────────────────────
   const typingUsers = selectedId ? (typingByConv[selectedId] ?? []) : []
-  // Auto-clear stale typing events (>3s old)
   const activeTyping = typingUsers.filter((t) => t.isTyping && Date.now() - t.at < 3500)
 
-  // ── Presence for the other user ──────────────────────────────────
   const selectedConv = convs.find((c) => c.id === selectedId) ?? null
   const otherUser    = selectedConv?.other_user
   const otherPresence = otherUser ? presences[otherUser.id] : undefined
 
-  // ── Mutations ─────────────────────────────────────────────────────
   const sendMutation = useMutation({
     mutationFn: (content: string) => messageService.sendMessage(selectedId!, content),
     onMutate: (content) => {
@@ -475,9 +442,7 @@ function MessagesPage() {
       return { optimisticId: optimistic.id }
     },
     onSuccess: (serverMsg, _, ctx) => {
-      // Retirer le message optimiste
       setPendingMsgs((p) => p.filter((m) => m.id !== ctx?.optimisticId))
-      // Injecter directement le message confirmé par le serveur — pas de refetch, pas de flash
       queryClient.setQueryData(['messages', selectedId], (old: any) => {
         if (!old) return old
         const alreadyExists = old.pages.some((page: any) =>
@@ -521,7 +486,6 @@ function MessagesPage() {
     shareMutation.mutate(post.id)
   }, [shareMutation])
 
-  // ── Send presence + mark_read on conv open ────────────────────────
   useEffect(() => {
     if (!selectedId || !wsSend) return
     wsSend({ type: 'presence_update', payload: { conv_id: selectedId } })
@@ -533,7 +497,6 @@ function MessagesPage() {
     }
   }, [selectedId, wsSend, stopTyping])
 
-  // ── Auto-scroll to bottom on initial load + new messages ──────────
   useEffect(() => {
     if (!scrollRef.current) return
     if (isFirstLoad.current && serverMessages.length > 0) {
@@ -541,7 +504,6 @@ function MessagesPage() {
       bottomRef.current?.scrollIntoView({ behavior: 'instant' })
       return
     }
-    // Scroll down for new messages if already near the bottom
     const el = scrollRef.current
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
     if (isNearBottom || pendingMsgs.length > 0) {
@@ -550,20 +512,17 @@ function MessagesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allMessages.length])
 
-  // Synchronise la conv active dans le store global (pour le WS handler)
   useEffect(() => {
     setActiveConvId(selectedId)
     return () => setActiveConvId(null)
   }, [selectedId, setActiveConvId])
 
-  // Reset on conv change
   useEffect(() => {
     isFirstLoad.current = true
     setPendingMsgs([])
     if (selectedId) setTimeout(() => inputRef.current?.focus(), 100)
   }, [selectedId])
 
-  // ── Preserve scroll position when loading older messages ──────────
   useEffect(() => {
     if (prevScrollHeight.current > 0 && scrollRef.current) {
       const diff = scrollRef.current.scrollHeight - prevScrollHeight.current
@@ -572,7 +531,6 @@ function MessagesPage() {
     }
   }, [messagesData?.pages.length])
 
-  // ── Scroll handler for lazy load ──────────────────────────────────
   const handleScroll = useCallback(() => {
     if (!scrollRef.current || !hasOlderMessages || isLoadingOlder) return
     if (scrollRef.current.scrollTop < 80) {
@@ -607,7 +565,6 @@ function MessagesPage() {
     }
   }
 
-  // ── Auth guard ────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <AuthWall
@@ -625,7 +582,6 @@ function MessagesPage() {
   return (
     <div className="flex overflow-hidden border-t border-border" style={{ height: 'calc(100vh - 56px)' }}>
 
-      {/* ── Sidebar ────────────────────────────────────────────────── */}
       <aside className={cn(
         'flex flex-col border-r border-border bg-background shrink-0 w-full md:w-72 lg:w-80',
         selectedId ? 'hidden md:flex' : 'flex',
@@ -671,7 +627,6 @@ function MessagesPage() {
         </div>
       </aside>
 
-      {/* ── Thread ─────────────────────────────────────────────────── */}
       <div className={cn('flex-1 flex flex-col min-w-0 bg-background', selectedId ? 'flex' : 'hidden md:flex')}>
         {!selectedConv ? (
           <div className="flex-1 flex items-center justify-center">
@@ -687,7 +642,6 @@ function MessagesPage() {
           </div>
         ) : (
           <>
-            {/* ── Header ── */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
               <button
                 className="md:hidden p-1.5 rounded-md hover:bg-accent -ml-1"
@@ -731,13 +685,11 @@ function MessagesPage() {
               )}
             </div>
 
-            {/* ── Messages ── */}
             <div
               ref={scrollRef}
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto px-4 py-4"
             >
-              {/* Loader ancien messages */}
               {isLoadingOlder && (
                 <div className="flex justify-center py-2 mb-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -799,7 +751,6 @@ function MessagesPage() {
                       )
                     })}
 
-                    {/* Indicateur de frappe */}
                     {activeTyping.length > 0 && (
                       <div className="mt-1">
                         <p className="text-[11px] text-muted-foreground ml-9 mb-0.5">
@@ -815,14 +766,12 @@ function MessagesPage() {
               )}
             </div>
 
-            {/* ── Bannière demande ── */}
             {selectedConv.status === 'request' && selectedConv.request_sender_id !== user?.id && (
               <div className="px-4 py-2 text-xs text-muted-foreground text-center border-t border-border bg-muted/30">
                 Cette personne t'a envoyé une demande de conversation.
               </div>
             )}
 
-            {/* ── Dialog partage post ── */}
             {showPostShare && (
               <PostShareDialog
                 onSelect={handleSharePost}
@@ -830,11 +779,9 @@ function MessagesPage() {
               />
             )}
 
-            {/* ── Input ── */}
             <div className="px-4 py-3 border-t border-border bg-background shrink-0">
               <div className="flex items-center gap-2 bg-muted rounded-2xl px-3 py-2">
 
-                {/* Partager un post */}
                 <button
                   onClick={() => setShowPostShare(true)}
                   className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors shrink-0"
@@ -843,7 +790,6 @@ function MessagesPage() {
                   <Share2 className="h-4 w-4" />
                 </button>
 
-                {/* Bouton image (placeholder) */}
                 <button
                   onClick={() => toast.info('Bientôt disponible', { description: "L'upload d'images arrive prochainement." })}
                   className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors shrink-0"

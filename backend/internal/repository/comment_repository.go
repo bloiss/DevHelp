@@ -45,6 +45,36 @@ func (r *CommentRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Comment{}, "id = ?", id).Error
 }
 
+func (r *CommentRepository) FindFiltered(status *model.ContentStatus, page, pageSize int) ([]model.Comment, int64, error) {
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+	base := r.db.Model(&model.Comment{})
+	if status != nil {
+		base = base.Where("status = ?", *status)
+	}
+	var total int64
+	base.Count(&total)
+
+	var comments []model.Comment
+	q := r.db.Preload("Author")
+	if status != nil {
+		q = q.Where("status = ?", *status)
+	}
+	err := q.Order("created_at DESC").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&comments).Error
+	return comments, total, err
+}
+
+func (r *CommentRepository) UpdateStatus(id uuid.UUID, status model.ContentStatus) error {
+	return r.db.Table("comments").Where("id = ?", id).Update("status", status).Error
+}
+
 func (r *CommentRepository) enrichComments(comments []model.Comment, requesterID *uuid.UUID) {
 	if len(comments) == 0 {
 		return
@@ -56,20 +86,25 @@ func (r *CommentRepository) enrichComments(comments []model.Comment, requesterID
 		idx[c.ID] = i
 	}
 
-	// Vote counts
+	// Vote counts (séparés like / dislike)
 	type voteRow struct {
 		TargetID uuid.UUID
-		Total    int64
+		Value    int
+		Count    int64
 	}
 	var voteRows []voteRow
 	r.db.Raw(
-		`SELECT target_id, COALESCE(SUM(value), 0) AS total
+		`SELECT target_id, value, COUNT(*) AS count
 		 FROM likes WHERE target_type = 'comment' AND target_id IN ?
-		 GROUP BY target_id`, ids,
+		 GROUP BY target_id, value`, ids,
 	).Scan(&voteRows)
 	for _, row := range voteRows {
 		if i, ok := idx[row.TargetID]; ok {
-			comments[i].VoteCount = row.Total
+			if row.Value == 1 {
+				comments[i].LikeCount = row.Count
+			} else if row.Value == -1 {
+				comments[i].DislikeCount = row.Count
+			}
 		}
 	}
 

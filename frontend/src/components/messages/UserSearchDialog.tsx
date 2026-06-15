@@ -45,7 +45,6 @@ export function UserSearchDialog({ onClose }: Props) {
         className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4"
         onClick={onClose}
       >
-        {/* Backdrop */}
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
 
         <motion.div
@@ -56,7 +55,6 @@ export function UserSearchDialog({ onClose }: Props) {
           className="relative z-10 w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <Input
@@ -72,7 +70,6 @@ export function UserSearchDialog({ onClose }: Props) {
             </Button>
           </div>
 
-          {/* Résultats */}
           <div className="max-h-72 overflow-y-auto">
             {q.trim().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">

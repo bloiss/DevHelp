@@ -17,10 +17,11 @@ type PostService struct {
 	repo         *repository.PostRepository
 	categoryRepo *repository.CategoryRepository
 	userRepo     *repository.UserRepository
+	publisher    *ModerationPublisher
 }
 
-func NewPostService(repo *repository.PostRepository, categoryRepo *repository.CategoryRepository, userRepo *repository.UserRepository) *PostService {
-	return &PostService{repo: repo, categoryRepo: categoryRepo, userRepo: userRepo}
+func NewPostService(repo *repository.PostRepository, categoryRepo *repository.CategoryRepository, userRepo *repository.UserRepository, publisher *ModerationPublisher) *PostService {
+	return &PostService{repo: repo, categoryRepo: categoryRepo, userRepo: userRepo, publisher: publisher}
 }
 
 type PostListInput struct {
@@ -106,7 +107,6 @@ type PostCreateInput struct {
 }
 
 func (s *PostService) Create(input PostCreateInput) (*model.Post, error) {
-	// Vérifie que la catégorie existe
 	if _, err := s.categoryRepo.FindByID(input.CategoryID); err != nil {
 		return nil, ErrCategoryNotFound
 	}
@@ -116,12 +116,23 @@ func (s *PostService) Create(input PostCreateInput) (*model.Post, error) {
 		CategoryID: input.CategoryID,
 		Title:      input.Title,
 		Content:    input.Content,
-		Status:     model.StatusApproved,
+		Status:     model.StatusPendingModeration,
 	}
 	if err := s.repo.Create(post); err != nil {
 		return nil, err
 	}
-	// Reload avec les relations
+
+	if s.publisher != nil {
+		_ = s.publisher.Publish(ModerationEvent{
+			ContentType: "post",
+			ContentID:   post.ID.String(),
+			AuthorID:    input.UserID.String(),
+			Title:       input.Title,
+			Body:        input.Content,
+			CreatedAt:   post.CreatedAt,
+		})
+	}
+
 	return s.repo.FindByID(post.ID, &input.UserID)
 }
 

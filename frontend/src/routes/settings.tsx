@@ -111,7 +111,6 @@ function SettingsPage() {
       updateUser(updatedUser)
       setAvatarFile(undefined)
       setBannerFile(undefined)
-      // Invalide le cache du profil pour que la page profil se rafraîchisse
       queryClient.invalidateQueries({ queryKey: ['profile', updatedUser.username] })
       toast.success('Profil mis à jour !')
     },
@@ -133,14 +132,12 @@ function SettingsPage() {
 
       <div className="flex flex-col gap-8">
 
-        {/* Profil */}
         <Section
           title="Profil"
           description="Ces informations sont visibles par les autres membres."
         >
           <div className="flex flex-col gap-5">
 
-            {/* Bannière */}
             <div>
               <Label className="text-sm mb-2 block">Bannière</Label>
               <div
@@ -171,7 +168,6 @@ function SettingsPage() {
               <p className="text-xs text-muted-foreground mt-1.5">JPG, PNG ou GIF — max 5 Mo</p>
             </div>
 
-            {/* Avatar */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 {avatarPreview ? (
@@ -209,7 +205,6 @@ function SettingsPage() {
               </div>
             </div>
 
-            {/* Username */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="username">Nom d'utilisateur</Label>
               <Input
@@ -221,7 +216,6 @@ function SettingsPage() {
               />
             </div>
 
-            {/* Bio */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="bio">Bio</Label>
               <Input
@@ -235,7 +229,6 @@ function SettingsPage() {
               <p className="text-xs text-muted-foreground text-right">{bio.length}/160</p>
             </div>
 
-            {/* Email — lecture seule */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Adresse email</Label>
               <Input
@@ -264,13 +257,11 @@ function SettingsPage() {
 
         <Separator />
 
-        {/* Notifications */}
         <Section
           title="Notifications"
           description="Choisis quand tu souhaites être notifié."
         >
           <div className="flex flex-col gap-4">
-            {/* Commentaires */}
             <div className="flex items-center justify-between gap-4">
               <div>
                 <Label htmlFor="notif-comment" className="text-sm font-medium cursor-pointer">Commentaires</Label>
@@ -284,7 +275,6 @@ function SettingsPage() {
               />
             </div>
 
-            {/* Votes */}
             <div className="flex items-center justify-between gap-4">
               <div>
                 <Label htmlFor="notif-like" className="text-sm font-medium cursor-pointer">Votes</Label>
@@ -298,7 +288,6 @@ function SettingsPage() {
               />
             </div>
 
-            {/* Messages */}
             <div className="flex items-center justify-between gap-4">
               <div>
                 <Label htmlFor="notif-message" className="text-sm font-medium cursor-pointer">Messages privés</Label>
@@ -314,7 +303,6 @@ function SettingsPage() {
 
             <div className="h-px bg-border" />
 
-            {/* Push notifications */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <Label htmlFor="notif-push" className="text-sm font-medium cursor-pointer">
@@ -376,7 +364,6 @@ function SettingsPage() {
 
         <Separator />
 
-        {/* Sécurité */}
         <Section title="Sécurité">
           <Link
             to="/auth/reset-password"

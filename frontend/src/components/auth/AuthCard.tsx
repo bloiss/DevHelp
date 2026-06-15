@@ -22,7 +22,6 @@ export function AuthCard({ title, description, children, oauth, className }: Aut
       animate="visible"
       className={cn('w-full max-w-sm mx-auto flex flex-col gap-6', className)}
     >
-      {/* Logo */}
       <motion.div variants={fadeInUp}>
         <Link to="/" className="flex items-center gap-2 font-bold text-xl justify-center group">
           <motion.div
@@ -35,7 +34,6 @@ export function AuthCard({ title, description, children, oauth, className }: Aut
         </Link>
       </motion.div>
 
-      {/* Card */}
       <motion.div
         variants={scaleIn}
         className="rounded-xl border border-border bg-card p-8 shadow-sm flex flex-col gap-6"

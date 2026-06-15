@@ -78,3 +78,10 @@ func (r *NotificationRepository) SoftDelete(id, userID uuid.UUID) error {
 		Where("id = ? AND user_id = ?", id, userID).
 		Update("deleted_at", now).Error
 }
+
+func (r *NotificationRepository) SoftDeleteAll(userID uuid.UUID) error {
+	now := time.Now()
+	return r.db.Model(&model.Notification{}).
+		Where("user_id = ? AND deleted_at IS NULL", userID).
+		Update("deleted_at", now).Error
+}

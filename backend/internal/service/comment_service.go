@@ -17,10 +17,11 @@ var (
 )
 
 type CommentService struct {
-	repo     *repository.CommentRepository
-	postRepo *repository.PostRepository
-	notifSvc *NotificationService
-	wsHub    *hub.Hub
+	repo      *repository.CommentRepository
+	postRepo  *repository.PostRepository
+	notifSvc  *NotificationService
+	wsHub     *hub.Hub
+	publisher *ModerationPublisher
 }
 
 func NewCommentService(
@@ -28,8 +29,9 @@ func NewCommentService(
 	postRepo *repository.PostRepository,
 	notifSvc *NotificationService,
 	wsHub *hub.Hub,
+	publisher *ModerationPublisher,
 ) *CommentService {
-	return &CommentService{repo: repo, postRepo: postRepo, notifSvc: notifSvc, wsHub: wsHub}
+	return &CommentService{repo: repo, postRepo: postRepo, notifSvc: notifSvc, wsHub: wsHub, publisher: publisher}
 }
 
 func (s *CommentService) ListByPost(postID uuid.UUID, requesterID *uuid.UUID) ([]model.Comment, error) {
@@ -44,18 +46,27 @@ func (s *CommentService) Create(postID, userID uuid.UUID, content string) (*mode
 		PostID:  postID,
 		UserID:  userID,
 		Content: content,
-		Status:  model.StatusApproved,
+		Status:  model.StatusPendingModeration,
 	}
 	if err := s.repo.Create(c); err != nil {
 		return nil, err
 	}
-	// Reload with author
+
+	if s.publisher != nil {
+		_ = s.publisher.Publish(ModerationEvent{
+			ContentType: "comment",
+			ContentID:   c.ID.String(),
+			AuthorID:    userID.String(),
+			Body:        content,
+			CreatedAt:   c.CreatedAt,
+		})
+	}
+
 	full, err := s.repo.FindByID(c.ID)
 	if err != nil {
 		return c, nil
 	}
 
-	// Notification au propriétaire du post (si différent du commentateur)
 	post, err := s.postRepo.FindByID(postID, nil)
 	if err == nil && post.UserID != userID {
 		_ = s.notifSvc.CreateCommentNotif(post.UserID, NotifPayload{

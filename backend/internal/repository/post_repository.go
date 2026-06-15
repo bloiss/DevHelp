@@ -97,6 +97,10 @@ func (r *PostRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&model.Post{}, "id = ?", id).Error
 }
 
+func (r *PostRepository) UpdateStatus(id uuid.UUID, status model.ContentStatus) error {
+	return r.db.Table("posts").Where("id = ?", id).Update("status", status).Error
+}
+
 // enrichPosts remplit VoteCount, CommentCount et UserVote en 3 requêtes batch.
 func (r *PostRepository) enrichPosts(posts []model.Post, requesterID *uuid.UUID) {
 	if len(posts) == 0 {
@@ -110,20 +114,25 @@ func (r *PostRepository) enrichPosts(posts []model.Post, requesterID *uuid.UUID)
 		idx[p.ID] = i
 	}
 
-	// ── Vote counts ────────────────────────────────────────────
+	// ── Vote counts (séparés like / dislike) ──────────────────
 	type voteRow struct {
 		TargetID uuid.UUID
-		Total    int64
+		Value    int
+		Count    int64
 	}
 	var voteRows []voteRow
 	r.db.Raw(
-		`SELECT target_id, COALESCE(SUM(value), 0) AS total
+		`SELECT target_id, value, COUNT(*) AS count
 		 FROM likes WHERE target_type = 'post' AND target_id IN ?
-		 GROUP BY target_id`, ids,
+		 GROUP BY target_id, value`, ids,
 	).Scan(&voteRows)
 	for _, row := range voteRows {
 		if i, ok := idx[row.TargetID]; ok {
-			posts[i].VoteCount = row.Total
+			if row.Value == 1 {
+				posts[i].LikeCount = row.Count
+			} else if row.Value == -1 {
+				posts[i].DislikeCount = row.Count
+			}
 		}
 	}
 

@@ -79,7 +79,6 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
 
   return (
     <div ref={ref} className="relative">
-      {/* Trigger */}
       <button
         type="button"
         onClick={() => !isLoading && setOpen((o) => !o)}
@@ -107,7 +106,6 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
         <ChevronDown className={cn('h-4 w-4 text-muted-foreground shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute z-50 mt-2 w-full rounded-xl border border-border bg-popover shadow-xl overflow-hidden">
           <div className="max-h-72 overflow-y-auto p-2 space-y-3">

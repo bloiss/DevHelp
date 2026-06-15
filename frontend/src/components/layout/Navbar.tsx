@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { Code2, Bell, MessageSquare, User, LogOut, Sun, Moon, Search, PenSquare } from 'lucide-react'
+import { Code2, Bell, MessageSquare, User, LogOut, Sun, Moon, Search, PenSquare, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -96,7 +96,6 @@ export function Navbar() {
     )}>
       <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-2">
 
-        {/* ── Logo ── */}
         <div className="flex-1 flex justify-start">
           <Link to="/" className="flex items-center gap-2 font-bold text-lg group">
             <Code2 className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" style={{ color: 'var(--gold)' }} />
@@ -104,7 +103,6 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* ── Center nav (desktop only) ── */}
         <div className="hidden md:flex items-center gap-1">
           <Link
             to="/home"
@@ -120,9 +118,18 @@ export function Navbar() {
           >
             Forum
           </Link>
+          {(user?.role === 'admin' || user?.role === 'moderator') && (
+            <Link
+              to="/admin"
+              className="relative flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+              activeProps={{ className: 'bg-accent text-accent-foreground' }}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Admin
+            </Link>
+          )}
         </div>
 
-        {/* ── Search (desktop) ── */}
         <button
           onClick={openCommand}
           className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/50 text-muted-foreground text-sm hover:bg-accent hover:text-foreground transition-colors duration-200 group"
@@ -135,10 +142,8 @@ export function Navbar() {
           </kbd>
         </button>
 
-        {/* ── Right actions ── */}
         <div className="flex items-center gap-1">
 
-          {/* Always-visible icons: Messages, Notifications, Profile */}
           <div className="hidden md:flex items-center gap-1">
 
             {isAuthenticated && (
@@ -157,7 +162,6 @@ export function Navbar() {
               <MessageSquare className="h-4 w-4" />
             </NavIconLink>
 
-            {/* Bell — toggles the dropdown panel */}
             <div className="relative">
               <button
                 onClick={toggleNotif}
@@ -223,7 +227,6 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile: search icon + theme */}
           <button
             onClick={openCommand}
             className="md:hidden p-2 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -232,7 +235,6 @@ export function Navbar() {
             <Search className="h-4 w-4" />
           </button>
 
-          {/* Dark mode toggle */}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-md hover:bg-accent transition-colors relative overflow-hidden text-muted-foreground hover:text-foreground"

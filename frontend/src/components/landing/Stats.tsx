@@ -2,12 +2,13 @@ import { useRef, useEffect, useState } from 'react'
 import { Users, MessageSquare, LayoutGrid, CheckCircle2 } from 'lucide-react'
 import { motion, useInView } from 'framer-motion'
 import { stagger, fadeInUp } from '@/lib/animations'
+import { api } from '@/lib/api'
 
-const STATS = [
-  { icon: Users,         target: 1200, suffix: '+',  label: 'Membres actifs'      },
-  { icon: MessageSquare, target: 4800, suffix: '+',  label: 'Discussions'         },
-  { icon: LayoutGrid,    target: 10,   suffix: '',   label: 'Rubriques'           },
-  { icon: CheckCircle2,  target: 98,   suffix: ' %', label: 'Questions résolues'  },
+const STAT_DEFS = [
+  { icon: Users,         key: 'users'      as const, suffix: '+', label: 'Membres'      },
+  { icon: MessageSquare, key: 'posts'       as const, suffix: '+', label: 'Discussions'  },
+  { icon: CheckCircle2,  key: 'comments'    as const, suffix: '+', label: 'Réponses'     },
+  { icon: LayoutGrid,    key: 'categories'  as const, suffix: '',  label: 'Rubriques'    },
 ]
 
 function useCountUp(target: number, inView: boolean, duration = 1.6) {
@@ -30,7 +31,7 @@ function useCountUp(target: number, inView: boolean, duration = 1.6) {
 
 function StatItem({
   icon: Icon, target, suffix, label,
-}: typeof STATS[number]) {
+}: { icon: typeof Users; target: number; suffix: string; label: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
   const count = useCountUp(target, inView)
@@ -64,6 +65,14 @@ function StatItem({
 }
 
 export function Stats() {
+  const [data, setData] = useState({ users: 0, posts: 0, comments: 0, categories: 0 })
+
+  useEffect(() => {
+    api.get<{ users: number; posts: number; comments: number; categories: number }>('/stats')
+      .then((r) => setData(r.data))
+      .catch(() => {})
+  }, [])
+
   return (
     <section className="border-y border-border bg-muted/40">
       <motion.div
@@ -73,8 +82,8 @@ export function Stats() {
         whileInView="visible"
         viewport={{ once: true, margin: '-60px' }}
       >
-        {STATS.map((stat) => (
-          <StatItem key={stat.label} {...stat} />
+        {STAT_DEFS.map((def) => (
+          <StatItem key={def.label} icon={def.icon} target={data[def.key]} suffix={def.suffix} label={def.label} />
         ))}
       </motion.div>
     </section>

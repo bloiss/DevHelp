@@ -13,7 +13,6 @@ export interface User {
   updated_at: string
 }
 
-// Profil public retourné par GET /users/:username
 export interface PublicProfile {
   id: string
   username: string

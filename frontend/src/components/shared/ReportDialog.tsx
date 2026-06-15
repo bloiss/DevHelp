@@ -63,7 +63,6 @@ export function ReportDialog({ postId, commentId, onClose }: ReportDialogProps) 
           className="relative z-10 w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Flag className="h-4 w-4 text-orange-500" />
@@ -76,7 +75,6 @@ export function ReportDialog({ postId, commentId, onClose }: ReportDialogProps) 
             </button>
           </div>
 
-          {/* Body */}
           <div className="px-5 py-4 space-y-3">
             <p className="text-xs text-muted-foreground">
               Pourquoi signales-tu ce contenu ?
@@ -112,7 +110,6 @@ export function ReportDialog({ postId, commentId, onClose }: ReportDialogProps) 
             )}
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border bg-muted/30">
             <Button variant="ghost" size="sm" onClick={onClose} disabled={mutation.isPending}>
               Annuler

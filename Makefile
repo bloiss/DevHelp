@@ -1,14 +1,15 @@
-MINIO_DATA  := /tmp/minio-data
-MINIO_PID   := /tmp/devhelp-minio.pid
-API_PID     := /tmp/devhelp-api.pid
-FRONT_PID   := /tmp/devhelp-front.pid
-MINIO_LOG   := /tmp/devhelp-minio.log
-API_LOG     := /tmp/devhelp-api.log
-FRONT_LOG   := /tmp/devhelp-front.log
+MINIO_DATA   := /tmp/minio-data
+MINIO_PID    := /tmp/devhelp-minio.pid
+API_PID      := /tmp/devhelp-api.pid
+FRONT_PID    := /tmp/devhelp-front.pid
+WORKER_PID   := /tmp/devhelp-worker.pid
+MINIO_LOG    := /tmp/devhelp-minio.log
+API_LOG      := /tmp/devhelp-api.log
+FRONT_LOG    := /tmp/devhelp-front.log
+WORKER_LOG   := /tmp/devhelp-worker.log
 
-.PHONY: dev stop logs-api logs-minio logs-front
+.PHONY: dev stop worker logs-api logs-minio logs-front logs-worker
 
-## Lance les 3 services : MinIO + API + Frontend
 dev:
 	@echo "▶  [1/3] MinIO (stockage images)..."
 	@mkdir -p $(MINIO_DATA)
@@ -36,15 +37,23 @@ dev:
 
 	@echo ""
 	@echo "✓ Stack complète. Ouvre http://localhost:5173"
+	@echo "  Worker modération : make worker"
 	@echo "  Arrêt : make stop"
 
-## Arrête les 3 services
-stop:
-	@if [ -f $(FRONT_PID) ]; then kill $$(cat $(FRONT_PID)) 2>/dev/null && rm $(FRONT_PID) && echo "  Frontend arrêté"; fi
-	@if [ -f $(API_PID) ];   then kill $$(cat $(API_PID))   2>/dev/null && rm $(API_PID)   && echo "  API arrêtée";    fi
-	@if [ -f $(MINIO_PID) ]; then kill $$(cat $(MINIO_PID)) 2>/dev/null && rm $(MINIO_PID) && echo "  MinIO arrêté";   fi
+worker:
+	@echo "▶  Worker modération..."
+	@cd worker && go run ./cmd > $(WORKER_LOG) 2>&1 & echo $$! > $(WORKER_PID)
+	@sleep 2
+	@grep -q "Consumer ready" $(WORKER_LOG) 2>/dev/null \
+		&& echo "   ✓ Worker  → en écoute sur la queue de modération" \
+		|| echo "   ✗ Worker failed — make logs-worker"
 
-## Logs en temps réel
+stop:
+	@if [ -f $(FRONT_PID) ];  then kill $$(cat $(FRONT_PID))  2>/dev/null && rm $(FRONT_PID)  && echo "  Frontend arrêté";  fi
+	@if [ -f $(API_PID) ];    then kill $$(cat $(API_PID))    2>/dev/null && rm $(API_PID)    && echo "  API arrêtée";      fi
+	@if [ -f $(MINIO_PID) ];  then kill $$(cat $(MINIO_PID))  2>/dev/null && rm $(MINIO_PID)  && echo "  MinIO arrêté";     fi
+	@if [ -f $(WORKER_PID) ]; then kill $$(cat $(WORKER_PID)) 2>/dev/null && rm $(WORKER_PID) && echo "  Worker arrêté";    fi
+
 logs-api:
 	@tail -f $(API_LOG)
 
@@ -53,3 +62,6 @@ logs-minio:
 
 logs-front:
 	@tail -f $(FRONT_LOG)
+
+logs-worker:
+	@tail -f $(WORKER_LOG)

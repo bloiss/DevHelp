@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { PostCard } from '@/components/forum/PostCard'
 import { Avatar } from '@/components/shared/Avatar'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { MOCK_POSTS } from '@/data/mockPosts'
 import { CATEGORIES } from '@/data/categories'
 import { cn } from '@/lib/utils'
 import { fadeInUp, stagger, staggerFast } from '@/lib/animations'
@@ -33,36 +32,27 @@ const ROLE_LABEL: Record<string, string | null> = {
   user: null,
 }
 
-function getMockUsers(): User[] {
-  const seen = new Set<string>()
-  return MOCK_POSTS.reduce<User[]>((acc, post) => {
-    if (!seen.has(post.author.id)) {
-      seen.add(post.author.id)
-      acc.push(post.author)
-    }
-    return acc
-  }, [])
-}
-
 function SearchPage() {
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('posts')
   const [postResults, setPostResults] = useState<any[]>([])
+  const [userResults, setUserResults] = useState<User[]>([])
+
   useEffect(() => {
-  if (!query.trim()) {
-    setPostResults([])
-    return
-  }
-  api.get('/posts', { params: { q: query } }).then((res) => {
-    setPostResults(res.data.posts ?? [])
-  })
-}, [query])
+    if (!query.trim()) {
+      setPostResults([])
+      setUserResults([])
+      return
+    }
+    api.get('/posts', { params: { q: query } }).then((res) => {
+      setPostResults(res.data.posts ?? [])
+    })
+    api.get('/users/search', { params: { q: query, limit: 20 } }).then((res) => {
+      setUserResults(res.data ?? [])
+    })
+  }, [query])
 
   const q = query.toLowerCase().trim()
-
-  const userResults = q
-    ? getMockUsers().filter((u) => u.username.toLowerCase().includes(q))
-    : []
 
   const categoryResults = q
     ? CATEGORIES.filter(
@@ -86,7 +76,6 @@ function SearchPage() {
       animate="visible"
     >
 
-      {/* Barre de recherche */}
       <motion.div variants={fadeInUp} className="mb-8">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold tracking-tight">Recherche</h1>
@@ -107,7 +96,6 @@ function SearchPage() {
         </div>
       </motion.div>
 
-      {/* État initial */}
       {!q && (
         <motion.div variants={fadeInUp}>
           <EmptyState
@@ -118,14 +106,12 @@ function SearchPage() {
         </motion.div>
       )}
 
-      {/* Résultats */}
       {q && (
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
         >
-          {/* Onglets */}
           <motion.div variants={fadeInUp} className="flex gap-1 p-1 bg-muted rounded-lg w-fit mb-6">
             {TABS.map(({ key, label }) => (
               <button
@@ -153,7 +139,6 @@ function SearchPage() {
             ))}
           </motion.div>
 
-          {/* Posts */}
           {activeTab === 'posts' && (
             postResults.length > 0 ? (
               <motion.div className="flex flex-col gap-3" variants={staggerFast} initial="hidden" animate="visible">
@@ -172,7 +157,6 @@ function SearchPage() {
             )
           )}
 
-          {/* Utilisateurs */}
           {activeTab === 'users' && (
             userResults.length > 0 ? (
               <motion.div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden" variants={staggerFast} initial="hidden" animate="visible">
@@ -194,7 +178,7 @@ function SearchPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {MOCK_POSTS.filter((p) => p.author.id === user.id).length} post(s)
+                        Membre
                       </p>
                     </div>
                   </Link>
@@ -210,7 +194,6 @@ function SearchPage() {
             )
           )}
 
-          {/* Catégories */}
           {activeTab === 'categories' && (
             categoryResults.length > 0 ? (
               <motion.div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden" variants={staggerFast} initial="hidden" animate="visible">

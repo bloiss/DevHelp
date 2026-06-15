@@ -25,7 +25,6 @@ export function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
@@ -36,7 +35,6 @@ export function ConfirmDialog({
             onClick={onCancel}
           />
 
-          {/* Dialog */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <motion.div
               key="dialog"
@@ -46,7 +44,6 @@ export function ConfirmDialog({
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="pointer-events-auto w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl p-6"
             >
-              {/* Icon + title */}
               <div className="flex flex-col items-center text-center gap-3 mb-5">
                 <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
                   variant === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'
@@ -63,7 +60,6 @@ export function ConfirmDialog({
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2">
                 <Button
                   variant="outline"

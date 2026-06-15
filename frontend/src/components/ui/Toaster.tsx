@@ -4,8 +4,6 @@ import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { useToastStore, type Toast } from '@/stores/toastStore'
 import { cn } from '@/lib/utils'
 
-// ─── Config per type ─────────────────────────────────────────────────────────
-
 const CONFIG = {
   success: {
     Icon:        CheckCircle,
@@ -33,13 +31,10 @@ const CONFIG = {
   },
 } as const
 
-// ─── Single toast item ───────────────────────────────────────────────────────
-
 function ToastItem({ toast }: { toast: Toast }) {
   const remove = useToastStore(s => s.remove)
   const { Icon, iconClass, barClass, wrapClass } = CONFIG[toast.type]
 
-  // Auto-dismiss
   useEffect(() => {
     const t = setTimeout(() => remove(toast.id), toast.duration)
     return () => clearTimeout(t)
@@ -59,10 +54,8 @@ function ToastItem({ toast }: { toast: Toast }) {
       )}
     >
       <div className="flex items-start gap-3 px-4 py-3.5">
-        {/* Icon */}
         <Icon className={cn('h-4.5 w-4.5 shrink-0 mt-0.5', iconClass)} style={{ width: 18, height: 18 }} />
 
-        {/* Text */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug">{toast.title}</p>
           {toast.description && (
@@ -72,7 +65,6 @@ function ToastItem({ toast }: { toast: Toast }) {
           )}
         </div>
 
-        {/* Close */}
         <button
           onClick={() => remove(toast.id)}
           className="shrink-0 p-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -82,7 +74,6 @@ function ToastItem({ toast }: { toast: Toast }) {
         </button>
       </div>
 
-      {/* Progress bar */}
       <div
         className={cn('absolute bottom-0 left-0 right-0 h-[2px] origin-left', barClass)}
         style={{ animation: `progress-shrink ${toast.duration}ms linear forwards` }}
@@ -90,8 +81,6 @@ function ToastItem({ toast }: { toast: Toast }) {
     </motion.div>
   )
 }
-
-// ─── Toast container ─────────────────────────────────────────────────────────
 
 export function Toaster() {
   const toasts = useToastStore(s => s.toasts)

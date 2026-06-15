@@ -2,13 +2,14 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface VoteButtonsProps {
-  score: number
+  likeCount: number
+  dislikeCount: number
   userVote: 1 | -1 | null
   onVote?: (value: 1 | -1) => void
   orientation?: 'vertical' | 'horizontal'
 }
 
-export function VoteButtons({ score, userVote, onVote, orientation = 'vertical' }: VoteButtonsProps) {
+export function VoteButtons({ likeCount, dislikeCount, userVote, onVote, orientation = 'vertical' }: VoteButtonsProps) {
   const isVertical = orientation === 'vertical'
 
   return (
@@ -27,15 +28,12 @@ export function VoteButtons({ score, userVote, onVote, orientation = 'vertical' 
         )}
       >
         <ThumbsUp className={cn(isVertical ? 'h-5 w-5' : 'h-4 w-4', userVote === 1 && 'fill-emerald-500/20')} />
+        {likeCount > 0 && (
+          <span className={cn('font-semibold tabular-nums select-none', isVertical ? 'text-base' : 'text-sm')}>
+            {likeCount}
+          </span>
+        )}
       </button>
-
-      <span className={cn(
-        'font-semibold tabular-nums select-none',
-        isVertical ? 'text-base' : 'text-sm',
-        score > 0 ? 'text-emerald-500' : score < 0 ? 'text-rose-500' : 'text-muted-foreground',
-      )}>
-        {score}
-      </span>
 
       <button
         onClick={() => onVote?.(-1)}
@@ -48,6 +46,11 @@ export function VoteButtons({ score, userVote, onVote, orientation = 'vertical' 
         )}
       >
         <ThumbsDown className={cn(isVertical ? 'h-5 w-5' : 'h-4 w-4', userVote === -1 && 'fill-rose-500/20')} />
+        {dislikeCount > 0 && (
+          <span className={cn('font-semibold tabular-nums select-none', isVertical ? 'text-base' : 'text-sm')}>
+            {dislikeCount}
+          </span>
+        )}
       </button>
     </div>
   )

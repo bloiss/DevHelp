@@ -20,13 +20,10 @@ const PILLAR_LABEL: Record<string, string> = {
   community: 'Communauté',
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Spring presets — depth-based parallax: active snaps first, side cards trail
-// ─────────────────────────────────────────────────────────────────────────────
 const SPRING = {
   active: { type: 'spring', stiffness: 220, damping: 30, mass: 1.0 },
-  side1:  { type: 'spring', stiffness: 185, damping: 28, mass: 1.2 }, // slight lag
-  side2:  { type: 'spring', stiffness: 150, damping: 26, mass: 1.5 }, // more lag
+  side1:  { type: 'spring', stiffness: 185, damping: 28, mass: 1.2 },
+  side2:  { type: 'spring', stiffness: 150, damping: 26, mass: 1.5 },
   snap:   { type: 'spring', stiffness: 260, damping: 30, mass: 0.85 },
 } as const
 
@@ -48,8 +45,6 @@ const itemVariant: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] } },
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface CategoryShowcaseProps {
   categories: CategoryMeta[]
 }
@@ -61,20 +56,14 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
   const count   = categories.length
   const stageRef = useRef<HTMLDivElement>(null)
 
-  // ── Tilt (active card only) ──────────────────────────────────────────────
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
   const tiltX = useTransform(my, [-0.5, 0.5], reduced ? [0, 0] : [6, -6])
   const tiltY = useTransform(mx, [-0.5, 0.5], reduced ? [0, 0] : [-6, 6])
 
-  // ── Live drag offset — applied to ALL cards as a shared x shift ──────────
-  // This makes the drag feel physical: cards move with the finger in real-time.
-  // On release, this value springs back to 0 (with the pan velocity as momentum).
   const trackX = useMotionValue(0)
-  // Reference to the in-flight snap animation so we can cancel it on re-grab
   const snapControls = useRef<{ stop: () => void } | null>(null)
 
-  // ── Core navigation (discrete index change only) ─────────────────────────
   const dismissHint = useCallback(() => setShowHint(false), [])
 
   const prev = useCallback(() => {
@@ -87,23 +76,20 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
     dismissHint()
   }, [count, dismissHint])
 
-  // Spring trackX to 0 (call after any navigation)
   const snapHome = useCallback((velocity = 0) => {
     if (reduced) { trackX.set(0); return }
     snapControls.current?.stop()
     snapControls.current = animate(trackX, 0, {
       ...SPRING.snap,
-      velocity, // carry real gesture momentum into the snap
+      velocity,
     }) as { stop: () => void }
   }, [reduced, trackX])
 
-  // Reset tilt on card change
   useEffect(() => {
     animate(mx, 0, { duration: 0.4, ease: 'easeOut' })
     animate(my, 0, { duration: 0.4, ease: 'easeOut' })
   }, [activeIndex]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keyboard navigation
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowLeft') { prev(); snapHome() }
@@ -113,7 +99,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [prev, next, snapHome])
 
-  // ── Wheel / trackpad horizontal scroll ───────────────────────────────────
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
@@ -138,7 +123,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
 
       if (accum > THRESHOLD) {
         next()
-        // Small physical "kick" so wheel nav feels as organic as drag
         if (!reduced) { trackX.set(-18); snapHome(0) }
         accum = 0
         locked = true
@@ -159,7 +143,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
     }
   }, [next, prev, snapHome, trackX, reduced])
 
-  // ── Tilt helpers ─────────────────────────────────────────────────────────
   function onTiltMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect()
     animate(mx, (e.clientX - rect.left) / rect.width  - 0.5, { duration: 0.1 })
@@ -175,32 +158,26 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
   return (
     <div className="w-full select-none">
 
-      {/* ── Stage ────────────────────────────────────────────────────────── */}
       <motion.div
         ref={stageRef}
         className="relative w-full h-[460px] flex items-center justify-center overflow-hidden"
         style={{ perspective: '1400px' }}
 
-        // ── Pan / swipe / drag gesture on the entire stage ──────────────
         onPanStart={() => {
-          // Cancel any in-flight snap so the user can "catch" the carousel
           snapControls.current?.stop()
         }}
         onPan={(_, info) => {
-          // Cards move physically with the finger — 0.88 resistance gives slight drag feel
           if (!reduced) trackX.set(info.offset.x * 0.88)
         }}
         onPanEnd={(_, info) => {
           const dx = info.offset.x
           const vx = info.velocity.x
 
-          // Trigger navigation if offset OR velocity crosses threshold
           if      (dx < -80 || vx < -420) { next(); snapHome(vx * 0.35) }
           else if (dx >  80 || vx >  420) { prev(); snapHome(vx * 0.35) }
-          else                             { snapHome(vx * 0.35) } // snap back, no change
+          else                             { snapHome(vx * 0.35) }
         }}
       >
-        {/* Ambient glow behind center */}
         <div aria-hidden className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div
             className="w-64 h-40 rounded-full opacity-40"
@@ -214,14 +191,12 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
         {categories.map((cat, i) => {
           const Icon = cat.icon
 
-          // Wrapped, signed offset from center
           let offset = ((i - activeIndex) % count + count) % count
           if (offset > count / 2) offset -= count
           const abs  = Math.abs(offset)
           const side = offset < 0 ? -1 : offset > 0 ? 1 : 0
           const isActive = offset === 0
 
-          // Per-depth position + spring
           let x: string, scale: number, rotY: number, opacity: number, blur: number, zIndex: number
           let spring: (typeof SPRING)[keyof typeof SPRING]
 
@@ -243,13 +218,11 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
           }
 
           return (
-            // ── Outer: adds the live trackX offset (shared, all cards move together) ──
             <motion.div
               key={cat.slug}
               className="absolute"
               style={{ zIndex, x: trackX }}
             >
-              {/* ── Inner: springs to its base position per depth-level spring ── */}
               <motion.div
                 animate={{ x, scale, rotateY: rotY, opacity }}
                 transition={reduced ? { type: 'tween', duration: 0 } : spring}
@@ -262,7 +235,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
                 >
                   <AnimatePresence initial={false} mode="wait">
                     {isActive ? (
-                      /* ── Active card: 3D tilt + full content ─────────── */
                       <motion.div
                         key="active"
                         className="w-[300px] sm:w-[360px]"
@@ -348,7 +320,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
                         </motion.div>
                       </motion.div>
                     ) : (
-                      /* ── Side card: minimal preview ───────────────────── */
                       <motion.button
                         key="side"
                         className={cn(
@@ -388,7 +359,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
         })}
       </motion.div>
 
-      {/* ── Controls ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col items-center gap-3 mt-2">
         <div className="flex items-center gap-4">
 
@@ -404,7 +374,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
             </Button>
           </motion.div>
 
-          {/* Animated pill dots */}
           <div className="flex items-center gap-1.5">
             {categories.map((_, i) => (
               <motion.button
@@ -444,7 +413,6 @@ export function CategoryShowcase({ categories }: CategoryShowcaseProps) {
           </motion.div>
         </div>
 
-        {/* Drag hint */}
         <AnimatePresence>
           {showHint && (
             <motion.p

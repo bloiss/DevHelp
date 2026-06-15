@@ -52,7 +52,6 @@ export function RegisterForm() {
     setApiError(null)
     setCaptchaError(false)
 
-    // En dev sans clé : bypass autorisé
     const token = captchaToken ?? (HCAPTCHA_SITE_KEY ? null : 'bypass-dev')
 
     if (!token) {
@@ -70,7 +69,6 @@ export function RegisterForm() {
       toast.success(`Compte créé ! Bienvenue, @${res.user.username}`)
       navigate({ to: '/forum' })
     } catch (err: unknown) {
-      // Réinitialiser le captcha après échec
       captchaRef.current?.resetCaptcha()
       setCaptchaToken(null)
 
@@ -167,7 +165,6 @@ export function RegisterForm() {
         </FieldWrapper>
       </motion.div>
 
-      {/* hCaptcha — affiché uniquement si la clé est configurée */}
       {HCAPTCHA_SITE_KEY && (
         <motion.div variants={fadeInUp} className="flex flex-col items-center gap-1">
           <HCaptcha

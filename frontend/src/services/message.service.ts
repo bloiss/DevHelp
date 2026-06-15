@@ -1,8 +1,6 @@
 import { api } from '@/lib/api'
 import type { User } from '@/types/user'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface MessageRead {
   message_id: string
   user_id:    string
@@ -49,8 +47,6 @@ export interface MessagesPage {
   has_more: boolean
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
-
 export const messageService = {
   listConversations: () =>
     api.get<{ data: ApiConversation[] }>('/conversations').then((r) => r.data.data),
@@ -58,7 +54,6 @@ export const messageService = {
   openConversation: (userId: string) =>
     api.post<ApiConversation>('/conversations', { user_id: userId }).then((r) => r.data),
 
-  /** Pagination par curseur. before = ISO timestamp du plus vieux message déjà chargé. */
   getMessages: (convId: string, before?: string): Promise<MessagesPage> =>
     api
       .get<{ data: ApiMessage[]; has_more: boolean }>(`/conversations/${convId}/messages`, {

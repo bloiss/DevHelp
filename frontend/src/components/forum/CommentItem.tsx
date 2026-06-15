@@ -47,7 +47,41 @@ export function CommentItem({
 
   const voteMutation = useMutation({
     mutationFn: (value: 1 | -1) => postService.voteComment(postId, comment.id, value),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey: ['comments', postId] })
+      const prev = queryClient.getQueryData<any[]>(['comments', postId])
+      if (prev) {
+        const cur = comment.user_vote
+        const toggling = cur === value
+        const newVote = toggling ? null : value
+        let likes = comment.like_count ?? 0
+        let dislikes = comment.dislike_count ?? 0
+        if (value === 1) {
+          likes = toggling ? Math.max(0, likes - 1) : likes + 1
+          if (!toggling && cur === -1) dislikes = Math.max(0, dislikes - 1)
+        } else {
+          dislikes = toggling ? Math.max(0, dislikes - 1) : dislikes + 1
+          if (!toggling && cur === 1) likes = Math.max(0, likes - 1)
+        }
+        queryClient.setQueryData(['comments', postId], prev.map((c: any) =>
+          c.id === comment.id ? { ...c, like_count: likes, dislike_count: dislikes, user_vote: newVote } : c
+        ))
+      }
+      return { prev }
+    },
+    onSuccess: (response) => {
+      queryClient.setQueryData(['comments', postId], (old: any[]) =>
+        (old ?? []).map((c: any) =>
+          c.id === comment.id
+            ? { ...c, like_count: response.data.like_count, dislike_count: response.data.dislike_count, user_vote: response.data.user_vote }
+            : c
+        )
+      )
+    },
+    onError: (_err, _val, context: any) => {
+      if (context?.prev) queryClient.setQueryData(['comments', postId], context.prev)
+      toast.error('Erreur', { description: 'Impossible de voter.' })
+    },
   })
 
   const deleteMutation = useMutation({
@@ -79,7 +113,6 @@ export function CommentItem({
 
       <div className="flex gap-2.5">
 
-        {/* Avatar */}
         <div className="shrink-0 pt-0.5">
           <Link to="/profile/$username" params={{ username: comment.author.username }}>
             <Avatar
@@ -93,10 +126,8 @@ export function CommentItem({
           </Link>
         </div>
 
-        {/* Contenu */}
         <div className="flex-1 min-w-0">
 
-          {/* Contexte "En réponse à" (sous-réponse à une réponse) */}
           {replyingToUsername && (
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1">
               <CornerDownRight className="h-3 w-3 shrink-0" />
@@ -107,7 +138,6 @@ export function CommentItem({
             </div>
           )}
 
-          {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Link to="/profile/$username" params={{ username: comment.author.username }} className="font-bold text-sm hover:underline">{comment.author.username}</Link>
@@ -121,7 +151,6 @@ export function CommentItem({
               </span>
             </div>
 
-            {/* Menu actions */}
             {(canModerate || canReport) && (
               <div className="relative shrink-0">
                 <button
@@ -162,15 +191,14 @@ export function CommentItem({
             )}
           </div>
 
-          {/* Contenu */}
           <p className="text-sm leading-relaxed text-foreground mt-1 whitespace-pre-wrap break-words">
             {comment.content}
           </p>
 
-          {/* Actions : votes + répondre */}
           <div className="flex items-center gap-3 mt-2 -ml-1.5">
             <VoteButtons
-              score={comment.vote_count ?? 0}
+              likeCount={comment.like_count ?? 0}
+              dislikeCount={comment.dislike_count ?? 0}
               userVote={comment.user_vote ?? null}
               onVote={user ? (value) => voteMutation.mutate(value) : undefined}
               orientation="horizontal"

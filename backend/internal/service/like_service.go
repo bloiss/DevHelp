@@ -52,8 +52,9 @@ func (s *LikeService) sendPostLikeNotif(likerID, postID uuid.UUID) {
 }
 
 type VoteResult struct {
-	VoteCount int64  `json:"vote_count"`
-	UserVote  *int   `json:"user_vote"` // +1, -1 ou null
+	LikeCount    int64 `json:"like_count"`
+	DislikeCount int64 `json:"dislike_count"`
+	UserVote     *int  `json:"user_vote"`
 }
 
 // Toggle gère le vote d'un utilisateur sur un post ou commentaire.
@@ -99,12 +100,11 @@ func (s *LikeService) Toggle(userID, targetID uuid.UUID, targetType string, valu
 		return nil, err
 	}
 
-	count, err := s.repo.CountByTarget(targetID, targetType)
+	likes, dislikes, err := s.repo.CountSeparate(targetID, targetType)
 	if err != nil {
 		return nil, err
 	}
 
-	// Récupère le vote actuel de l'utilisateur après l'opération
 	updated, err := s.repo.Find(userID, targetID, targetType)
 	var userVote *int
 	if err == nil {
@@ -112,5 +112,5 @@ func (s *LikeService) Toggle(userID, targetID uuid.UUID, targetType string, valu
 		userVote = &v
 	}
 
-	return &VoteResult{VoteCount: count, UserVote: userVote}, nil
+	return &VoteResult{LikeCount: likes, DislikeCount: dislikes, UserVote: userVote}, nil
 }

@@ -242,6 +242,15 @@ func (h *NotificationHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *NotificationHandler) DeleteAll(c *gin.Context) {
+	userID := c.MustGet("user_id").(uuid.UUID)
+	if err := h.svc.DeleteAll(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete all"})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
 // ─── Préférences de notifications ───────────────────────────────────────────
 
 // GetPrefs godoc

@@ -56,13 +56,25 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
   const [isImproving, setIsImproving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-    const handleImprove = async () => {
-    const text = editor?.getText().trim()
-    if (!text) return
+  const handleImprove = async () => {
+    if (!editor) return
+    const text = editor.getText().trim()
+    if (!text) {
+      toast.error('Contenu vide', { description: 'Écris quelque chose avant d\'utiliser l\'IA.' })
+      return
+    }
     setIsImproving(true)
     try {
       const res = await api.post('/ai/assist', { text })
-      editor?.commands.setContent(res.data.result)
+      const improved: string = res.data.result ?? ''
+      const html = improved
+        .split('\n\n')
+        .filter((p) => p.trim())
+        .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+        .join('') || `<p>${improved}</p>`
+      editor.commands.setContent(html, true)
+    } catch {
+      toast.error('Erreur IA', { description: 'Impossible de contacter le service IA.' })
     } finally {
       setIsImproving(false)
     }
@@ -143,10 +155,8 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
     >
-      {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 bg-muted/50 border-b border-border flex-wrap">
 
-        {/* Texte */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           active={editor.isActive('heading', { level: 2 })}
@@ -181,7 +191,6 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
 
         <Divider />
 
-        {/* Code */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCode().run()}
           active={editor.isActive('code')}
@@ -200,7 +209,6 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
 
         <Divider />
 
-        {/* Listes */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive('bulletList')}
@@ -219,7 +227,6 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
 
         <Divider />
 
-        {/* Séparateur horizontal */}
         <ToolbarButton
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           title="Séparateur"
@@ -229,7 +236,6 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
 
         <Divider />
 
-        {/* Image upload */}
         <ToolbarButton
           onClick={handleImageButtonClick}
           title="Insérer une image (PNG, JPEG, GIF — max 20 MB)"
@@ -260,10 +266,8 @@ export function PostEditor({ onChange, error }: PostEditorProps) {
     </button>
       </div>
           
-      {/* Zone de saisie */}
       <EditorContent editor={editor} />
 
-      {/* Pied de l'éditeur */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-t border-border">
         <span className="text-[11px] text-muted-foreground">
           Glisse une image ou clique <ImageIcon className="inline h-3 w-3" /> pour uploader

@@ -42,7 +42,6 @@ export function ReplyForm({ replyingToUsername, onSubmit, onCancel }: ReplyFormP
       <form onSubmit={handleSubmit} className="flex gap-2.5 pt-3 pb-1">
         <Avatar user={user} size="sm" className="shrink-0 mt-0.5" />
         <div className="flex flex-col gap-2 flex-1 min-w-0">
-          {/* Context "En réponse à" */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <CornerDownRight className="h-3 w-3 shrink-0" />
             <span>En réponse à</span>

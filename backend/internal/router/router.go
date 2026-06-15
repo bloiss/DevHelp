@@ -27,7 +27,9 @@ type Handlers struct {
 	WS           *handler.WSHandler
 	Upload       *handler.UploadHandler
 	Report       *handler.ReportHandler
+	Moderation   *handler.ModerationHandler
 	AI           *handler.AIHandler
+	Stats        *handler.StatsHandler
 	JWTSecret    string
 }
 
@@ -71,6 +73,7 @@ func New(h *Handlers) *gin.Engine {
 	api.GET("/posts", middleware.OptionalAuth(h.JWTSecret), h.Post.List)
 	api.GET("/posts/:id", middleware.OptionalAuth(h.JWTSecret), h.Post.Get)
 	api.GET("/posts/:id/comments", middleware.OptionalAuth(h.JWTSecret), h.Comment.List)
+	api.GET("/stats", h.Stats.Get)
 	api.GET("/users/search", h.User.SearchUsers)
 	api.GET("/users/:username", middleware.OptionalAuth(h.JWTSecret), h.User.GetProfile)
 	api.GET("/users/:username/followers", h.Follow.Followers)
@@ -137,6 +140,7 @@ func New(h *Handlers) *gin.Engine {
 		protected.PATCH("/notifications/:id/unread", h.Notification.MarkUnread)
 		protected.PATCH("/notifications/:id/star", h.Notification.Star)
 		protected.PATCH("/notifications/:id/archive", h.Notification.Archive)
+		protected.DELETE("/notifications", h.Notification.DeleteAll)
 		protected.DELETE("/notifications/:id", h.Notification.Delete)
 
 		// Push subscriptions
@@ -153,6 +157,10 @@ func New(h *Handlers) *gin.Engine {
 		admin.GET("/posts", h.Admin.ListPosts)
 		admin.GET("/reports", h.Report.AdminListReports)
 		admin.PATCH("/reports/:id", h.Report.AdminUpdateReport)
+		admin.GET("/moderation/queue", h.Moderation.ListQueue)
+		admin.GET("/moderation/stats", h.Moderation.GetStats)
+		admin.PATCH("/moderation/posts/:id", h.Moderation.ReviewPost)
+		admin.PATCH("/moderation/comments/:id", h.Moderation.ReviewComment)
 	}
 
 	// ─── Admin seul ───────────────────────────────
